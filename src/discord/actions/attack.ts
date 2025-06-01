@@ -1,5 +1,5 @@
 import { Bot, Message } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
-import { getPlayer, setPlayerHealth } from "../../db/player.ts";
+import { findOrCreatePlayer, setPlayerHealth } from "../../db/player.ts";
 import { narrate } from "../../llm/ollama.ts";
 import { rollAndAnnounceDie } from "../dice.ts";
 
@@ -25,7 +25,7 @@ export async function attack({
     (p) =>
       (p.nick ?? p.username).toLowerCase() === (target?.toLowerCase() ?? "")
   );
-  if (!targetPlayer) {
+  if (!targetPlayer || !targetPlayer.id) {
     await bot.helpers.sendMessage(message.channelId, {
       content: `<@${message.authorId}>, whom are you attacking?`,
     });
@@ -43,12 +43,15 @@ export async function attack({
     sides: 4,
     label: "1d4 (unarmed)",
   });
-  const dbPlayer = await getPlayer(targetPlayer.id);
+  const dbPlayer = await findOrCreatePlayer({
+    id: targetPlayer.id,
+    name: targetPlayer.nick ?? targetPlayer.username,
+  });
   const newHealth = dbPlayer
     ? Math.max(0, dbPlayer.health - damage)
     : undefined;
   if (dbPlayer && newHealth !== undefined) {
-    await setPlayerHealth(targetPlayer.id, newHealth);
+    await setPlayerHealth({ id: targetPlayer.id, health: newHealth });
   }
   const prompt = [
     `Narrate an attack in a fantasy Discord RPG.`,

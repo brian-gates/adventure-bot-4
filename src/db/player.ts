@@ -1,6 +1,6 @@
-import { PrismaClient } from "@prisma/client.ts";
+import { PrismaClient } from "../generated/prisma/client.ts";
 
-const prisma = new PrismaClient({
+export const prisma = new PrismaClient({
   datasourceUrl: Deno.env.get("DATABASE_URL"),
 });
 
@@ -28,4 +28,25 @@ export async function createPlayer({
   health: number;
 }) {
   return await prisma.player.create({ data: { id, name, health } });
+}
+
+export async function findOrCreatePlayer({
+  id,
+  name,
+  health = 10,
+}: {
+  id: string;
+  name: string;
+  health?: number;
+}) {
+  try {
+    let player = await prisma.player.findUnique({ where: { id } });
+    if (!player) {
+      player = await prisma.player.create({ data: { id, name, health } });
+    }
+    return player;
+  } catch (err) {
+    console.error("Prisma error in findOrCreatePlayer:", err);
+    throw err;
+  }
 }
