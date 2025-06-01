@@ -1,57 +1,69 @@
-import { Bot, Message } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
+import { Bot, Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { findOrCreatePlayer, setPlayerHealth } from "~/db/player.ts";
-import { getGuildPlayers } from "~/discord/players.ts";
+import { getTargetPlayer } from "~/discord/get-target.ts";
 import { rollDie } from "~/game/dice.ts";
-import { inferTarget } from "~/game/players.ts";
 import { narrate } from "~/llm/ollama.ts";
-import {
-  defaultResponseTemplate,
-  immersiveRoleplay,
-  mentionInstruction,
-} from "~/prompts.ts";
+import { narrateHeal } from "~/prompts.ts";
 import { healthBar } from "~/ui/health-bar.ts";
 
-export async function heal({ bot, message }: { bot: Bot; message: Message }) {
-  const validPlayers = message.guildId
-    ? await getGuildPlayers({ bot, guildId: message.guildId })
-    : [];
-  const targetPlayer = inferTarget({
-    target: null,
-    validPlayers,
-    authorId: message.authorId,
-  });
-  if (typeof targetPlayer === "string" || !targetPlayer.id) {
-    await bot.helpers.sendMessage(message.channelId, {
-      content: `<@${message.authorId}>, whom would you like to heal?`,
+export async function heal({
+  bot,
+  interaction,
+}: {
+  bot: Bot;
+  interaction: Interaction;
+}) {
+  const targetPlayer = await getTargetPlayer({ interaction });
+  if (!targetPlayer) {
+    await bot.helpers.sendMessage(interaction.channelId!, {
+      content: `<@${
+        interaction.user?.id ?? interaction.member?.user?.id
+      }>, whom would you like to heal?`,
     });
     return;
   }
   const player = await findOrCreatePlayer({
     id: targetPlayer.id,
-    name: targetPlayer.nick ?? targetPlayer.username,
+    name: targetPlayer.name,
   });
   const healAmount = rollDie({ sides: 4 });
   const newHealth = Math.min(player.maxHealth, player.health + healAmount);
   await setPlayerHealth({ id: targetPlayer.id, health: newHealth });
 
-  const prompt = [
-    `Narrate a magical or fantasy healing in a Discord RPG.`,
-    `The healer is <@${message.authorId}> (use this exact mention format for the healer).`,
-    `The target is <@${targetPlayer.id}>.`,
-    `The amount healed is ${healAmount}.`,
-    `The target's new health is ${newHealth}.`,
-    ...defaultResponseTemplate,
-    mentionInstruction({
-      role: "healer",
-      authorId: message.authorId.toString(),
-    }),
-    immersiveRoleplay,
-  ].join(" ");
-  await bot.helpers.sendMessage(message.channelId, {
-    content: await narrate({ prompt }),
+  const prompt = narrateHeal({
+    authorId:
+      interaction.user?.id?.toString() ??
+      interaction.member?.user?.id?.toString() ??
+      "",
+    targetId: targetPlayer.id,
+    healAmount,
+    newHealth,
+  });
+  const narrationResult = await narrate({ prompt });
+  const LLMResponse = z.object({ response: z.string() });
+  const narration = (() => {
+    if (typeof narrationResult === "string") {
+      try {
+        return LLMResponse.parse(JSON.parse(narrationResult)).response;
+      } catch {
+        return narrationResult;
+      }
+    }
+    if (
+      narrationResult &&
+      typeof narrationResult === "object" &&
+      "response" in narrationResult
+    ) {
+      return (narrationResult as { response: string }).response;
+    }
+    return JSON.stringify(narrationResult);
+  })();
+  await bot.helpers.sendMessage(interaction.channelId!, {
+    content: narration,
   });
 
-  await bot.helpers.sendMessage(message.channelId, {
+  await bot.helpers.sendMessage(interaction.channelId!, {
     content: `<@${targetPlayer.id}>'s health bar:`,
     file: {
       blob: new Blob([

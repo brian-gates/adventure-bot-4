@@ -1,30 +1,38 @@
-import { Bot } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
+import { Bot, Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 
 export function rollDie({ sides }: { sides: number }) {
   return Math.floor(Math.random() * sides) + 1;
 }
 
+async function getRollEmoji(
+  bot: Bot,
+  guildId: bigint | undefined,
+  sides: number,
+  roll: number
+): Promise<string> {
+  if (!guildId || (sides !== 20 && sides !== 4)) return "";
+  const num = roll.toString().padStart(2, "0");
+  const name = sides === 20 ? `d20_${num}` : `d4_${roll}`;
+  const emojis = await bot.helpers.getEmojis(guildId);
+  const found = emojis.find((e) => e.name === name);
+  return found ? `<:${found.name}:${found.id}>` : `:${name}:`;
+}
+
 export async function rollAndAnnounceDie({
   bot,
-  message,
+  interaction,
   sides,
   label,
 }: {
   bot: Bot;
-  message: { authorId: bigint; channelId: bigint; guildId?: bigint };
+  interaction: Interaction;
   sides: number;
   label: string;
 }) {
+  const channelId = interaction.channelId!;
   const roll = rollDie({ sides });
-  let emoji = "";
-  if (message.guildId && (sides === 20 || sides === 4)) {
-    const num = roll.toString().padStart(2, "0");
-    const name = sides === 20 ? `d20_${num}` : `d4_${roll}`;
-    const emojis = await bot.helpers.getEmojis(message.guildId);
-    const found = emojis.find((e) => e.name === name);
-    emoji = found ? `<:${found.name}:${found.id}>` : `:${name}:`;
-  }
-  await bot.helpers.sendMessage(message.channelId, {
+  const emoji = await getRollEmoji(bot, interaction.guildId, sides, roll);
+  await bot.helpers.sendMessage(channelId, {
     content: emoji,
   });
   return { roll, label };
@@ -80,19 +88,19 @@ export function attackNarration({
 
 export async function rollAndAnnounceD20({
   bot,
-  message,
+  interaction,
 }: {
   bot: Bot;
-  message: { authorId: bigint; channelId: bigint; guildId?: bigint };
+  interaction: Interaction;
 }) {
   const roll = rollDie({ sides: 20 });
-  if (!message.guildId) return { roll, dice: undefined };
+  if (!interaction.guildId) return { roll, dice: undefined };
   const dice = await getDiceEmojiString({
     bot,
-    guildId: message.guildId,
+    guildId: interaction.guildId,
     roll,
   });
-  await bot.helpers.sendMessage(message.channelId, {
+  await bot.helpers.sendMessage(interaction.channelId!, {
     content: dice,
   });
   return { roll, dice };
@@ -104,16 +112,18 @@ export function rollD4() {
 
 export async function rollAndAnnounceD4({
   bot,
-  message,
+  interaction,
   formula = "1d4",
 }: {
   bot: Bot;
-  message: { authorId: bigint; channelId: bigint };
+  interaction: Interaction;
   formula?: string;
 }) {
   const roll = rollD4();
-  await bot.helpers.sendMessage(message.channelId, {
-    content: `<@${message.authorId}> rolled ${formula}: **${roll}**`,
+  await bot.helpers.sendMessage(interaction.channelId!, {
+    content: `<@${BigInt(
+      interaction.user?.id ?? interaction.member?.user?.id
+    )}> rolled ${formula}: **${roll}**`,
   });
   return { roll };
 }

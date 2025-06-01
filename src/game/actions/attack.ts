@@ -1,46 +1,42 @@
-import { Bot, Message } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
+import { Bot, Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import {
   findOrCreatePlayer,
   setPlayerHealth,
   setPlayerLastTarget,
 } from "~/db/player.ts";
-import { getGuildPlayers } from "~/discord/players.ts";
+import { getTargetPlayer } from "~/discord/get-target.ts";
 import { rollAndAnnounceDie } from "~/game/dice.ts";
-import { inferTarget } from "~/game/players.ts";
 import { narrate } from "~/llm/ollama.ts";
-import { immersiveRoleplay } from "~/prompts.ts";
+import { narrateAttack } from "~/prompts.ts";
 import { healthBar } from "~/ui/health-bar.ts";
 
-export async function attack({ bot, message }: { bot: Bot; message: Message }) {
-  const validPlayers = message.guildId
-    ? await getGuildPlayers({ bot, guildId: message.guildId })
-    : [];
-  const targetPlayer = inferTarget({
-    target: null,
-    validPlayers,
-    authorId: message.authorId,
-  });
-  if (typeof targetPlayer === "string" || !targetPlayer.id) {
-    await bot.helpers.sendMessage(message.channelId, {
-      content: `<@${message.authorId}>, whom would you like to attack?`,
-    });
-    return;
-  }
+export async function attack({
+  bot,
+  interaction,
+}: {
+  bot: Bot;
+  interaction: Interaction;
+}) {
+  const authorId = interaction.user.id;
+  const channelId = interaction.channelId!;
+  const targetPlayer = await getTargetPlayer({ interaction });
+  if (!targetPlayer) throw new Error("Target player not found");
   const { roll: d20 } = await rollAndAnnounceDie({
     bot,
-    message,
+    interaction,
     sides: 20,
     label: "d20",
   });
   const { roll: damage } = await rollAndAnnounceDie({
     bot,
-    message,
+    interaction,
     sides: 4,
     label: "1d4 (unarmed)",
   });
   const player = await findOrCreatePlayer({
     id: targetPlayer.id,
-    name: targetPlayer.nick ?? targetPlayer.username,
+    name: targetPlayer.name,
   });
   const actualDamage = player ? Math.min(damage, player.health) : 0;
   const newHealth = player
@@ -49,35 +45,45 @@ export async function attack({ bot, message }: { bot: Bot; message: Message }) {
   if (player && newHealth !== undefined) {
     await setPlayerHealth({ id: targetPlayer.id, health: newHealth });
     await findOrCreatePlayer({
-      id: message.authorId.toString(),
+      id: authorId.toString(),
       name: "Unknown",
     });
     await setPlayerLastTarget({
-      id: message.authorId.toString(),
+      id: authorId.toString(),
       lastTarget: targetPlayer.id,
     });
   }
-  const prompt = [
-    `Narrate an attack in a fantasy Discord RPG.`,
-    `The attacker is <@${message.authorId}> (use this exact mention format for the attacker).`,
-    `The target is ${targetPlayer.nick ?? targetPlayer.username}.`,
-    `The d20 roll was ${d20} against AC 10.`,
-    `The damage roll was ${damage} (1d4 unarmed).`,
-    newHealth !== undefined
-      ? `The target's new health is ${newHealth}.`
-      : `The target's health is unknown.`,
-    `Respond ONLY with a single vivid, immersive sentence.`,
-    `Do not include any JSON or extra formatting.`,
-    `Always refer to the attacker using the exact mention string <@${message.authorId}> so Discord renders it as a clickable mention.`,
-    immersiveRoleplay,
-  ].join(" ");
-  const narration = await narrate({ prompt });
-  await bot.helpers.sendMessage(message.channelId, {
-    content: narration,
+  const prompt = narrateAttack({
+    authorId: authorId.toString(),
+    target: targetPlayer.name,
+    d20,
+    damage,
+    newHealth,
   });
 
+  const narrationResult = await narrate({ prompt });
+  const LLMResponse = z.object({ response: z.string() });
+  const narration = (() => {
+    if (typeof narrationResult === "string") {
+      try {
+        return LLMResponse.parse(JSON.parse(narrationResult)).response;
+      } catch {
+        return narrationResult;
+      }
+    }
+    if (
+      narrationResult &&
+      typeof narrationResult === "object" &&
+      "response" in narrationResult
+    ) {
+      return (narrationResult as { response: string }).response;
+    }
+    return JSON.stringify(narrationResult);
+  })();
+  await bot.helpers.sendMessage(channelId, { content: narration });
+
   if (player && newHealth !== undefined) {
-    await bot.helpers.sendMessage(message.channelId, {
+    await bot.helpers.sendMessage(channelId, {
       content: `<@${targetPlayer.id}>'s health:`,
       file: {
         blob: new Blob([

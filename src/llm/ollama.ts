@@ -1,3 +1,5 @@
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+
 const LLM_MODEL = "llama3";
 
 export async function callLLM({
@@ -22,8 +24,19 @@ export async function callLLM({
   return response;
 }
 
-export function narrate({ prompt }: { prompt: string }) {
-  return callLLM({ prompt });
+export async function narrate({ prompt }: { prompt: string }) {
+  const raw = await callLLM({ prompt });
+  const LLMResponse = z.object({ response: z.string() });
+  try {
+    const parsed = JSON.parse(raw);
+    console.log("[LLM] Full response:", parsed);
+    if (LLMResponse.safeParse(parsed).success) {
+      return LLMResponse.parse(parsed).response;
+    }
+    return raw;
+  } catch {
+    return raw;
+  }
 }
 
 export function inferIntent({

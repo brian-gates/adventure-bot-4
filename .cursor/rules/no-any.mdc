@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Avoid the use of any. Reference proper types, and typeguard when needed.
