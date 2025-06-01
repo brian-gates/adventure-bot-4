@@ -47,11 +47,7 @@ export function makeBot({ token, botId }: { token: string; botId: bigint }) {
               name: m.nick ?? m.user!.username,
               value: m.user!.id.toString(),
             }));
-          const monsterChoices = [
-            { name: "Goblin", value: "monster:goblin" },
-            { name: "Dragon", value: "monster:dragon" },
-          ];
-          const allChoices = [...userChoices, ...monsterChoices]
+          const allChoices = [...userChoices]
             .filter((choice) => choice.name.toLowerCase().includes(input))
             .slice(0, 25);
           await bot.helpers.sendInteractionResponse(
