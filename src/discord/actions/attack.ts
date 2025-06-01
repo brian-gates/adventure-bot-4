@@ -1,6 +1,7 @@
 import { Bot, Message } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
+import { getPlayer, setPlayerHealth } from "../../db/player.ts";
 import { narrate } from "../../llm/ollama.ts";
-import { rollAndAnnounceD20 } from "../dice.ts";
+import { rollAndAnnounceDie } from "../dice.ts";
 
 export async function attack({
   bot,
@@ -20,23 +21,44 @@ export async function attack({
     typeof args.target === "string"
       ? args.target
       : null;
-  if (
-    !target ||
-    !validPlayers.some(
-      (p) => (p.nick ?? p.username).toLowerCase() === target.toLowerCase()
-    )
-  ) {
+  const targetPlayer = validPlayers.find(
+    (p) =>
+      (p.nick ?? p.username).toLowerCase() === (target?.toLowerCase() ?? "")
+  );
+  if (!targetPlayer) {
     await bot.helpers.sendMessage(message.channelId, {
       content: `<@${message.authorId}>, whom are you attacking?`,
     });
     return;
   }
-  const { roll } = await rollAndAnnounceD20({ bot, message });
+  const { roll: d20 } = await rollAndAnnounceDie({
+    bot,
+    message,
+    sides: 20,
+    label: "d20",
+  });
+  const { roll: damage } = await rollAndAnnounceDie({
+    bot,
+    message,
+    sides: 4,
+    label: "1d4 (unarmed)",
+  });
+  const dbPlayer = await getPlayer(targetPlayer.id);
+  const newHealth = dbPlayer
+    ? Math.max(0, dbPlayer.health - damage)
+    : undefined;
+  if (dbPlayer && newHealth !== undefined) {
+    await setPlayerHealth(targetPlayer.id, newHealth);
+  }
   const prompt = [
     `Narrate an attack in a fantasy Discord RPG.`,
     `The attacker is <@${message.authorId}> (use this exact mention format for the attacker).`,
     `The target is ${target}.`,
-    `The d20 roll was ${roll} against AC 10.`,
+    `The d20 roll was ${d20} against AC 10.`,
+    `The damage roll was ${damage} (1d4 unarmed).`,
+    newHealth !== undefined
+      ? `The target's new health is ${newHealth}.`
+      : `The target's health is unknown.`,
     `Respond ONLY with a single vivid, immersive sentence.`,
     `Do not include any JSON or extra formatting.`,
     `Avoid mentioning any game mechanics or system messages overtly, keep it flavorful and immersive.`,

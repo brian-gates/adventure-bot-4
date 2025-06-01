@@ -1,0 +1,14 @@
+{
+  "version": "5",
+  "redirects": {
+    "https://esm.sh/@prisma/client/deno/edge": "https://esm.sh/@prisma/client@6.8.2/deno/edge"
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@prisma/client@^6.8.2",
+        "npm:prisma@^6.8.2"
+      ]
+    }
+  }
+}

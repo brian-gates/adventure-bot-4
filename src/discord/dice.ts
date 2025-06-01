@@ -1,7 +1,33 @@
 import { Bot } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 
-export function rollD20() {
-  return Math.floor(Math.random() * 20) + 1;
+export function rollDie({ sides }: { sides: number }) {
+  return Math.floor(Math.random() * sides) + 1;
+}
+
+export async function rollAndAnnounceDie({
+  bot,
+  message,
+  sides,
+  label,
+}: {
+  bot: Bot;
+  message: { authorId: bigint; channelId: bigint; guildId?: bigint };
+  sides: number;
+  label: string;
+}) {
+  const roll = rollDie({ sides });
+  let emoji = "";
+  if (message.guildId && (sides === 20 || sides === 4)) {
+    const num = roll.toString().padStart(2, "0");
+    const name = sides === 20 ? `d20_${num}` : `d4_${roll}`;
+    const emojis = await bot.helpers.getEmojis(message.guildId);
+    const found = emojis.find((e) => e.name === name);
+    emoji = found ? `<:${found.name}:${found.id}>` : `:${name}:`;
+  }
+  await bot.helpers.sendMessage(message.channelId, {
+    content: emoji,
+  });
+  return { roll, label };
 }
 
 export async function getDiceEmojiString({
@@ -59,7 +85,7 @@ export async function rollAndAnnounceD20({
   bot: Bot;
   message: { authorId: bigint; channelId: bigint; guildId?: bigint };
 }) {
-  const roll = rollD20();
+  const roll = rollDie({ sides: 20 });
   if (!message.guildId) return { roll, dice: undefined };
   const dice = await getDiceEmojiString({
     bot,
@@ -70,4 +96,24 @@ export async function rollAndAnnounceD20({
     content: dice,
   });
   return { roll, dice };
+}
+
+export function rollD4() {
+  return Math.floor(Math.random() * 4) + 1;
+}
+
+export async function rollAndAnnounceD4({
+  bot,
+  message,
+  formula = "1d4",
+}: {
+  bot: Bot;
+  message: { authorId: bigint; channelId: bigint };
+  formula?: string;
+}) {
+  const roll = rollD4();
+  await bot.helpers.sendMessage(message.channelId, {
+    content: `<@${message.authorId}> rolled ${formula}: **${roll}**`,
+  });
+  return { roll };
 }

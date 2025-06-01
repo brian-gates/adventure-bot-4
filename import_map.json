@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "@prisma/": "./src/generated/prisma/",
+    "~/": "./src/"
+  }
+}

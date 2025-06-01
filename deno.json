@@ -1,0 +1,10 @@
+{
+  "importMap": "import_map.json",
+  "lint": {},
+  "fmt": {},
+  "tasks": {
+    "dev": "deno run -A src/bot/index.ts",
+    "prisma:generate": "npx prisma generate",
+    "prisma:migrate": "npx prisma migrate dev"
+  }
+}
