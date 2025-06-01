@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+functional style, single argument, destructured, inline props, infer return types

@@ -1,17 +1,14 @@
 import {
   createBot,
   Intents,
-  startBot,
 } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 import { inferIntent } from "../llm/ollama.ts";
-import { attack } from "./actions/attack.ts";
-import { rollD20 } from "./dice.ts";
+import { actions } from "./actions/index.ts";
 import { getGuildPlayers } from "./players.ts";
 
 const PIXEL_DEV_CHANNEL_ID = 1375304555251765278n;
-const DEFAULT_AC = 10;
 
-export function makeBot(token: string, botId: bigint) {
+export function makeBot({ token, botId }: { token: string; botId: bigint }) {
   return createBot({
     token,
     botId,
@@ -22,16 +19,15 @@ export function makeBot(token: string, botId: bigint) {
       Intents.GuildMembers,
     events: {
       messageCreate: async (bot, message) => {
+        await bot.helpers.startTyping(message.channelId);
         if (message.authorId === botId) return;
         if (message.channelId !== PIXEL_DEV_CHANNEL_ID) return;
         const userInput = message.content.trim();
         if (!userInput) return;
         try {
-          let validPlayers: { id: string; username: string; nick?: string }[] =
-            [];
-          if (message.guildId) {
-            validPlayers = await getGuildPlayers(bot, message.guildId);
-          }
+          const validPlayers = message.guildId
+            ? await getGuildPlayers({ bot, guildId: message.guildId })
+            : [];
           const context =
             validPlayers.length > 0
               ? `Valid player targets: ${validPlayers
@@ -42,50 +38,12 @@ export function makeBot(token: string, botId: bigint) {
             message: userInput,
             context,
           });
-          if (intent === "attack") {
-            const target =
-              args &&
-              typeof args === "object" &&
-              "target" in args &&
-              typeof (args as any).target === "string"
-                ? (args as any).target
-                : null;
-            if (
-              !target ||
-              !validPlayers.some(
-                (p) =>
-                  (p.nick ?? p.username).toLowerCase() === target.toLowerCase()
-              )
-            ) {
-              await bot.helpers.sendMessage(message.channelId, {
-                content: "You must mention a real player to attack!",
-              });
-              return;
-            }
-            const roll = rollD20();
-            const narration = attack({
-              validPlayers,
-              target,
-              ac: DEFAULT_AC,
-              roll,
-            });
-            await bot.helpers.sendMessage(message.channelId, {
-              content: narration,
-            });
-          } else if (intent === "heal") {
-            await bot.helpers.sendMessage(message.channelId, {
-              content: "You heal yourself!",
-            });
-          } else if (intent === "look") {
-            await bot.helpers.sendMessage(message.channelId, {
-              content: "You look around.",
-            });
-          } else {
-            await bot.helpers.sendMessage(message.channelId, {
-              content: `Unknown intent: ${intent}`,
-            });
+          const action = actions[intent as keyof typeof actions];
+          if (action) {
+            await action({ bot, message, args, validPlayers });
           }
         } catch (err) {
+          console.error(err);
           await bot.helpers.sendMessage(message.channelId, {
             content: "Sorry, I couldn't understand that.",
           });
@@ -95,4 +53,4 @@ export function makeBot(token: string, botId: bigint) {
   });
 }
 
-export { startBot };
+export { startBot } from "https://deno.land/x/discordeno@18.0.1/mod.ts";

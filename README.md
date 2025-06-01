@@ -5,6 +5,7 @@ A Discord bot powered by LLM intent inference, written in Deno with a pure funct
 ## Prerequisites
 
 - [Deno](https://deno.com/manual/getting_started/installation) (v1.40+ recommended)
+- [Ollama](https://github.com/ollama/ollama) (for LLM intent inference)
 - A Discord bot application ([create one here](https://discord.com/developers/applications))
 - Permissions for your bot: `MESSAGE CONTENT INTENT`, `GUILD MEMBERS INTENT`, and appropriate channel/message permissions
 
@@ -66,3 +67,21 @@ deno run -A src/bot/index.ts
 - `src/discord/` — Discord bot logic, actions, and helpers
 - `src/llm/` — LLM intent inference logic
 - `.env` — Environment variables (not committed)
+
+### Ollama Setup
+
+Ollama is required to run the local LLM for intent inference. See the [Ollama GitHub repo](https://github.com/ollama/ollama) for full installation instructions.
+
+**Quick install (macOS/Linux):**
+
+```sh
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+**Start Ollama:**
+
+```sh
+ollama serve
+```
+
+Make sure Ollama is running before you start the bot.
