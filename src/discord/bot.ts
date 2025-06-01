@@ -4,7 +4,8 @@ import {
   startBot,
 } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 import { inferIntent } from "../llm/ollama.ts";
-import { attackNarration, rollD20 } from "./dice.ts";
+import { attack } from "./actions/attack.ts";
+import { rollD20 } from "./dice.ts";
 import { getGuildPlayers } from "./players.ts";
 
 const PIXEL_DEV_CHANNEL_ID = 1375304555251765278n;
@@ -62,7 +63,12 @@ export function makeBot(token: string, botId: bigint) {
               return;
             }
             const roll = rollD20();
-            const narration = attackNarration(roll, DEFAULT_AC, target);
+            const narration = attack({
+              validPlayers,
+              target,
+              ac: DEFAULT_AC,
+              roll,
+            });
             await bot.helpers.sendMessage(message.channelId, {
               content: narration,
             });
