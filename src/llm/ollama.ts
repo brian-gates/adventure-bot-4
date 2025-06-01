@@ -1,22 +1,32 @@
-import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+const LLM_MODEL = "llama3";
 
-export async function narrate(prompt: string): Promise<string> {
-  const res = await fetch("http://localhost:11434/api/generate", {
+export async function callLLM({
+  prompt,
+  stream = false,
+  max_tokens,
+}: {
+  prompt: string;
+  stream?: boolean;
+  max_tokens?: number;
+}) {
+  const start = Date.now();
+  const body: Record<string, unknown> = { model: LLM_MODEL, prompt, stream };
+  if (max_tokens) body.max_tokens = max_tokens;
+  const response = await fetch("http://localhost:11434/api/generate", {
     method: "POST",
-    body: JSON.stringify({ model: "llama3", prompt, stream: false }),
+    body: JSON.stringify(body),
     headers: { "Content-Type": "application/json" },
-  });
-  const data = await res.json();
-  // Accept plain string response from LLM
-  return typeof data.response === "string" ? data.response.trim() : "";
+  }).then((res) => res.text());
+  const duration = Date.now() - start;
+  console.log(`LLM (${LLM_MODEL}) call took ${duration}ms: ${response}`);
+  return response;
 }
 
-const IntentSchema = z.object({
-  intent: z.string(),
-  args: z.any().optional(),
-});
+export function narrate({ prompt }: { prompt: string }) {
+  return callLLM({ prompt });
+}
 
-export async function inferIntent({
+export function inferIntent({
   message,
   context,
 }: {
@@ -25,25 +35,10 @@ export async function inferIntent({
 }) {
   const prompt = [
     "You are an intent classifier for a Discord adventure game.",
-    "Given the following message, infer the user's intent as a single word (e.g., 'attack', 'heal', 'look', 'inventory', etc.), and any arguments.",
-    "If the intent is 'attack', extract the target as args.target.",
-    "If the target is ambiguous (e.g., 'retaliate!', 'punch him!'), infer the most likely target from context (such as the last attacker or the current enemy).",
-    "If no target can be inferred, set args.target to null.",
-    "Respond ONLY with a single line of valid JSON: { 'intent': string, 'args'?: any }.",
-    "Do not include any explanation or extra text.",
+    "Given the following message, respond ONLY with the user's intent as a single word (e.g., 'attack', 'heal', 'look', 'inventory', etc.).",
+    "Do not include any explanation, formatting, or JSON.",
     `\nMessage: \"${message}\"`,
     context ? `\nContext: ${context}` : "",
   ].join("\n");
-  const res = await fetch("http://localhost:11434/api/generate", {
-    method: "POST",
-    body: JSON.stringify({ model: "llama3", prompt, stream: false }),
-    headers: { "Content-Type": "application/json" },
-  });
-  const data = await res.json();
-  const intentObj = JSON.parse(data.response);
-  console.log("LLM prompt:", prompt);
-  console.log("LLM response:", intentObj);
-  const parsed = IntentSchema.safeParse(intentObj);
-  if (!parsed.success) throw new Error("Invalid LLM output");
-  return parsed.data;
+  return callLLM({ prompt });
 }

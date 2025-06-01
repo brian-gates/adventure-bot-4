@@ -3,9 +3,9 @@ import { makeBot, startBot } from "./bot.ts";
 
 await dotenv.load({ export: true });
 
-const bot = makeBot({
-  token: Deno.env.get("DISCORD_TOKEN")!,
-  botId: BigInt(Deno.env.get("DISCORD_BOT_ID")!),
-});
-
-await startBot(bot);
+await startBot(
+  makeBot({
+    token: Deno.env.get("DISCORD_TOKEN")!,
+    botId: BigInt(Deno.env.get("DISCORD_BOT_ID")!),
+  })
+);

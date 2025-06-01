@@ -14,7 +14,8 @@ export async function healthBar({
   height?: number;
 }): Promise<Uint8Array> {
   const healthWidth = Math.round((current / max) * width);
-  const healWidth = Math.round((heal / max) * width);
+  const effectiveHeal = Math.max(0, Math.min(heal, max - current));
+  const healWidth = Math.round((effectiveHeal / max) * width);
   const damageWidth = Math.round((damage / max) * width);
   const greenBox =
     healthWidth > 0
@@ -22,9 +23,7 @@ export async function healthBar({
       : "";
   const whiteBox =
     healWidth > 0
-      ? `drawbox=x=${
-          healthWidth - healWidth
-        }:y=0:w=${healWidth}:h=${height}:color=white@1:t=fill,`
+      ? `drawbox=x=${healthWidth}:y=0:w=${healWidth}:h=${height}:color=white@1:t=fill,`
       : "";
   const redBox =
     damageWidth > 0

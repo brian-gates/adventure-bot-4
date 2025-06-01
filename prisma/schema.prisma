@@ -10,8 +10,11 @@ datasource db {
 }
 
 model Player {
-    id        String @id
-    name      String
-    health    Int
-    maxHealth Int    @default(10)
+    id         String  @id
+    name       String
+    health     Int
+    maxHealth  Int     @default(10)
+    lastTarget String? // ID of the last targeted player
+
+    @@index([lastTarget])
 }
