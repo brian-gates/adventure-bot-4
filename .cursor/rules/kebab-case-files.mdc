@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Use kebab-case for filenames, e.g. my-component.tsx or get-user.ts
