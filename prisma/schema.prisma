@@ -18,3 +18,38 @@ model Player {
 
     @@index([lastTarget])
 }
+
+model Location {
+    id          String       @id
+    channelId   String
+    row         Int
+    col         Int
+    name        String
+    description String
+    attributes  Json
+    createdAt   DateTime     @default(now())
+    updatedAt   DateTime     @updatedAt
+    fromPaths   Path[]       @relation("FromLocation")
+    toPaths     Path[]       @relation("ToLocation")
+    GuildState  GuildState[]
+}
+
+model Path {
+    id             String   @id
+    channelId      String
+    fromLocation   Location @relation("FromLocation", fields: [fromLocationId], references: [id])
+    fromLocationId String
+    toLocation     Location @relation("ToLocation", fields: [toLocationId], references: [id])
+    toLocationId   String
+    description    String
+    attributes     Json
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
+}
+
+model GuildState {
+    guildId           String   @id
+    currentLocation   Location @relation(fields: [currentLocationId], references: [id])
+    currentLocationId String
+    updatedAt         DateTime @updatedAt
+}

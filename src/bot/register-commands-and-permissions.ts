@@ -1,6 +1,27 @@
 import type { Bot } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 import { ensureAdventurerRole } from "./ensure-adventurer-role.ts";
 
+async function logBotGuildPermissions({
+  bot,
+  guildId,
+}: {
+  bot: Bot;
+  guildId: string;
+}) {
+  const botId = bot.applicationId.toString();
+  const member = await bot.helpers.getMember(guildId, botId);
+  const permissions = member.permissions;
+  console.log(
+    `[Bot] Bot permissions bitfield in guild ${guildId}: ${permissions}`
+  );
+  const perms = permissions ? BigInt(permissions) : 0n;
+  const hasManageRoles = (perms & 0x10000000n) !== 0n;
+  const hasAdmin = (perms & 0x8n) !== 0n;
+  console.log(
+    `[Bot] MANAGE_ROLES: ${hasManageRoles}, ADMINISTRATOR: ${hasAdmin}`
+  );
+}
+
 export async function registerCommandsAndPermissions({
   bot,
   guildId,
@@ -8,8 +29,9 @@ export async function registerCommandsAndPermissions({
   bot: Bot;
   guildId: string;
 }) {
+  await logBotGuildPermissions({ bot, guildId });
   console.log(`[Bot] Registering commands for guild ${guildId}`);
-  const commands = await bot.helpers.upsertGuildApplicationCommands(guildId, [
+  await bot.helpers.upsertGuildApplicationCommands(guildId, [
     {
       name: "attack",
       description: "Attack a target",
@@ -41,28 +63,12 @@ export async function registerCommandsAndPermissions({
       description: "Go on an adventure",
       options: [],
     },
+    {
+      name: "map",
+      description: "Show the current adventure map",
+      options: [],
+    },
   ]);
-
-  const adventurerRoleId = await ensureAdventurerRole({ bot, guildId });
-
-  const attackCommand = [...commands.values()].find(
-    (cmd) => cmd.name === "attack"
-  );
-  const attackCommandId = attackCommand?.id;
-  if (attackCommandId) {
-    console.log(
-      `[Bot] Setting permissions for /attack command (${attackCommandId}) in guild ${guildId}`
-    );
-    await bot.helpers.editApplicationCommandPermissions(
-      bot.applicationId,
-      guildId,
-      attackCommandId.toString(),
-      [{ id: adventurerRoleId, type: 1, permission: true }]
-    );
-  } else {
-    console.log(
-      `[Bot] Could not find /attack command to set permissions in guild ${guildId}`
-    );
-  }
+  await ensureAdventurerRole({ bot, guildId });
   console.log(`[Bot] Command registration complete for guild ${guildId}`);
 }
