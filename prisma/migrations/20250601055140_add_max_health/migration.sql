@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Player" ADD COLUMN     "maxHealth" INTEGER NOT NULL DEFAULT 10;

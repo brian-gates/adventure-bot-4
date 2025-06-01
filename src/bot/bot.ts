@@ -2,9 +2,9 @@ import {
   createBot,
   Intents,
 } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
-import { inferIntent } from "../llm/ollama.ts";
-import { actions } from "./actions/index.ts";
-import { getGuildPlayers } from "./players.ts";
+import { getGuildPlayers } from "~/discord/players.ts";
+import { actions } from "~/game/actions/index.ts";
+import { inferIntent } from "~/llm/ollama.ts";
 
 const PIXEL_DEV_CHANNEL_ID = 1375304555251765278n;
 

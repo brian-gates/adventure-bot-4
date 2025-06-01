@@ -1,5 +1,5 @@
 import * as dotenv from "https://deno.land/std@0.224.0/dotenv/mod.ts";
-import { makeBot, startBot } from "../discord/bot.ts";
+import { makeBot, startBot } from "./bot.ts";
 
 await dotenv.load({ export: true });
 

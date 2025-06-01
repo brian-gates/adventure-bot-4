@@ -10,7 +10,8 @@ datasource db {
 }
 
 model Player {
-    id     String @id
-    name   String
-    health Int
+    id        String @id
+    name      String
+    health    Int
+    maxHealth Int    @default(10)
 }

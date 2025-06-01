@@ -1,7 +1,9 @@
 import { Bot, Message } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
-import { findOrCreatePlayer, setPlayerHealth } from "../../db/player.ts";
-import { narrate } from "../../llm/ollama.ts";
-import { rollAndAnnounceDie } from "../dice.ts";
+import { findOrCreatePlayer, setPlayerHealth } from "~/db/player.ts";
+import { rollAndAnnounceDie } from "~/game/dice.ts";
+import { narrate } from "~/llm/ollama.ts";
+import { immersiveRoleplay } from "~/prompts.ts";
+import { healthBar } from "~/ui/health-bar.ts";
 
 export async function attack({
   bot,
@@ -47,8 +49,9 @@ export async function attack({
     id: targetPlayer.id,
     name: targetPlayer.nick ?? targetPlayer.username,
   });
+  const actualDamage = dbPlayer ? Math.min(damage, dbPlayer.health) : 0;
   const newHealth = dbPlayer
-    ? Math.max(0, dbPlayer.health - damage)
+    ? Math.max(0, dbPlayer.health - actualDamage)
     : undefined;
   if (dbPlayer && newHealth !== undefined) {
     await setPlayerHealth({ id: targetPlayer.id, health: newHealth });
@@ -64,11 +67,26 @@ export async function attack({
       : `The target's health is unknown.`,
     `Respond ONLY with a single vivid, immersive sentence.`,
     `Do not include any JSON or extra formatting.`,
-    `Avoid mentioning any game mechanics or system messages overtly, keep it flavorful and immersive.`,
+    `Express mechanics in roleplay terms -- avoid mentioning mechanics like health points overtly. Keep it flavorful and immersive.`,
     `Always refer to the attacker using the exact mention string <@${message.authorId}> so Discord renders it as a clickable mention.`,
+    immersiveRoleplay,
   ].join(" ");
   const narration = await narrate(prompt);
   await bot.helpers.sendMessage(message.channelId, {
     content: narration,
   });
+
+  if (dbPlayer && newHealth !== undefined) {
+    const image = await healthBar({
+      current: newHealth,
+      max: dbPlayer.maxHealth,
+      damage: actualDamage,
+      width: 200,
+      height: 24,
+    });
+    await bot.helpers.sendMessage(message.channelId, {
+      content: `<@${targetPlayer.id}>'s health bar:`,
+      file: { blob: new Blob([image]), name: "healthbar.png" },
+    });
+  }
 }
