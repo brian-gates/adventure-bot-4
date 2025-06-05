@@ -9,12 +9,22 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
+enum LocationType {
+    combat
+    event
+    elite
+    tavern
+    treasure
+    boss
+    campfire
+}
+
 model Player {
     id         String  @id
     name       String
     health     Int
     maxHealth  Int     @default(10)
-    lastTarget String? // ID of the last targeted player
+    lastTarget String?
 
     @@index([lastTarget])
 }
@@ -27,11 +37,12 @@ model Location {
     name        String
     description String
     attributes  Json
+    type        LocationType
     createdAt   DateTime     @default(now())
     updatedAt   DateTime     @updatedAt
     fromPaths   Path[]       @relation("FromLocation")
     toPaths     Path[]       @relation("ToLocation")
-    GuildState  GuildState[]
+    Guild       Guild[]
 }
 
 model Path {
@@ -47,9 +58,11 @@ model Path {
     updatedAt      DateTime @updatedAt
 }
 
-model GuildState {
-    guildId           String   @id
-    currentLocation   Location @relation(fields: [currentLocationId], references: [id])
-    currentLocationId String
-    updatedAt         DateTime @updatedAt
+model Guild {
+    guildId           String    @id
+    currentLocation   Location? @relation(fields: [currentLocationId], references: [id])
+    currentLocationId String?
+    updatedAt         DateTime  @updatedAt
+    seed              String    @default(uuid())
+    randomCursor      Int       @default(0)
 }

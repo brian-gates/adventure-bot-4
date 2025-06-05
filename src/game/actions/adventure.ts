@@ -1,5 +1,5 @@
 import { Bot, Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
-import { narrate } from "../../llm/ollama.ts";
+import { narrate } from "~/llm/index.ts";
 
 export async function adventure({
   bot,

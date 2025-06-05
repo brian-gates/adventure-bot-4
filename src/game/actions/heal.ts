@@ -3,7 +3,7 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { findOrCreatePlayer, setPlayerHealth } from "~/db/player.ts";
 import { getTargetPlayer } from "~/discord/get-target.ts";
 import { rollDie } from "~/game/dice.ts";
-import { narrate } from "~/llm/ollama.ts";
+import { narrate } from "~/llm/index.ts";
 import { narrateHeal } from "~/prompts.ts";
 import { healthBar } from "~/ui/health-bar.ts";
 

@@ -1,10 +1,12 @@
 {
   "importMap": "import_map.json",
+  "nodeModulesDir": "auto",
   "lint": {},
   "fmt": {},
   "tasks": {
     "dev": "deno run -A src/bot/index.ts",
     "prisma:generate": "npx prisma generate",
-    "prisma:migrate": "npx prisma migrate dev"
+    "prisma:migrate": "npx prisma migrate dev",
+    "clear-map": "deno run -A src/game/clear-map.ts $GUILD_ID"
   }
 }
