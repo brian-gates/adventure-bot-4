@@ -113,7 +113,7 @@ if (import.meta.main) {
       let failCount = 0;
 
       for (let run = 1; run <= 1000; run++) {
-        const { locations, paths } = fn({
+        const map = fn({
           cols: config.cols,
           rows: config.rows,
           numPaths: config.numPaths,
@@ -121,10 +121,7 @@ if (import.meta.main) {
           maxNodes: config.maxNodes,
           random: seededRandom(run),
         });
-        const errors = testMap(
-          { locations, paths, cols: config.cols, rows: config.rows },
-          config
-        );
+        const errors = testMap(map, config);
         if (errors.length === 0) {
           passCount++;
         } else {

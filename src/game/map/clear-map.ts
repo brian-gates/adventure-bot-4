@@ -1,8 +1,6 @@
 import { load } from "https://deno.land/std@0.224.0/dotenv/mod.ts";
-import { PrismaClient } from "~/generated/prisma/client.ts";
+import { prisma } from "~/db/index.ts";
 await load({ export: true });
-
-const prisma = new PrismaClient();
 
 const main = async () => {
   const deletedPaths = await prisma.path.deleteMany({});

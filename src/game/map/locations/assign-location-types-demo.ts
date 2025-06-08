@@ -1,4 +1,4 @@
-import { Location, Path } from "~/generated/prisma/client.ts";
+import { Location, LocationType, Path } from "~/generated/prisma/client.ts";
 import { assignLocationTypes } from "./assign-location-types.ts";
 
 function generateMap({ cols, rows }: { cols: number; rows: number }) {
@@ -19,9 +19,10 @@ function generateMap({ cols, rows }: { cols: number; rows: number }) {
         channelId: "demo",
         description: "",
         attributes: {},
-        type: "default",
+        type: LocationType.combat,
         createdAt: new Date(),
         updatedAt: new Date(),
+        mapId: "demo",
       });
     }
   }
@@ -41,6 +42,7 @@ function generateMap({ cols, rows }: { cols: number; rows: number }) {
             attributes: {},
             createdAt: new Date(),
             updatedAt: new Date(),
+            mapId: "demo",
           });
         }
       }

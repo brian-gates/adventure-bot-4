@@ -2,21 +2,16 @@ import type {
   Bot,
   Interaction,
 } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
+import { prisma } from "~/db/index.ts";
+import { asciiMapString } from "~/game/map/generation/log-ascii-map.ts";
+import type { Location, LocationType, Map } from "~/game/map/index.ts";
 import { locationTypeImage } from "~/game/map/locations/location-type-image.ts";
-import {
-  $Enums,
-  Location,
-  Path,
-  PrismaClient,
-} from "~/generated/prisma/client.ts";
-
-const prisma = new PrismaClient();
 
 const WIDTH = 600;
 const HEIGHT = 1800;
 const NODE_RADIUS = 28;
 
-const iconDominantColors: Record<$Enums.LocationType, string> = {
+const iconDominantColors: Record<LocationType, string> = {
   boss: "#ac04a4",
   combat: "#447404",
   elite: "#ac0404",
@@ -24,9 +19,10 @@ const iconDominantColors: Record<$Enums.LocationType, string> = {
   treasure: "#b47404",
   event: "#b40474",
   campfire: "#04b4b4",
+  shop: "#9013FE",
 };
 
-const getContrastBg = (hex: string) => {
+function getContrastBg(hex: string) {
   // Remove # if present
   hex = hex.replace("#", "");
   // Parse r, g, b
@@ -37,49 +33,41 @@ const getContrastBg = (hex: string) => {
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   // Return black for light colors, white for dark colors
   return luminance > 0.5 ? "#111" : "#fff";
-};
+}
 
-const getMapData = async (guildId: string) => {
+async function getMap(guildId: string) {
   console.log(`[map] Querying locations and paths for guild ${guildId}`);
-  const locations = await prisma.location.findMany({
+  const map = await prisma.map.findFirst({
     where: { channelId: guildId },
-    orderBy: [{ row: "asc" }, { col: "asc" }],
-  });
-  const paths = await prisma.path.findMany({
-    where: { channelId: guildId },
+    include: {
+      locations: true,
+      paths: true,
+    },
   });
   console.log(
-    `[map] Found ${locations.length} locations, ${paths.length} paths`
+    `[map] Found ${map?.locations.length} locations, ${map?.paths.length} paths`
   );
-  return { locations, paths };
-};
+  return map;
+}
 
-const renderMapSvg = ({
+function renderMapSvg({
   locations,
   paths,
   cols,
   rows,
   currentLocationId,
-}: {
-  locations: Location[];
-  paths: Path[];
-  cols: number;
-  rows: number;
-  currentLocationId?: string;
-}) => {
+}: Map) {
   const nodePos = (loc: Location) => {
-    const x = loc.col * (WIDTH / (cols + 1)) + WIDTH / (cols + 1);
-    const y = loc.row * (HEIGHT / (rows + 1)) + HEIGHT / (rows + 1);
-    return { x, y };
+    return { x: loc.col, y: loc.row };
   };
-  let svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${WIDTH}' height='${HEIGHT}' viewBox='0 0 ${WIDTH} ${HEIGHT}'><rect width='100%' height='100%' fill='#fff'/>`;
+  let svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${cols}' height='${rows}' viewBox='0 0 ${cols} ${rows}'>`;
   for (const path of paths) {
     const from = locations.find((l) => l.id === path.fromLocationId);
     const to = locations.find((l) => l.id === path.toLocationId);
     if (from && to) {
       const { x: x1, y: y1 } = nodePos(from);
       const { x: x2, y: y2 } = nodePos(to);
-      svg += `<line x1='${x1}' y1='${y1}' x2='${x2}' y2='${y2}' stroke='#888' stroke-width='2'/>`;
+      svg += `<line x1='${x1}' y1='${y1}' x2='${x2}' y2='${y2}' stroke='#888' stroke-width='0.1'/>`;
     }
   }
   for (const loc of locations) {
@@ -90,19 +78,19 @@ const renderMapSvg = ({
     const bg = getContrastBg(dominant);
     const isCurrent = currentLocationId && loc.id === currentLocationId;
     const stroke = isCurrent ? "#FFD700" : dominant;
-    const strokeWidth = isCurrent ? 8 : 4;
-    svg += `<circle cx='${x}' cy='${y}' r='${NODE_RADIUS}' fill='${bg}' stroke='${stroke}' stroke-width='${strokeWidth}'/>`;
+    const strokeWidth = isCurrent ? 0.2 : 0.1;
+    svg += `<circle cx='${x}' cy='${y}' r='0.4' fill='${bg}' stroke='${stroke}' stroke-width='${strokeWidth}'/>`;
     const iconUrl =
       locationTypeImage[loc.type as keyof typeof locationTypeImage];
     if (iconUrl) {
-      svg += `<image href='${iconUrl}' x='${x - 20}' y='${
-        y - 20
-      }' width='40' height='40' />`;
+      svg += `<image href='${iconUrl}' x='${x - 0.28}' y='${
+        y - 0.28
+      }' width='0.56' height='0.56' />`;
     }
   }
   svg += `</svg>`;
   return svg;
-};
+}
 
 const rasterizeSvgToPng = async (svg: string): Promise<Uint8Array> => {
   const p = new Deno.Command("rsvg-convert", {
@@ -142,52 +130,21 @@ export async function map({
     }
     return;
   }
-  let locations, paths;
-  try {
-    const data = await getMapData(guildId);
-    locations = data.locations;
-    paths = data.paths;
-  } catch (err) {
-    console.error(`[map] Error in getMapData for guild ${guildId}:`, err);
+  const map = await getMap(guildId);
+  if (!map) {
+    console.log(`[map] No map found for guild ${guildId}`);
     try {
       await bot.helpers.editOriginalInteractionResponse(interaction.token, {
-        content: `Error loading map data: ${err}`,
+        content: "No map found for this server.",
       });
-    } catch (e) {
-      console.error(`[map] Error sending error response:`, e);
+    } catch (err) {
+      console.error(`[map] Error sending no-map response:`, err);
     }
     return;
   }
-  // Determine cols and rows from locations
-  const cols =
-    locations.length > 0
-      ? Math.max(...locations.map((l: Location) => l.col)) + 1
-      : 1;
-  const rows =
-    locations.length > 0
-      ? Math.max(...locations.map((l: Location) => l.row)) + 1
-      : 1;
-  let svg;
-  try {
-    svg = renderMapSvg({ locations, paths, cols, rows });
-  } catch (err) {
-    console.error(`[map] Error in renderMapSvg:`, err);
-    try {
-      await bot.helpers.editOriginalInteractionResponse(interaction.token, {
-        content: `Error rendering map SVG: ${err}`,
-      });
-    } catch (e) {
-      console.error(`[map] Error sending error response:`, e);
-    }
-    return;
-  }
-  let png;
-  try {
-    png = await rasterizeSvgToPng(svg);
-  } catch (err) {
-    console.error(`[map] Error rasterizing SVG to PNG:`, err);
-    png = null;
-  }
+  const svg = renderMapSvg(map);
+
+  const png = await rasterizeSvgToPng(svg);
   try {
     await bot.helpers.editOriginalInteractionResponse(interaction.token, {
       content: "Here is your map:",
@@ -196,7 +153,10 @@ export async function map({
     console.error(`[map] Error editing original interaction response:`, err);
   }
   if (interaction.channelId) {
-    console.log(`[map] Sending map image to channel ${interaction.channelId}`);
+    console.log(
+      `[map] Sending map image to channel ${interaction.channelId}`,
+      asciiMapString({ map })
+    );
     try {
       if (png) {
         await bot.helpers.sendMessage(interaction.channelId, {

@@ -17,6 +17,7 @@ enum LocationType {
     treasure
     boss
     campfire
+    shop
 }
 
 model Player {
@@ -30,24 +31,25 @@ model Player {
 }
 
 model Location {
-    id          String       @id
-    channelId   String
-    row         Int
-    col         Int
-    name        String
-    description String
-    attributes  Json
-    type        LocationType
-    createdAt   DateTime     @default(now())
-    updatedAt   DateTime     @updatedAt
-    fromPaths   Path[]       @relation("FromLocation")
-    toPaths     Path[]       @relation("ToLocation")
-    Guild       Guild[]
+    id                    String       @id
+    row                   Int
+    col                   Int
+    name                  String
+    description           String
+    attributes            Json
+    type                  LocationType
+    createdAt             DateTime     @default(now())
+    updatedAt             DateTime     @updatedAt
+    fromPaths             Path[]       @relation("FromLocation")
+    toPaths               Path[]       @relation("ToLocation")
+    map                   Map          @relation("MapLocations", fields: [mapId], references: [id], onDelete: Cascade)
+    mapId                 String
+    mapsAsCurrentLocation Map[]        @relation("MapCurrentLocation")
+    Map                   Map[]
 }
 
 model Path {
     id             String   @id
-    channelId      String
     fromLocation   Location @relation("FromLocation", fields: [fromLocationId], references: [id])
     fromLocationId String
     toLocation     Location @relation("ToLocation", fields: [toLocationId], references: [id])
@@ -56,13 +58,32 @@ model Path {
     attributes     Json
     createdAt      DateTime @default(now())
     updatedAt      DateTime @updatedAt
+    map            Map      @relation(fields: [mapId], references: [id], onDelete: Cascade)
+    mapId          String
 }
 
 model Guild {
-    guildId           String    @id
-    currentLocation   Location? @relation(fields: [currentLocationId], references: [id])
+    guildId      String   @id
+    updatedAt    DateTime @updatedAt
+    seed         String   @default(uuid())
+    randomCursor Int      @default(0)
+    locationId   String?
+    map          Map?     @relation(fields: [mapId], references: [id])
+    mapId        String?
+}
+
+model Map {
+    id                String     @id @default(uuid())
+    channelId         String     @unique
+    locations         Location[] @relation("MapLocations")
+    paths             Path[]
+    createdAt         DateTime   @default(now())
+    updatedAt         DateTime   @updatedAt
+    rows              Int
+    cols              Int
+    currentLocation   Location?  @relation("MapCurrentLocation", fields: [currentLocationId], references: [id])
     currentLocationId String?
-    updatedAt         DateTime  @updatedAt
-    seed              String    @default(uuid())
-    randomCursor      Int       @default(0)
+    Guild             Guild[]
+    Location          Location?  @relation(fields: [locationId], references: [id])
+    locationId        String?
 }

@@ -92,5 +92,16 @@ export const rowwiseBranchingMapGenerator = ({
       updatedAt: new Date(),
     } as Path;
   });
-  return { locations, paths, cols, rows };
+  return {
+    locations,
+    paths,
+    cols,
+    rows,
+    id: crypto.randomUUID(),
+    channelId: "",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    currentLocationId: locations[0].id,
+    locationId: locations[0].id,
+  };
 };

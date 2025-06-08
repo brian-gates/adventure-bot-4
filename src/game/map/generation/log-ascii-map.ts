@@ -6,10 +6,10 @@ import type {
 } from "~/generated/prisma/client.ts";
 import { isReachablePosition } from "./walk/walk.ts";
 
-export function logAsciiMap({ map }: { map: Map }) {
+export function asciiMapString({ map }: { map: Map }) {
   const { locations, paths, cols, rows } = map;
   const failingNodes = new Set<string>();
-  const nodeMap = new Map(locations.map((l) => [`${l.row},${l.col}`, l]));
+  const locationMap = new Map(locations.map((l) => [`${l.row},${l.col}`, l]));
   // Prepare edgeLines: edgeLines[row][col] is the edge char below node at (row+1, col)
   const edgeLines: string[][] = Array.from({ length: rows - 1 }, () =>
     Array(cols).fill("   ")
@@ -44,7 +44,7 @@ export function logAsciiMap({ map }: { map: Map }) {
   for (let row = rows - 1; row >= 0; row--) {
     let nodeLine = row.toString().padStart(3, " ") + " ";
     for (let col = 0; col < cols; col++) {
-      const node = nodeMap.get(`${row},${col}`);
+      const location = locationMap.get(`${row},${col}`);
       const key = `${row},${col}`;
       const reachable =
         boss &&
@@ -57,11 +57,14 @@ export function logAsciiMap({ map }: { map: Map }) {
           rows,
           cols,
         });
-      if (node) {
+      if (location) {
+        const color = locationTypeColor[location.type];
         if (failingNodes.has(key)) {
-          nodeLine += ` ${colorRed(locationTypeChar[node.type] ?? "O")} `;
+          nodeLine += ` ${colorRed(locationTypeChar[location.type] ?? "O")} `;
         } else {
-          nodeLine += ` ${locationTypeChar[node.type] ?? "O"} `;
+          nodeLine += ` ${color}${
+            locationTypeChar[location.type] ?? "O"
+          }${resetColor} `;
         }
       } else {
         nodeLine += reachable ? " . " : "███";
@@ -73,7 +76,11 @@ export function logAsciiMap({ map }: { map: Map }) {
       out += (edgeLines[row - 1] || []).join("") + "\n";
     }
   }
-  console.log("[seed-map] ASCII map structure:\n" + out);
+  return out;
+}
+
+export function logAsciiMap({ map }: { map: Map }) {
+  console.log("[seed-map] ASCII map structure:\n" + asciiMapString({ map }));
 }
 
 export const colorRed = (s: string) => `\x1b[31m${s}\x1b[0m`;
@@ -104,4 +111,20 @@ const locationTypeChar: Record<LocationType | "boss" | "campfire", string> = {
   event: "?",
   boss: "B",
   campfire: "C",
+  shop: "S",
 };
+
+const locationTypeColor: Record<
+  LocationType | "boss" | "campfire" | "shop",
+  string
+> = {
+  combat: "\x1b[32m", // Green
+  elite: "\x1b[35m", // Magenta
+  tavern: "\x1b[36m", // Cyan
+  treasure: "\x1b[33m", // Yellow
+  event: "\x1b[34m", // Blue
+  boss: "\x1b[31m", // Red
+  campfire: "\x1b[37m", // White
+  shop: "\x1b[90m", // Bright Black (Gray)
+};
+const resetColor = "\x1b[0m";

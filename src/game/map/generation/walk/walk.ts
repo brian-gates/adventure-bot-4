@@ -16,9 +16,10 @@ export const walkStrategy: MapGenerator = ({ cols, rows, random, onStep }) => {
   const boss = createLocation({
     row: rows - 1,
     col: bossCol,
-    type: LocationType.boss,
+    random,
+    map,
   });
-  map.locations.push(boss);
+  map.locations = [...(map.locations ?? []), boss];
 
   // Walk four lanes from start to finish
   const startCol = Math.floor(cols / 2);
@@ -37,7 +38,11 @@ export const walkStrategy: MapGenerator = ({ cols, rows, random, onStep }) => {
 
   map.locations = map.locations.map((l) => ({
     ...l,
-    type: locationType({ map, position: { row: l.row, col: l.col } }),
+    type: locationType({
+      map,
+      position: { row: l.row, col: l.col },
+      random,
+    }),
   }));
 
   return map;
@@ -65,12 +70,27 @@ function walkPath({
   return { position, map };
 }
 
-export function emptyMap({ cols, rows }: { cols: number; rows: number }): Map {
+export function emptyMap({
+  cols,
+  rows,
+  channelId = "demo",
+}: {
+  cols: number;
+  rows: number;
+  channelId?: string;
+}): Map {
+  const now = new Date();
   return {
+    id: crypto.randomUUID(),
+    channelId,
     locations: [],
     paths: [],
     cols,
     rows,
+    createdAt: now,
+    updatedAt: now,
+    currentLocationId: null,
+    locationId: null,
   };
 }
 
@@ -121,7 +141,12 @@ function step({
     (loc) => loc.row === position.row && loc.col === position.col
   );
   if (!initialPosition) {
-    initialPosition = createLocation({ row: position.row, col: position.col });
+    initialPosition = createLocation({
+      row: position.row,
+      col: position.col,
+      random,
+      map,
+    });
     map.locations.push(initialPosition);
   }
 
@@ -169,11 +194,22 @@ function step({
   if (existingLocationAtNextStep) {
     newLocation = existingLocationAtNextStep;
   } else {
-    newLocation = createLocation({ row: nextRow, col: nextCol });
+    newLocation = createLocation({
+      row: nextRow,
+      col: nextCol,
+      random,
+      map,
+    });
     map.locations.push(newLocation);
   }
   if (initialPosition?.id && newLocation.id) {
-    map.paths.push(createPath(initialPosition.id, newLocation.id));
+    map.paths.push(
+      createPath({
+        fromLocationId: initialPosition.id,
+        toLocationId: newLocation.id,
+        mapId: map.id,
+      })
+    );
   }
 
   if (onStep) onStep(map);
@@ -186,36 +222,44 @@ function step({
 function createLocation({
   row,
   col,
-  type = LocationType.combat,
-  channelId = "default",
+  map,
+  random,
 }: {
   row: number;
   col: number;
-  type?: LocationType;
-  channelId?: string;
+  random: () => number;
+  map: Map;
 }): Location {
   return {
     id: `${row}, ${col}`,
-    channelId,
+    mapId: map.id,
     name: `Location ${row}, ${col}`,
     description: `A location at ${row}, ${col}`,
     row,
     col,
-    type,
+    type: locationType({
+      map,
+      position: { row, col },
+      random,
+    }),
     attributes: {},
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 }
 
-function createPath(
-  fromLocationId: string,
-  toLocationId: string,
-  channelId: string = "default"
-): Path {
+function createPath({
+  fromLocationId,
+  toLocationId,
+  mapId,
+}: {
+  fromLocationId: string;
+  toLocationId: string;
+  mapId: string;
+}): Path {
   return {
+    mapId,
     id: `${fromLocationId} ➡️ ${toLocationId}`,
-    channelId,
     fromLocationId,
     toLocationId,
     createdAt: new Date(),

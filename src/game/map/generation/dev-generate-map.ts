@@ -1,26 +1,28 @@
 import { Keypress } from "https://deno.land/x/cliffy@v1.0.0-rc.4/keypress/mod.ts";
 import { Input } from "https://deno.land/x/cliffy@v1.0.0-rc.4/prompt/input.ts";
+import { Map } from "~/game/map/index.ts";
 import { seededRandom } from "~/game/seeded-random.ts";
+import { stringToSeed } from "~/game/string-to-seed.ts";
 import { testMap } from "../test-map-validity.ts";
 import { strategies } from "./index.ts";
-import { logAsciiMap } from "./log-ascii-map.ts";
+import { asciiMapString } from "./log-ascii-map.ts";
 
-const promptInt = async (msg: string, def: number) => {
+async function promptInt(msg: string, def: number) {
   const input = await Input.prompt({
     message: `${msg} [${def}]`,
     default: String(def),
   });
   const n = input === null || input.trim() === "" ? def : Number(input);
   return Number.isNaN(n) ? def : n;
-};
+}
 
-const promptChoice = async (msg: string, options: string[], def: string) => {
+async function promptChoice(msg: string, options: string[], def: string) {
   const input = await Input.prompt({
     message: `${msg} (${options.join("/")}) [${def}]`,
     default: def,
   });
   return input && options.includes(input) ? input : def;
-};
+}
 
 let stratIndex = 0;
 let strat = strategies[stratIndex].name;
@@ -30,24 +32,9 @@ let minNodes = 2;
 let maxNodes = 5;
 let seed = 0;
 
-let frames: any[] = [];
+let frames: Map[] = [];
 let frameIndex = 0;
 let isPlaying = false;
-
-function logAsciiMapToString({ map }: { map: any }) {
-  let out = "";
-  const originalLog = console.log;
-  try {
-    // Monkey-patch console.log to capture output
-    (console as any).log = (msg: string) => {
-      out += msg + "\n";
-    };
-    logAsciiMap({ map });
-  } finally {
-    (console as any).log = originalLog;
-  }
-  return out.trim();
-}
 
 async function exportAnimationFrames() {
   const fileName = `map-animation-seed-${seed}.txt`;
@@ -55,7 +42,7 @@ async function exportAnimationFrames() {
   const content = frames
     .map(
       (frame, i) =>
-        `Frame ${i + 1}/${frames.length}\n${logAsciiMapToString({
+        `Frame ${i + 1}/${frames.length}\n${asciiMapString({
           map: frame,
         })}`
     )
@@ -67,17 +54,14 @@ async function exportAnimationFrames() {
 function renderFrame() {
   console.clear();
   const map = frames[frameIndex] || frames[frames.length - 1];
-  logAsciiMap({ map });
+  console.log(asciiMapString({ map }));
   console.log(
     `\nSeed: ${seed} | Frame: ${frameIndex + 1}/${frames.length}${
       isPlaying ? " | Playing... (P to stop)" : ""
     }`
   );
   const strat = strategies[stratIndex];
-  const errors = testMap(
-    { locations: map.locations, paths: map.paths, cols, rows },
-    { minNodes, maxNodes }
-  );
+  const errors = testMap(map, { minNodes, maxNodes });
   console.log("\n[Checks]");
   if (errors.length === 0) {
     console.log("All conditions passed ✅");
@@ -99,17 +83,14 @@ function renderCurrent() {
   frameIndex = 0;
   isPlaying = false;
   const strat = strategies[stratIndex];
-  const { locations, paths } = strat.fn({
+  strat.fn({
     cols,
     rows,
     minNodes,
     maxNodes,
-    random: seededRandom(seed),
-    onStep: (map: any) => frames.push(structuredClone(map)),
+    random: seededRandom(stringToSeed(seed.toString())),
+    onStep: (map: Map) => frames.push(map),
   });
-  if (frames.length === 0) {
-    frames.push({ locations, paths, cols, rows });
-  }
   frameIndex = frames.length - 1; // Start at the end by default
   renderFrame();
 }

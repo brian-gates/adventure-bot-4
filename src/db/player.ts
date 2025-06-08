@@ -1,8 +1,4 @@
-import { PrismaClient } from "~/generated/prisma/client.ts";
-
-export const prisma = new PrismaClient({
-  datasourceUrl: Deno.env.get("DATABASE_URL"),
-});
+import { prisma } from "~/db/index.ts";
 
 export async function getPlayer({ id }: { id: string }) {
   return await prisma.player.findUnique({ where: { id } });

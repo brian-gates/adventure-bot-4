@@ -7,9 +7,9 @@ module.exports = {
       interpreter_args:
         "--allow-env --allow-net --allow-read --allow-write --allow-run --allow-ffi --allow-import=unpkg.com,deno.land",
       args: "",
-      cwd: "/Users/briangates/code/ai-chat",
       env: {
         DENO_ENV: "production",
+        DATABASE_URL: "postgres://postgres:postgres@localhost:5444/adventure",
       },
       watch: false,
     },

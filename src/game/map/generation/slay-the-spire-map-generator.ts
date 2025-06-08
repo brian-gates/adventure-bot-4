@@ -1,8 +1,9 @@
 import {
   LocationType,
   type Location,
+  type Map,
   type Path,
-} from "~/generated/prisma/client.ts";
+} from "~/game/map/index.ts";
 
 export const slayTheSpireMapGenerator = (opts: {
   cols: number;
@@ -32,6 +33,18 @@ export const slayTheSpireMapGenerator = (opts: {
     }
     allRows[row].sort((a, b) => a.col - b.col);
   }
+  const map: Map = {
+    cols,
+    rows,
+    id: crypto.randomUUID(),
+    channelId: "",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    currentLocationId: null,
+    locationId: null,
+    locations: [],
+    paths: [],
+  };
   const nodeMap = new Map<string, Location>();
   const locations: Location[] = [];
   for (const row of allRows)
@@ -39,7 +52,6 @@ export const slayTheSpireMapGenerator = (opts: {
       const id = `${r},${col}`;
       const loc: Location = {
         id,
-        channelId: "",
         row: r,
         col,
         name: `Node ${col},${r}`,
@@ -48,6 +60,7 @@ export const slayTheSpireMapGenerator = (opts: {
         type: LocationType.combat,
         createdAt: new Date(),
         updatedAt: new Date(),
+        mapId: map.id,
       };
       nodeMap.set(id, loc);
       locations.push(loc);
@@ -199,7 +212,12 @@ export const slayTheSpireMapGenerator = (opts: {
       attributes: {},
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as Path;
+      mapId: crypto.randomUUID(),
+    };
   });
-  return { locations, paths, cols, rows };
+  return {
+    ...map,
+    locations,
+    paths,
+  };
 };

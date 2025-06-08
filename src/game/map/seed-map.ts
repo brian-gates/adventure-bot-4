@@ -1,21 +1,33 @@
+import { prisma } from "~/db/index.ts";
 import { seededRandom } from "~/game/seeded-random.ts";
-import { PrismaClient } from "~/generated/prisma/client.ts";
+import { stringToSeed } from "../string-to-seed.ts";
 import { getMapGenerator } from "./generation/index.ts";
 import { assignLocationTypes } from "./locations/assign-location-types.ts";
 
-const prisma = new PrismaClient();
-
-export const seedMapForGuild = async ({ guildId }: { guildId: string }) => {
+export async function seedMapForGuild({ guildId }: { guildId: string }) {
   console.log(`[seed-map] Seeding map for guild ${guildId}`);
+  let map = await prisma.map.findFirst({ where: { channelId: guildId } });
+  if (!map) {
+    map = await prisma.map.create({
+      data: {
+        channelId: guildId,
+        rows: 15,
+        cols: 7,
+      },
+    });
+  }
+  const { seed } = (await prisma.guild.findUnique({ where: { guildId } })) ?? {
+    seed: "42",
+  };
   const existing = await prisma.location.findFirst({
-    where: { channelId: guildId },
+    where: { mapId: map.id },
   });
   if (existing) {
     console.log(`[seed-map] Map already exists for guild ${guildId}`);
     return;
   }
-  const cols = 7;
-  const rows = 15;
+  const cols = map.cols;
+  const rows = map.rows;
   const minNodes = 2;
   const maxNodes = 5;
   const { locations: locs, paths: rawPaths } = getMapGenerator("walk")({
@@ -23,7 +35,7 @@ export const seedMapForGuild = async ({ guildId }: { guildId: string }) => {
     rows,
     minNodes,
     maxNodes,
-    random: seededRandom(0),
+    random: seededRandom(stringToSeed(seed)),
   });
   // Assign location types
   let { locations: typedLocs } = assignLocationTypes(
@@ -36,7 +48,6 @@ export const seedMapForGuild = async ({ guildId }: { guildId: string }) => {
   typedLocs = typedLocs.map((l) =>
     l.row === firstRow && l.col === centerCol ? { ...l, type: "combat" } : l
   );
-  // logAsciiMap({ locations: locs, paths: rawPaths, cols, rows });
   console.log(
     `[seed-map] Built map: ${typedLocs.length} locations, ${rawPaths.length} paths`
   );
@@ -47,7 +58,7 @@ export const seedMapForGuild = async ({ guildId }: { guildId: string }) => {
       prisma.location.create({
         data: {
           id: locationIds[i],
-          channelId: guildId,
+          mapId: map.id,
           name: `Node ${loc.col},${loc.row}`,
           description: "",
           attributes: {},
@@ -66,7 +77,7 @@ export const seedMapForGuild = async ({ guildId }: { guildId: string }) => {
       prisma.path.create({
         data: {
           id: crypto.randomUUID(),
-          channelId: guildId,
+          mapId: map.id,
           fromLocationId:
             idMap.get(path.fromLocationId) ??
             (() => {
@@ -85,8 +96,8 @@ export const seedMapForGuild = async ({ guildId }: { guildId: string }) => {
   );
   await prisma.guild.upsert({
     where: { guildId },
-    update: { currentLocationId: locationIds[0] },
-    create: { guildId, currentLocationId: locationIds[0] },
+    update: { locationId: locationIds[0] },
+    create: { guildId, locationId: locationIds[0] },
   });
   console.log(`[seed-map] Map seeded for guild ${guildId}`);
-};
+}

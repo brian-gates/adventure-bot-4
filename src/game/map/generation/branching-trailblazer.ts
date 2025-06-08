@@ -1,18 +1,17 @@
-import { seededRandom } from "~/game/seeded-random.ts";
 import {
   LocationType,
   type Location,
   type Path,
 } from "~/generated/prisma/client.ts";
 import type { JsonValue } from "~/generated/prisma/internal/prismaNamespace.ts";
-import type { MapGenerator } from "./index.ts";
+import type { MapGenerator } from "../index.ts";
 
 export const branchingTrailblazerStrategy: MapGenerator = ({
   cols,
   rows,
   minNodes = 2,
   maxNodes = 5,
-  random = seededRandom(0),
+  random,
 }) => {
   const allRows: { col: number; row: number }[][] = Array.from(
     { length: rows },
@@ -32,13 +31,13 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
       minNodes,
       Math.min(
         maxNodes,
-        Math.floor(Math.random() * (maxNodes - minNodes + 1)) + minNodes
+        Math.floor(random() * (maxNodes - minNodes + 1)) + minNodes
       )
     );
     const availableCols = Array.from({ length: cols }, (_, i) => i);
     const rowCols: number[] = [];
     while (rowCols.length < nodeCount && availableCols.length > 0) {
-      const idx = Math.floor(Math.random() * availableCols.length);
+      const idx = Math.floor(random() * availableCols.length);
       rowCols.push(availableCols[idx]);
       availableCols.splice(idx, 1);
     }
@@ -48,12 +47,12 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
         (c) => !rowCols.includes(c)
       );
       if (missing.length === 0) break;
-      const col = missing[Math.floor(Math.random() * missing.length)];
+      const col = missing[Math.floor(random() * missing.length)];
       rowCols.push(col);
     }
     // Ensure maxNodes are not exceeded
     while (rowCols.length > maxNodes) {
-      rowCols.splice(Math.floor(Math.random() * rowCols.length), 1);
+      rowCols.splice(Math.floor(random() * rowCols.length), 1);
     }
     allRows[row] = rowCols.map((col) => ({ col, row }));
   }
@@ -180,12 +179,8 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
           for (const existingEdgeString of existingEdgesInRowPair) {
             const [existingFromStr, existingToStr] =
               existingEdgeString.split("->");
-            const [existingFromRow, existingFromCol] = existingFromStr
-              .split(",")
-              .map(Number);
-            const [existingToRow, existingToCol] = existingToStr
-              .split(",")
-              .map(Number);
+            const [existingFromCol] = existingFromStr.split(",").map(Number);
+            const [existingToCol] = existingToStr.split(",").map(Number);
             if (
               crosses(from.col, targetNode.col, existingFromCol, existingToCol)
             ) {
@@ -311,7 +306,7 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
         (c) => !allRows[row].some((n) => n.col === c)
       );
       if (missing.length === 0) break;
-      const col = missing[Math.floor(Math.random() * missing.length)];
+      const col = missing[Math.floor(random() * missing.length)];
       allRows[row].push({ col, row });
       // Re-sort after adding
       allRows[row].sort((a, b) => a.col - b.col);
@@ -320,7 +315,7 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
     while (allRows[row].length > maxNodes) {
       // Avoid removing nodes that are the only connection for a node in the previous/next row if possible
       // This check adds complexity; for now, simple random removal
-      allRows[row].splice(Math.floor(Math.random() * allRows[row].length), 1);
+      allRows[row].splice(Math.floor(random() * allRows[row].length), 1);
     }
     // Deduplicate one last time after all adjustments
     allRows[row] = Array.from(
@@ -413,8 +408,8 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
       Array.from(edgeSet)
         .filter((edgeString) => {
           const [fromStr, toStr] = edgeString.split("->");
-          const [fromRow, fromCol] = fromStr.split(",").map(Number);
-          const [toRow, toCol] = toStr.split(",").map(Number);
+          const [fromRow] = fromStr.split(",").map(Number);
+          const [toRow] = toStr.split(",").map(Number);
           return fromRow === row && toRow === row + 1;
         })
         .forEach((edgeString) => {
@@ -434,7 +429,6 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
     // Identify all edges in edgeSet that cross each other and collect them for removal.
     const edgesArray = Array.from(edgeSet);
     const edgesToRemove = new Set<string>();
-    let crossingsFound = false;
 
     for (let i = 0; i < edgesArray.length; i++) {
       const [from1Str, to1Str] = edgesArray[i].split("->");
@@ -452,7 +446,6 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
             // Found a crossing! Add both edges to the removal set.
             edgesToRemove.add(edgesArray[i]);
             edgesToRemove.add(edgesArray[j]);
-            crossingsFound = true;
             stable = false; // Crossings were found, need another iteration
           }
         }
@@ -513,6 +506,7 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
     attributes: {} as JsonValue,
     createdAt: new Date(),
     updatedAt: new Date(),
+    mapId: crypto.randomUUID(),
   }));
 
   const paths: Path[] = Array.from(edgeSet).map((edge, i) => {
@@ -539,6 +533,7 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
       attributes: {} as JsonValue, // Added placeholder
       createdAt: new Date(),
       updatedAt: new Date(),
+      mapId: crypto.randomUUID(),
     };
   });
 
@@ -547,5 +542,11 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
     paths,
     cols,
     rows,
+    id: crypto.randomUUID(),
+    channelId: "",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    currentLocationId: locations[0].id,
+    locationId: locations[0].id,
   };
 };

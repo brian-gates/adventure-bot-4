@@ -8,6 +8,7 @@ const locationTypeIcon: Record<LocationType, string> = {
   treasure: "💰",
   boss: "👑",
   campfire: "🔥",
+  shop: "🛒",
 };
 
 export { locationTypeIcon };

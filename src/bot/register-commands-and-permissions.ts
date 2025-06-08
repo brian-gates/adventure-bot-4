@@ -68,6 +68,23 @@ export async function registerCommandsAndPermissions({
       description: "Show the current adventure map",
       options: [],
     },
+    {
+      name: "resetmap",
+      description: "Clear and regenerate the adventure map",
+      options: [],
+    },
+    {
+      name: "setseed",
+      description: "Set or reset the adventure map seed for this guild",
+      options: [
+        {
+          name: "seed",
+          type: 3,
+          description: "Seed value (string or UUID)",
+          required: true,
+        },
+      ],
+    },
   ]);
   await ensureAdventurerRole({ bot, guildId });
   console.log(`[Bot] Command registration complete for guild ${guildId}`);
