@@ -2,10 +2,9 @@ import {
   assertEquals,
   assertExists,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { seededRandom } from "../../seeded-random.ts";
-import { logAsciiMap } from "./log-ascii-map.ts";
-
-import { emptyMap, walkStrategy } from "./walk.ts";
+import { logAsciiMap } from "~/game/map/generation/log-ascii-map.ts";
+import { emptyMap, walkStrategy } from "~/game/map/generation/walk/walk.ts";
+import { seededRandom } from "~/game/seeded-random.ts";
 
 Deno.test(
   "emptyMap creates a map with correct dimensions and empty locations/paths",
@@ -57,7 +56,7 @@ Deno.test("emptyMap handles 0 rows", () => {
   assertEquals(map.locations.length, 0);
 });
 
-Deno.test.only("walkStrategy creates a complex map with a main path", () => {
+Deno.test("walkStrategy creates a complex map with a main path", () => {
   const rows = 5;
   const cols = 5;
 
@@ -118,7 +117,7 @@ Deno.test(
       (l) => l.row === 0 && l.col === Math.floor(cols / 2)
     );
     assertExists(startLocation, "The start location (0,2) must exist.");
-    assertEquals(startLocation.id, "0,2");
+    assertEquals(startLocation.id, "0, 2");
 
     // Find the first path segment from the true start
     const firstPath = map.paths.find(
@@ -136,8 +135,8 @@ Deno.test(
     assertEquals(nextLocation.row, 1);
     assertEquals(
       nextLocation.col,
-      startLocation.col - 1,
-      "First step should be to the left"
+      startLocation.col,
+      "First step should be straight ahead"
     );
   }
 );

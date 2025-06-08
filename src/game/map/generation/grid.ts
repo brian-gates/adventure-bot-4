@@ -1,5 +1,5 @@
+import type { MapGenerator } from "~/game/map/index.ts";
 import type { Location, Path } from "~/generated/prisma/client.ts";
-import type { MapGenerator } from "./index.ts";
 
 const defaultNode = (
   col: number,

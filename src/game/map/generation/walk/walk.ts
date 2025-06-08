@@ -6,9 +6,10 @@ import type {
   Position,
 } from "~/game/map/index.ts";
 import { LocationType } from "~/generated/prisma/client.ts";
+import { logAsciiMap } from "../log-ascii-map.ts";
 import { locationType } from "./location-types.ts";
 
-export const walkStrategy: MapGenerator = ({ cols, rows, random }) => {
+export const walkStrategy: MapGenerator = ({ cols, rows, random, onStep }) => {
   let map = emptyMap({ cols, rows });
   // Place boss node in the last row, centered
   const bossCol = Math.floor(cols / 2);
@@ -30,6 +31,7 @@ export const walkStrategy: MapGenerator = ({ cols, rows, random }) => {
       rows: rows - 1,
       map,
       random,
+      onStep,
     }));
   }
 
@@ -46,16 +48,19 @@ function walkPath({
   rows,
   map: initialMap,
   random,
+  onStep,
 }: {
   position: Position;
   rows: number;
   map: Map;
   random: () => number;
+  onStep?: (map: Map) => void;
 }): { position: Position; map: Map } {
   let map = structuredClone(initialMap);
   let position = structuredClone(initialPosition);
+  if (onStep) onStep(map);
   while (position.row < rows) {
-    ({ map, position } = step({ map, position, random }));
+    ({ map, position } = step({ map, position, random, onStep }));
   }
   return { position, map };
 }
@@ -104,10 +109,12 @@ function step({
   map: initialMap,
   position,
   random,
+  onStep,
 }: {
   map: Map;
   position: Position;
   random: () => number;
+  onStep?: (map: Map) => void;
 }) {
   const map = structuredClone(initialMap);
   let initialPosition = map.locations.find(
@@ -120,22 +127,31 @@ function step({
 
   const nextRow = position.row + 1;
   if (nextRow >= map.rows) {
-    console.error("Out of bounds", { map, position, initialPosition });
     throw new Error("Out of bounds");
   }
 
-  const possibleSteps = [
+  let possibleSteps = [
     { row: nextRow, col: position.col },
     { row: nextRow, col: position.col + 1 },
     { row: nextRow, col: position.col - 1 },
-  ];
-  const validNextSteps = possibleSteps.filter(
+  ].filter(
     (pos) =>
       isValidNextStep({ map, position: pos }) &&
       !wouldCrossExistingPath({ from: position, to: pos, map })
   );
 
-  if (!validNextSteps.length) {
+  // Enforce at least two lanes per row
+  const nextRowNodes = map.locations.filter((l) => l.row === nextRow);
+  if (nextRowNodes.length === 1 && possibleSteps.length > 1) {
+    // Exclude the column already occupied
+    const occupiedCol = nextRowNodes[0].col;
+    const altSteps = possibleSteps.filter((pos) => pos.col !== occupiedCol);
+    if (altSteps.length > 0) {
+      possibleSteps = altSteps;
+    }
+  }
+
+  if (!possibleSteps.length) {
     logAsciiMap({ map });
     throw new Error(
       `No valid next step from ${initialPosition?.id} at ${position.row},${position.col}`
@@ -143,7 +159,7 @@ function step({
   }
 
   const nextCol =
-    validNextSteps[Math.floor(random() * validNextSteps.length)].col;
+    possibleSteps[Math.floor(random() * possibleSteps.length)].col;
 
   const existingLocationAtNextStep = map.locations.find(
     (loc) => loc.row === nextRow && loc.col === nextCol
@@ -160,6 +176,7 @@ function step({
     map.paths.push(createPath(initialPosition.id, newLocation.id));
   }
 
+  if (onStep) onStep(map);
   return {
     map,
     position: { row: nextRow, col: nextCol },
@@ -212,7 +229,7 @@ function createPath(
  * given a target position and a spread, returns true if the position is reachable
  * by moving at most spread per row towards the target position
  */
-export const isReachablePosition = ({
+export function isReachablePosition({
   row,
   col,
   targetRow,
@@ -228,7 +245,7 @@ export const isReachablePosition = ({
   spread?: number;
   rows: number;
   cols: number;
-}) => {
+}) {
   if (row < 0 || row >= rows) return false;
   if (col < 0 || col >= cols) return false;
   for (const tCol of targetCols) {
@@ -239,15 +256,15 @@ export const isReachablePosition = ({
     }
   }
   return false;
-};
+}
 
-export const isValidNextStep = ({
+export function isValidNextStep({
   map,
   position,
 }: {
   map: Map;
   position: Position;
-}) => {
+}) {
   // Use the boss as the target
   const boss = map.locations.find((l) => l.type === LocationType.boss);
   if (!boss) return false;
@@ -271,15 +288,15 @@ export const isValidNextStep = ({
     return false;
   }
   return true;
-};
+}
 
-export const isInCampfireCone = ({
+export function isInCampfireCone({
   position,
   map,
 }: {
   position: Position;
   map: Map;
-}) => {
+}) {
   const center = Math.floor(map.cols / 2);
   const leftCampfire = center - 2;
   const rightCampfire = center + 2;
@@ -291,4 +308,4 @@ export const isInCampfireCone = ({
   const rightBound = Math.min(map.cols - 1, rightCampfire + stepsFromCampfire);
 
   return position.col >= leftBound && position.col <= rightBound;
-};
+}

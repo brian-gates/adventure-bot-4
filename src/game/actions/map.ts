@@ -2,13 +2,13 @@ import type {
   Bot,
   Interaction,
 } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
+import { locationTypeImage } from "~/game/map/locations/location-type-image.ts";
 import {
   $Enums,
   Location,
   Path,
   PrismaClient,
 } from "~/generated/prisma/client.ts";
-import { locationTypeImage } from "../location-type-image.ts";
 
 const prisma = new PrismaClient();
 

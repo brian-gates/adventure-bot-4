@@ -1,15 +1,5 @@
-import type { Map } from "~/game/map/index.ts";
-
-export type MapGenerator = (opts: {
-  cols: number;
-  rows: number;
-  minNodes?: number;
-  maxNodes?: number;
-  numPaths?: number;
-  random: () => number;
-}) => Map;
-
 import { trailblazingStrategy } from "~/game/map/generation/trailblazing.ts";
+import type { MapGenerator } from "../index.ts";
 import { branchingTrailblazerStrategy } from "./branching-trailblazer.ts";
 import { gridStrategy } from "./grid.ts";
 import { rowwiseBranchingMapGenerator } from "./rowwise-branching-map-generator.ts";

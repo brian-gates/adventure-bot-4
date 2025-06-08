@@ -1,5 +1,5 @@
+import type { MapGenerator } from "~/game/map/index.ts";
 import { LocationType } from "~/generated/prisma/enums.ts";
-import type { MapGenerator } from "./index.ts";
 
 export const trailblazingStrategy: MapGenerator = ({
   cols,
