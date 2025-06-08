@@ -3,6 +3,7 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { findOrCreatePlayer, setPlayerHealth } from "~/db/player.ts";
 import { getTargetPlayer } from "~/discord/get-target.ts";
 import { rollDie } from "~/game/dice.ts";
+import { seededRandom } from "~/game/seeded-random.ts";
 import { narrate } from "~/llm/index.ts";
 import { narrateHeal } from "~/prompts.ts";
 import { healthBar } from "~/ui/health-bar.ts";
@@ -27,7 +28,7 @@ export async function heal({
     id: targetPlayer.id,
     name: targetPlayer.name,
   });
-  const healAmount = rollDie({ sides: 4 });
+  const healAmount = await rollDie({ sides: 4, random: seededRandom(0) });
   const newHealth = Math.min(player.maxHealth, player.health + healAmount);
   await setPlayerHealth({ id: targetPlayer.id, health: newHealth });
 

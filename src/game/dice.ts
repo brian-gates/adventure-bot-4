@@ -1,38 +1,12 @@
 import { Bot, Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
-import { PrismaClient } from "~/generated/prisma/client.ts";
-import { seededRandom } from "./seeded-random.ts";
 
-const prisma = new PrismaClient();
-
-// djb2 hash function to convert string seed to number
-function stringToHash(str: string): number {
-  let hash = 5381;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash * 33) ^ str.charCodeAt(i);
-  }
-  return hash >>> 0; // Ensure positive integer
-}
-
-export async function rollDie({
+export function rollDie({
   sides,
-  interaction,
+  random,
 }: {
   sides: number;
-  interaction: Interaction;
+  random: () => number;
 }) {
-  const guildId = interaction.guildId?.toString();
-  if (!guildId) {
-    // Or handle this case differently, e.g., use a default seed or throw a more specific error
-    throw new Error(
-      "Guild ID not found in interaction. Cannot roll die without a guild-specific seed."
-    );
-  }
-  const guild = await prisma.guild.findUniqueOrThrow({
-    where: { guildId },
-  });
-
-  const numericSeed = stringToHash(guild.seed);
-  const random = seededRandom(numericSeed);
   return Math.floor(random() * sides) + 1;
 }
 
@@ -55,14 +29,16 @@ export async function rollAndAnnounceDie({
   interaction,
   sides,
   label,
+  random,
 }: {
   bot: Bot;
   interaction: Interaction;
   sides: number;
   label: string;
+  random: () => number;
 }) {
   const channelId = interaction.channelId!;
-  const roll = await rollDie({ sides, interaction });
+  const roll = rollDie({ sides, random });
   const emoji = await getRollEmoji(bot, interaction.guildId, sides, roll);
   await bot.helpers.sendMessage(channelId, {
     content: emoji,

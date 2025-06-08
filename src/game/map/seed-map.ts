@@ -6,48 +6,6 @@ import { assignLocationTypes } from "./locations/assign-location-types.ts";
 
 const prisma = new PrismaClient();
 
-export const logAsciiMap = ({ locations, paths, cols, rows }: Map) => {
-  const nodeSet = new Set(locations.map((l) => `${l.row},${l.col}`));
-  const edgeMap: Record<
-    string,
-    { down?: boolean; left?: boolean; right?: boolean }
-  > = {};
-  paths.forEach(({ fromLocationId, toLocationId }) => {
-    const fromLoc = locations.find((l) => l.id === fromLocationId);
-    const toLoc = locations.find((l) => l.id === toLocationId);
-    if (!fromLoc || !toLoc) return;
-    const dr = toLoc.row - fromLoc.row;
-    const dc = toLoc.col - fromLoc.col;
-    const key = `${fromLoc.row},${fromLoc.col}`;
-    if (!edgeMap[key]) edgeMap[key] = {};
-    if (dr === 1 && dc === 0) edgeMap[key].down = true;
-    if (dr === 1 && dc === -1) edgeMap[key].left = true;
-    if (dr === 1 && dc === 1) edgeMap[key].right = true;
-  });
-  let out = "";
-  for (let row = 0; row < rows; row++) {
-    let nodeLine = "";
-    let edgeLine = "";
-    for (let col = 0; col < cols; col++) {
-      nodeLine += nodeSet.has(`${row},${col}`) ? " O " : "   ";
-      const key = `${row},${col}`;
-      const edge = edgeMap[key] || {};
-      let edgeChars = "   ";
-      if (row < rows - 1) {
-        if (edge.left)
-          edgeChars = edgeChars.slice(0, 0) + "/" + edgeChars.slice(1);
-        if (edge.down)
-          edgeChars = edgeChars.slice(0, 1) + "|" + edgeChars.slice(2);
-        if (edge.right) edgeChars = edgeChars.slice(0, 2) + "\\";
-      }
-      edgeLine += edgeChars;
-    }
-    out += nodeLine + "\n";
-    if (row < rows - 1) out += edgeLine + "\n";
-  }
-  console.log("[seed-map] ASCII map structure:\n" + out);
-};
-
 export const seedMapForGuild = async ({ guildId }: { guildId: string }) => {
   console.log(`[seed-map] Seeding map for guild ${guildId}`);
   const existing = await prisma.location.findFirst({

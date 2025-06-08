@@ -1,12 +1,35 @@
-import type { Location } from "~/generated/prisma/client.ts"; // Path might be needed if we generate paths
-import { LocationType } from "~/generated/prisma/client.ts"; // Enum for LocationType
-import type { Map, MapGenerator } from "./index.ts";
+import { LocationType } from "~/generated/prisma/client.ts";
+import type { Location, Map, MapGenerator, Path } from "./index.ts";
 
 export const walkStrategy: MapGenerator = ({ cols, rows, random }) => {
-  const initialMap = emptyMap({ cols, rows });
-  const mapWithPath = addPath({ map: initialMap, random });
-  return mapWithPath;
+  let map = emptyMap({ cols, rows });
+  const startingPosition = startingLocation(map);
+
+  for (let i = 0; i < 1; i++) {
+    let position = { row: startingPosition.row + 1, col: startingPosition.col };
+    ({ position, map } = walkPath({ position, rows, map, random }));
+  }
+  return map;
 };
+
+function walkPath({
+  position: initialPosition,
+  rows,
+  map: initialMap,
+  random,
+}: {
+  position: Position;
+  rows: number;
+  map: Map;
+  random: () => number;
+}): { position: Position; map: Map } {
+  let map = structuredClone(initialMap);
+  let position = structuredClone(initialPosition);
+  while (position.row < rows - 3) {
+    ({ map, position } = step({ map, position, random }));
+  }
+  return { position, map };
+}
 
 export function emptyMap({ cols, rows }: { cols: number; rows: number }): Map {
   return {
@@ -17,60 +40,10 @@ export function emptyMap({ cols, rows }: { cols: number; rows: number }): Map {
   };
 }
 
-function startingLocation(map: Map) {
+function startingLocation(map: Map): Position {
   return {
     row: 0,
     col: Math.floor(map.cols / 2),
-  };
-}
-
-export function addPath({
-  map,
-  random,
-}: {
-  map: Map;
-  random: () => number;
-}): Map {
-  const startPos = startingLocation(map);
-  const endPos = { row: map.rows - 1, col: Math.floor(map.cols / 2) };
-
-  const pathPositions = randomWalk({
-    start: startPos,
-    end: endPos,
-    numRows: map.rows,
-    numCols: map.cols,
-    random,
-  });
-
-  const pathLocations: Location[] = pathPositions.map((pos, index) => ({
-    id: `pathloc_${map.locations.length + index}_${pos.row}_${pos.col}`,
-    channelId: "placeholder_channel_id",
-    row: pos.row,
-    col: pos.col,
-    type: LocationType.combat,
-    name: `Combat ${pos.row},${pos.col}`,
-    description: "A combat encounter.",
-    attributes: {},
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }));
-
-  const combinedLocations = [...map.locations];
-  pathLocations.forEach((newLoc) => {
-    const existingIndex = combinedLocations.findIndex(
-      (l) => l.row === newLoc.row && l.col === newLoc.col
-    );
-    if (existingIndex !== -1) {
-      combinedLocations[existingIndex] = newLoc; // Replace if exists at same spot
-    } else {
-      combinedLocations.push(newLoc); // Add if new spot
-    }
-  });
-
-  return {
-    ...map, // Spreads original cols, rows, and paths
-    locations: combinedLocations,
-    // paths: generated paths if randomWalk also creates Path objects
   };
 }
 
@@ -79,91 +52,102 @@ type Position = {
   col: number;
 };
 
-// randomWalk needs to be aware of map boundaries
-function randomWalk({
-  start,
-  end,
-  numRows,
-  numCols,
+function step({
+  map: initialMap,
+  position,
   random,
 }: {
-  start: Position;
-  end: Position;
-  numRows: number;
-  numCols: number;
+  map: Map;
+  position: Position;
   random: () => number;
-}): Position[] {
-  const path: Position[] = [];
-  let current = { ...start };
-  path.push({ ...start });
+}) {
+  const map = structuredClone(initialMap);
+  const previousLocation = map.locations.find(
+    (loc) => loc.row === position.row && loc.col === position.col
+  );
+  const previousLocationId = previousLocation?.id;
 
-  let iterations = 0;
-  // A more sensible maxIterations might be numRows * numCols to avoid overly long/stuck paths.
-  const maxIterations = numRows * numCols * 2;
-
-  while (
-    (current.row !== end.row || current.col !== end.col) &&
-    iterations < maxIterations
-  ) {
-    const prevPos = { ...current };
-
-    // Prioritize moving towards the end row
-    if (current.row !== end.row) {
-      current.row += end.row > current.row ? 1 : -1;
-    } else if (current.col !== end.col) {
-      // Then move towards the end col
-      current.col += end.col > current.col ? 1 : -1;
-    }
-
-    // Boundary checks (simple clamp)
-    current.row = Math.max(0, Math.min(numRows - 1, current.row));
-    current.col = Math.max(0, Math.min(numCols - 1, current.col));
-
-    // Avoid getting stuck in the same spot if movement was clamped or no change happened
-    if (
-      current.row === prevPos.row &&
-      current.col === prevPos.col &&
-      (current.row !== end.row || current.col !== end.col)
-    ) {
-      // If stuck, try a random move as a fallback, prioritizing overall direction
-      const randomMove = Math.random();
-      if (randomMove < 0.33 && current.row !== end.row) {
-        current.row += end.row > current.row ? 1 : -1;
-      } else if (randomMove < 0.66 && current.col !== end.col) {
-        current.col += end.col > current.col ? 1 : -1;
-      } else {
-        // Try a small nudge if still stuck
-        if (Math.random() > 0.5) current.row += Math.random() > 0.5 ? 1 : -1;
-        else current.col += Math.random() > 0.5 ? 1 : -1;
-        current.row = Math.max(0, Math.min(numRows - 1, current.row));
-        current.col = Math.max(0, Math.min(numCols - 1, current.col));
-      }
-    }
-
-    // Only add to path if it's a new position to avoid duplicates from being stuck
-    if (
-      path.length === 0 ||
-      path[path.length - 1].row !== current.row ||
-      path[path.length - 1].col !== current.col
-    ) {
-      path.push({ ...current });
-    }
-
-    iterations++;
+  // Determine next row (always try to move up)
+  const nextRow = position.row + 1;
+  if (nextRow >= map.rows) {
+    console.error("Out of bounds", { map, position, previousLocationId });
+    return { map, position: position, previousLocationId };
   }
 
-  if (
-    iterations >= maxIterations &&
-    (current.row !== end.row || current.col !== end.col)
-  ) {
-    // console.warn("randomWalk: Max iterations. Path may be incomplete. Forcing to end.");
-    // Ensure the end point is part of the path if not reached
-    if (
-      path[path.length - 1].row !== end.row ||
-      path[path.length - 1].col !== end.col
-    ) {
-      path.push({ ...end });
-    }
+  // Determine next column (slight horizontal variation)
+  // random() gives 0 to 1. Options: -1 (left), 0 (straight), 1 (right)
+  const colOffset = Math.floor(random() * 3) - 1;
+  let nextCol = position.col + colOffset;
+
+  // Keep column in bounds
+  if (nextCol < 0) {
+    nextCol = 0;
   }
-  return path;
+  if (nextCol >= map.cols) {
+    nextCol = map.cols - 1;
+  }
+
+  // Check if a location already exists at nextPosition (simple check)
+  // For a single path, this is less critical, but good for future
+  const existingLocationAtNextStep = map.locations.find(
+    (loc) => loc.row === nextRow && loc.col === nextCol
+  );
+
+  let newLocation: Location;
+  if (existingLocationAtNextStep) {
+    newLocation = existingLocationAtNextStep; // Link to existing if somehow one is there
+  } else {
+    newLocation = createLocation({ row: nextRow, col: nextCol });
+    map.locations.push(newLocation);
+  }
+  if (previousLocationId && newLocation.id) {
+    map.paths.push(createPath(previousLocationId, newLocation.id));
+  }
+
+  return {
+    map,
+    position: { row: nextRow, col: nextCol },
+  };
+}
+
+function createLocation({
+  row,
+  col,
+  type = LocationType.combat,
+  channelId = "default",
+}: {
+  row: number;
+  col: number;
+  type?: LocationType;
+  channelId?: string;
+}): Location {
+  return {
+    id: `${row}, ${col}`,
+    channelId,
+    name: `Location ${row}, ${col}`,
+    description: `A location at ${row}, ${col}`,
+    row,
+    col,
+    type,
+    attributes: {},
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
+function createPath(
+  fromLocationId: string,
+  toLocationId: string,
+  channelId: string = "default"
+): Path {
+  return {
+    id: `${fromLocationId} ➡️ ${toLocationId}`,
+    channelId,
+    fromLocationId,
+    toLocationId,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    description: "Path from " + fromLocationId + " to " + toLocationId,
+    attributes: {},
+  };
 }

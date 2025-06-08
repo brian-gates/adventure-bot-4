@@ -1,5 +1,7 @@
 import type { Location, Path } from "~/generated/prisma/client.ts";
 
+export type { Location, Path };
+
 export type Map = {
   locations: Location[];
   paths: Path[];
@@ -33,12 +35,12 @@ export {
 };
 
 export const strategies = [
+  { name: "walk", fn: walkStrategy },
   { name: "grid", fn: gridStrategy },
   { name: "trailblazing", fn: trailblazingStrategy },
   { name: "branching-trailblazer", fn: branchingTrailblazerStrategy },
   { name: "rowwise-branching", fn: rowwiseBranchingMapGenerator },
   { name: "slay-the-spire", fn: slayTheSpireMapGenerator },
-  { name: "walk", fn: walkStrategy },
 ];
 
 export function getMapGenerator(strategy: string): MapGenerator {
@@ -53,6 +55,8 @@ export function getMapGenerator(strategy: string): MapGenerator {
       return rowwiseBranchingMapGenerator;
     case "slay-the-spire":
       return slayTheSpireMapGenerator;
+    case "walk":
+      return walkStrategy;
     default:
       throw new Error(`Unknown strategy: ${strategy}`);
   }

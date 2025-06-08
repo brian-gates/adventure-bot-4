@@ -6,8 +6,12 @@ import { LocationType } from "~/generated/prisma/enums.ts";
 import { assignLocationTypes } from "../locations/assign-location-types.ts";
 import { testMap } from "../test-map-validity.ts";
 import { strategies } from "./index.ts";
+import { logAsciiMap } from "./log-ascii-map.ts";
 
-const locationTypeChar: Record<LocationType | "boss" | "campfire", string> = {
+export const locationTypeChar: Record<
+  LocationType | "boss" | "campfire",
+  string
+> = {
   combat: "X",
   elite: "E",
   tavern: "T",
@@ -41,116 +45,6 @@ let rows = 15;
 let minNodes = 2;
 let maxNodes = 5;
 
-function extractFailingNodes(
-  errors: string[],
-  locations: Location[]
-): Set<string> {
-  const failing = new Set<string>();
-  for (const err of errors) {
-    let match = err.match(/Node (\d+,\d+)/);
-    if (match) {
-      failing.add(match[1]);
-      continue;
-    }
-    match = err.match(/row (\d+), col (\d+)/);
-    if (match) {
-      failing.add(`${match[1]},${match[2]}`);
-      continue;
-    }
-    match = err.match(/Row (\d+)/);
-    if (match) {
-      const row = Number(match[1]);
-      for (const l of locations)
-        if (l.row === row) failing.add(`${l.row},${l.col}`);
-      continue;
-    }
-    match = err.match(/col (\d+)/);
-    if (match) {
-      const col = Number(match[1]);
-      for (const l of locations)
-        if (l.col === col) failing.add(`${l.row},${l.col}`);
-      continue;
-    }
-    match = err.match(/\((\d+),(\d+)\)/);
-    if (match) {
-      failing.add(`${match[1]},${match[2]}`);
-      continue;
-    }
-  }
-  return failing;
-}
-
-const colorRed = (s: string) => `\x1b[31m${s}\x1b[0m`;
-
-function logAsciiMap({
-  locations,
-  paths,
-  cols,
-  rows,
-  failingNodes = new Set(),
-}: {
-  locations: Location[];
-  paths: Path[];
-  cols: number;
-  rows: number;
-  failingNodes?: Set<string>;
-}) {
-  const nodeMap = new Map(locations.map((l) => [`${l.row},${l.col}`, l]));
-  const edgeMap: Record<
-    string,
-    { down?: boolean; left?: boolean; right?: boolean }
-  > = {};
-  paths.forEach(({ fromLocationId, toLocationId }: Path) => {
-    const fromLoc = locations.find((l: Location) => l.id === fromLocationId);
-    const toLoc = locations.find((l: Location) => l.id === toLocationId);
-    if (!fromLoc || !toLoc) return;
-    const dr = toLoc.row - fromLoc.row;
-    const dc = toLoc.col - fromLoc.col;
-    const key = `${fromLoc.row},${fromLoc.col}`;
-    if (!edgeMap[key]) edgeMap[key] = {};
-    if (dr === 1 && dc === 0) edgeMap[key].down = true;
-    if (dr === 1 && dc === -1) edgeMap[key].left = true;
-    if (dr === 1 && dc === 1) edgeMap[key].right = true;
-  });
-  let out = "";
-  for (let row = rows - 1; row >= 0; row--) {
-    let nodeLine = "";
-    let edgeLine = "";
-    for (let col = 0; col < cols; col++) {
-      const node = nodeMap.get(`${row},${col}`);
-      const key = `${row},${col}`;
-      if (node) {
-        if (failingNodes.has(key)) {
-          nodeLine += ` ${colorRed(
-            locationTypeChar[node.type as LocationType | "boss" | "campfire"] ??
-              "O"
-          )} `;
-        } else {
-          nodeLine += ` ${
-            locationTypeChar[node.type as LocationType | "boss" | "campfire"] ??
-            "O"
-          } `;
-        }
-      } else {
-        nodeLine += "   ";
-      }
-      const edge = edgeMap[key] || {};
-      let edgeChars = "   ";
-      if (row < rows - 1) {
-        if (edge.left)
-          edgeChars = edgeChars.slice(0, 0) + "/" + edgeChars.slice(1);
-        if (edge.down)
-          edgeChars = edgeChars.slice(0, 1) + "|" + edgeChars.slice(2);
-        if (edge.right) edgeChars = edgeChars.slice(0, 2) + "\\";
-      }
-      edgeLine += edgeChars;
-    }
-    out += nodeLine + "\n";
-    if (row < rows - 1) out += edgeLine + "\n";
-  }
-  console.log("[seed-map] ASCII map structure:\n" + out);
-}
-
 function renderCurrent() {
   console.clear();
   const strat = strategies[stratIndex];
@@ -159,23 +53,21 @@ function renderCurrent() {
     rows,
     minNodes,
     maxNodes,
-    random: seededRandom(0),
+    random: seededRandom(Math.floor(Math.random() * 1000000)),
   });
   const { locations, paths } = assignLocationTypes({
     locations: raw.locations,
     paths: raw.paths,
   });
   const errors = testMap(
-    { locations, paths },
-    { cols, rows, minNodes, maxNodes, numPaths: 3 }
+    { locations, paths, cols, rows },
+    { minNodes, maxNodes }
   );
-  const failingNodes = extractFailingNodes(errors, locations as Location[]);
   logAsciiMap({
     locations: locations as Location[],
     paths: paths as Path[],
     cols,
     rows,
-    failingNodes,
   });
   console.log("\n[Checks]");
   if (errors.length === 0) {

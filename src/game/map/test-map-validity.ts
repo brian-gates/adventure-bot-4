@@ -1,18 +1,10 @@
+import type { Map } from "~/game/map/generation/index.ts";
 import { seededRandom } from "~/game/seeded-random.ts";
-import { Location, Path } from "~/generated/prisma/client.ts";
-import { getMapGenerator } from "./generation/index.ts";
-
-type Config = {
-  cols: number;
-  rows: number;
-  minNodes: number;
-  maxNodes: number;
-  numPaths: number;
-};
+import { Location } from "~/generated/prisma/client.ts";
 
 function testMap(
-  { locations, paths }: { locations: Location[]; paths: Path[] },
-  { cols, rows, minNodes, maxNodes }: Config
+  { locations, paths, cols, rows }: Map,
+  { minNodes, maxNodes }: { minNodes: number; maxNodes: number }
 ) {
   const errors: string[] = [];
   const byRow: Record<number, Location[]> = {};
@@ -113,20 +105,12 @@ function testMap(
   return errors;
 }
 
-const configs: Config[] = [
-  { cols: 7, rows: 15, minNodes: 2, maxNodes: 5, numPaths: 3 },
-];
+import { strategies } from "./generation/index.ts";
 
-const algos = [
-  ["Grid", getMapGenerator("grid")],
-  ["Trailblazing", getMapGenerator("trailblazing")],
-  ["BranchingTrailblazer", getMapGenerator("branching-trailblazer")],
-  ["SlayTheSpire", getMapGenerator("slay-the-spire")],
-  ["Walk", getMapGenerator("walk")],
-] as const;
+const configs = [{ cols: 7, rows: 15, minNodes: 2, maxNodes: 5, numPaths: 3 }];
 
 for (const config of configs) {
-  for (const [name, fn] of algos) {
+  for (const { name, fn } of strategies) {
     let passCount = 0;
     let failCount = 0;
 
@@ -139,7 +123,10 @@ for (const config of configs) {
         maxNodes: config.maxNodes,
         random: seededRandom(run),
       });
-      const errors = testMap({ locations, paths }, config);
+      const errors = testMap(
+        { locations, paths, cols: config.cols, rows: config.rows },
+        config
+      );
       if (errors.length === 0) {
         passCount++;
       } else {

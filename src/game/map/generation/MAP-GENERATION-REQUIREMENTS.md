@@ -36,12 +36,6 @@
   - For each node in the current row, ensure it has at least one incoming connection from an adjacent node in the previous row.
 - All fallback logic (for ensuring connectivity) must only consider adjacent columns.
 
-## Rendering
-
-- The map should be renderable as both SVG and PNG, with nodes and paths clearly visible.
-- Node labels should be unique and human-readable (e.g., `Node 3,5`).
-- The map should be visually balanced, with no long horizontal or diagonal jumps.
-
 ## Additional Constraints
 
 - The algorithm must be deterministic if seeded (for reproducibility).

@@ -1,14 +1,11 @@
 import {
-  assert,
   assertEquals,
   assertExists,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { logAsciiMap } from "~/game/map/seed-map.ts";
-import { seededRandom } from "~/game/seeded-random.ts";
-import type { Location } from "~/generated/prisma/client.ts";
-import { LocationType } from "~/generated/prisma/enums.ts";
-import type { Map } from "./index.ts";
-import { addPath, emptyMap } from "./walk.ts";
+import { seededRandom } from "../../seeded-random.ts";
+import { logAsciiMap } from "./log-ascii-map.ts";
+
+import { emptyMap, walkStrategy } from "./walk.ts";
 
 Deno.test(
   "emptyMap creates a map with correct dimensions and empty locations/paths",
@@ -60,124 +57,148 @@ Deno.test("emptyMap handles 0 rows", () => {
   assertEquals(map.locations.length, 0);
 });
 
-Deno.test("addPath handles a 1xN map (vertical path)", () => {
-  const rows = 3;
-  const cols = 1;
+Deno.test("walkStrategy creates a complex map with a main path", () => {
+  const rows = 5;
+  const cols = 5;
 
-  const originalMathRandom = Math.random;
-  Math.random = () => 0; // Deterministic randomWalk (hopefully straight)
+  const map = walkStrategy({ cols, rows, random: seededRandom(0) });
 
-  const mapWithPath = addPath({
-    map: emptyMap({ cols, rows }),
-    random: seededRandom(0),
-  });
-  Math.random = originalMathRandom;
-
-  assertEquals(
-    mapWithPath.locations.length,
-    3,
-    "Should have 3 locations for a 3x1 path"
+  const startLocation = map.locations.find(
+    (loc) => loc.row === 0 && loc.col === Math.floor(cols / 2)
   );
-  mapWithPath.locations.forEach((loc, i) => {
-    assertEquals(loc.type, LocationType.combat);
-    assertEquals(loc.row, i); // 0, 1, 2
-    assertEquals(loc.col, 0);
-  });
-  logAsciiMap(mapWithPath);
+  assertExists(startLocation, "Should have a starting location");
+
+  const bossLocation = map.locations.find((loc) => loc.type === "boss");
+  assertExists(bossLocation, "Should have a boss location");
+
+  // Check that the first path segment from the start location exists
+  const firstPath = map.paths.find(
+    (p) => p.fromLocationId === startLocation.id
+  );
+  assertExists(firstPath, "A path should originate from the start location");
+
+  const secondLocation = map.locations.find(
+    (l) => l.id === firstPath.toLocationId
+  );
+  assertExists(secondLocation);
+  assertEquals(
+    secondLocation.row,
+    1,
+    "The first path should lead to a location on row 1"
+  );
+
+  // Check that at least one path leads to the boss
+  const path_to_boss = map.paths.find(
+    (p) => p.toLocationId === bossLocation.id
+  );
+  assertExists(
+    path_to_boss,
+    "There should be at least one path leading to the boss"
+  );
+});
+
+Deno.test("walkStrategy with 1 row map", () => {
+  const rows = 1;
+  const cols = 3;
+  const map = walkStrategy({ cols, rows, random: () => 0.5 });
+  // With 1 row, start and boss are the same node, no campfires
+  assertEquals(map.locations.length, 1);
+  assertEquals(map.paths.length, 0);
 });
 
 Deno.test(
-  "addPath combines new path locations with existing ones (no overlap)",
+  "walkStrategy creates locations with varied column positions based on random",
   () => {
-    const rows = 3;
-    const cols = 3;
-    const existingLocation: Location = {
-      id: "existing_0_0",
-      channelId: "ch",
-      row: 0,
-      col: 0,
-      type: LocationType.event,
-      name: "E",
-      description: "D",
-      attributes: {},
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    const initialMap: Map = {
-      cols,
-      rows,
-      locations: [existingLocation],
-      paths: [],
-    };
+    const rows = 4;
+    const cols = 5;
+    const map = walkStrategy({ cols, rows, random: seededRandom(0) });
 
-    const mapWithPath = addPath({ map: initialMap, random: seededRandom(0) });
+    // Find the true start location, not just the first one in the row
+    const startLocation = map.locations.find(
+      (l) => l.row === 0 && l.col === Math.floor(cols / 2)
+    );
+    assertExists(startLocation, "The start location (0,2) must exist.");
+    assertEquals(startLocation.id, "0,2");
 
+    // Find the first path segment from the true start
+    const firstPath = map.paths.find(
+      (p) => p.fromLocationId === startLocation.id
+    );
+    assertExists(firstPath, "Path from start location should exist");
+
+    // Find the next location on that path
+    const nextLocation = map.locations.find(
+      (l) => l.id === firstPath.toLocationId
+    );
+    assertExists(nextLocation, "The location after the start should exist");
+
+    // With seededRandom(0), the first offset is -1 (left)
+    assertEquals(nextLocation.row, 1);
     assertEquals(
-      mapWithPath.locations.length,
-      1 + 3,
-      "Should have initial location + 3 path locations"
+      nextLocation.col,
+      startLocation.col - 1,
+      "First step should be to the left"
     );
-
-    const eventLoc = mapWithPath.locations.find(
-      (l) => l.type === LocationType.event
-    );
-    assertExists(eventLoc);
-    assertEquals(eventLoc?.id, "existing_0_0");
-
-    const combatLocs = mapWithPath.locations.filter(
-      (l) => l.type === LocationType.combat
-    );
-    assertEquals(combatLocs.length, 3);
-    combatLocs.forEach((cl) => assertEquals(cl.col, 1));
   }
 );
 
-Deno.test("addPath replaces existing location if path overlaps", () => {
-  const rows = 3;
-  const cols = 3;
-  const existingLocation: Location = {
-    id: "existing_1_1",
-    channelId: "ch",
-    row: 1,
-    col: 1,
-    type: LocationType.event,
-    name: "E",
-    description: "D",
-    attributes: {},
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-  const initialMap: Map = {
-    cols,
-    rows,
-    locations: [existingLocation],
-    paths: [],
-  };
+Deno.test("ascii view", () => {
+  logAsciiMap(walkStrategy({ cols: 15, rows: 7, random: seededRandom(2) }));
+});
 
-  const mapWithPath = addPath({ map: initialMap, random: seededRandom(0) });
+Deno.test("all nodes are connected (no orphans, proper in/out degree)", () => {
+  const rows = 7;
+  const cols = 7;
+  const map = walkStrategy({ cols, rows, random: seededRandom(0) });
 
-  assertEquals(
-    mapWithPath.locations.length,
-    3,
-    "Should have 3 locations in total (1 replaced, 2 new)"
+  const bossLocation = map.locations.find((loc) => loc.type === "boss");
+  assertExists(bossLocation, "Should have a boss location");
+  const startLocation = map.locations.find(
+    (loc) => loc.row === 0 && loc.col === Math.floor(cols / 2)
   );
+  assertExists(startLocation, "Should have a starting location");
 
-  const overlappingLoc = mapWithPath.locations.find(
-    (l) => l.row === 1 && l.col === 1
-  );
-  assertExists(overlappingLoc);
-  assertEquals(
-    overlappingLoc?.type,
-    LocationType.combat,
-    "Overlapping location should be replaced by combat type"
-  );
-  assert(
-    overlappingLoc.id.startsWith("pathloc_"),
-    "ID of replaced location should be new"
-  );
-
-  const otherCombatLocs = mapWithPath.locations.filter(
-    (l) => l.type === LocationType.combat && !(l.row === 1 && l.col === 1)
-  );
-  assertEquals(otherCombatLocs.length, 2);
+  for (const loc of map.locations) {
+    const incoming = map.paths.filter((p) => p.toLocationId === loc.id).length;
+    const outgoing = map.paths.filter(
+      (p) => p.fromLocationId === loc.id
+    ).length;
+    if (loc.id === startLocation.id) {
+      // Start node: only outgoing
+      assertEquals(
+        incoming,
+        0,
+        `Start node ${loc.id} should have no incoming paths`
+      );
+      assertEquals(
+        outgoing > 0,
+        true,
+        `Start node ${loc.id} should have outgoing paths`
+      );
+    } else if (loc.id === bossLocation.id) {
+      // Boss node: only incoming
+      assertEquals(
+        outgoing,
+        0,
+        `Boss node ${loc.id} should have no outgoing paths`
+      );
+      assertEquals(
+        incoming > 0,
+        true,
+        `Boss node ${loc.id} should have incoming paths`
+      );
+    } else {
+      // All other nodes: at least one in and one out
+      assertEquals(
+        incoming > 0,
+        true,
+        `Node ${loc.id} should have at least one incoming path`
+      );
+      assertEquals(
+        outgoing > 0,
+        true,
+        `Node ${loc.id} should have at least one outgoing path`
+      );
+    }
+  }
 });
