@@ -1,7 +1,12 @@
+import type {
+  Location,
+  Map,
+  MapGenerator,
+  Path,
+  Position,
+} from "~/game/map/index.ts";
 import { LocationType } from "~/generated/prisma/client.ts";
-import { assignTypesForWalk } from "./assign-types-walk.ts";
-import type { Location, Map, MapGenerator, Path, Position } from "./index.ts";
-import { logAsciiMap } from "./log-ascii-map.ts";
+import { locationType } from "./location-types.ts";
 
 export const walkStrategy: MapGenerator = ({ cols, rows, random }) => {
   let map = emptyMap({ cols, rows });
@@ -28,30 +33,13 @@ export const walkStrategy: MapGenerator = ({ cols, rows, random }) => {
     }));
   }
 
-  // Assign types for all nodes
-  const rowNums = Array.from(new Set(map.locations.map((l) => l.row))).sort(
-    (a, b) => a - b
-  );
-  map.locations = assignTypesForWalk({
-    locations: map.locations,
-    paths: map.paths,
-    rows: rowNums,
-    cols,
-    rand: random,
-  });
+  map.locations = map.locations.map((l) => ({
+    ...l,
+    type: locationType({ map, position: { row: l.row, col: l.col } }),
+  }));
 
   return map;
 };
-
-function isCampfirePosition({
-  position,
-  map,
-}: {
-  position: Position;
-  map: Map;
-}) {
-  return position.row === map.rows - 2;
-}
 
 function walkPath({
   position: initialPosition,

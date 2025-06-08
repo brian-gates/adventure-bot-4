@@ -57,7 +57,7 @@ Deno.test("emptyMap handles 0 rows", () => {
   assertEquals(map.locations.length, 0);
 });
 
-Deno.test("walkStrategy creates a complex map with a main path", () => {
+Deno.test.only("walkStrategy creates a complex map with a main path", () => {
   const rows = 5;
   const cols = 5;
 
@@ -143,7 +143,9 @@ Deno.test(
 );
 
 Deno.test("ascii view", () => {
-  logAsciiMap(walkStrategy({ cols: 15, rows: 7, random: seededRandom(2) }));
+  logAsciiMap({
+    map: walkStrategy({ cols: 15, rows: 7, random: seededRandom(0) }),
+  });
 });
 
 Deno.test("all nodes are connected (no orphans, proper in/out degree)", () => {

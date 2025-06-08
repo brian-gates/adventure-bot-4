@@ -1,13 +1,4 @@
-import type { Location, Path } from "~/generated/prisma/client.ts";
-
-export type { Location, Path };
-
-export type Map = {
-  locations: Location[];
-  paths: Path[];
-  cols: number;
-  rows: number;
-};
+import type { Map } from "~/game/map/index.ts";
 
 export type MapGenerator = (opts: {
   cols: number;
@@ -23,7 +14,7 @@ import { branchingTrailblazerStrategy } from "./branching-trailblazer.ts";
 import { gridStrategy } from "./grid.ts";
 import { rowwiseBranchingMapGenerator } from "./rowwise-branching-map-generator.ts";
 import { slayTheSpireMapGenerator } from "./slay-the-spire-map-generator.ts";
-import { walkStrategy } from "./walk.ts";
+import { walkStrategy } from "./walk/walk.ts";
 
 export {
   branchingTrailblazerStrategy,
@@ -38,7 +29,7 @@ export const strategies = [
   { name: "walk", fn: walkStrategy },
   { name: "grid", fn: gridStrategy },
   { name: "trailblazing", fn: trailblazingStrategy },
-  { name: "branching-trailblazer", fn: branchingTrailblazerStrategy },
+  // { name: "branching-trailblazer", fn: branchingTrailblazerStrategy },
   { name: "rowwise-branching", fn: rowwiseBranchingMapGenerator },
   { name: "slay-the-spire", fn: slayTheSpireMapGenerator },
 ];

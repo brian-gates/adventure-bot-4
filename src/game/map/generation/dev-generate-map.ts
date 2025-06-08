@@ -1,25 +1,9 @@
 import { Keypress } from "https://deno.land/x/cliffy@v1.0.0-rc.4/keypress/mod.ts";
 import { Input } from "https://deno.land/x/cliffy@v1.0.0-rc.4/prompt/input.ts";
 import { seededRandom } from "~/game/seeded-random.ts";
-import type { Location, Path } from "~/generated/prisma/client.ts";
-import { LocationType } from "~/generated/prisma/enums.ts";
-import { assignLocationTypes } from "../locations/assign-location-types.ts";
 import { testMap } from "../test-map-validity.ts";
 import { strategies } from "./index.ts";
 import { logAsciiMap } from "./log-ascii-map.ts";
-
-export const locationTypeChar: Record<
-  LocationType | "boss" | "campfire",
-  string
-> = {
-  combat: "X",
-  elite: "E",
-  tavern: "T",
-  treasure: "$",
-  event: "?",
-  boss: "B",
-  campfire: "C",
-};
 
 const promptInt = async (msg: string, def: number) => {
   const input = await Input.prompt({
@@ -48,26 +32,19 @@ let maxNodes = 5;
 function renderCurrent() {
   console.clear();
   const strat = strategies[stratIndex];
-  const raw = strat.fn({
+  const { locations, paths } = strat.fn({
     cols,
     rows,
     minNodes,
     maxNodes,
     random: seededRandom(Math.floor(Math.random() * 1000000)),
   });
-  const { locations, paths } = assignLocationTypes({
-    locations: raw.locations,
-    paths: raw.paths,
-  });
   const errors = testMap(
     { locations, paths, cols, rows },
     { minNodes, maxNodes }
   );
   logAsciiMap({
-    locations: locations as Location[],
-    paths: paths as Path[],
-    cols,
-    rows,
+    map: { locations, paths, cols, rows },
   });
   console.log("\n[Checks]");
   if (errors.length === 0) {

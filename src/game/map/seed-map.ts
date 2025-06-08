@@ -1,4 +1,3 @@
-import type { Map } from "~/game/map/generation/index.ts";
 import { seededRandom } from "~/game/seeded-random.ts";
 import { PrismaClient } from "~/generated/prisma/client.ts";
 import { getMapGenerator } from "./generation/index.ts";
@@ -19,10 +18,7 @@ export const seedMapForGuild = async ({ guildId }: { guildId: string }) => {
   const rows = 15;
   const minNodes = 2;
   const maxNodes = 5;
-  // Example usage for branching trailblazer:
-  const { locations: locs, paths: rawPaths } = getMapGenerator(
-    "branching-trailblazer"
-  )({
+  const { locations: locs, paths: rawPaths } = getMapGenerator("walk")({
     cols,
     rows,
     minNodes,

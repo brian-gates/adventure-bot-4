@@ -14,12 +14,12 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
   maxNodes = 5,
   random = seededRandom(0),
 }) => {
-  let allRows: { col: number; row: number }[][] = Array.from(
+  const allRows: { col: number; row: number }[][] = Array.from(
     { length: rows },
     () => []
   );
 
-  let edgeSet = new Set<string>();
+  const edgeSet = new Set<string>();
   let stable = false;
 
   // Ensure first and last rows have one centered node
@@ -403,8 +403,6 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
       if (!Array.isArray(allRows[row]) || !Array.isArray(allRows[row + 1]))
         continue;
 
-      const fromNodes = allRows[row];
-      const toNodes = allRows[row + 1];
       // Edges for this row pair in this iteration
       const currentEdges: Array<{
         from: { col: number; row: number };

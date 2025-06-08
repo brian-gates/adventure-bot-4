@@ -1,6 +1,6 @@
-import type { Map } from "~/game/map/generation/index.ts";
+import { strategies } from "~/game/map/generation/index.ts";
+import type { Location, Map } from "~/game/map/index.ts";
 import { seededRandom } from "~/game/seeded-random.ts";
-import { Location } from "~/generated/prisma/client.ts";
 
 function testMap(
   { locations, paths, cols, rows }: Map,
@@ -105,42 +105,40 @@ function testMap(
   return errors;
 }
 
-import { strategies } from "./generation/index.ts";
-
 const configs = [{ cols: 7, rows: 15, minNodes: 2, maxNodes: 5, numPaths: 3 }];
+if (import.meta.main) {
+  for (const config of configs) {
+    for (const { name, fn } of strategies) {
+      let passCount = 0;
+      let failCount = 0;
 
-for (const config of configs) {
-  for (const { name, fn } of strategies) {
-    let passCount = 0;
-    let failCount = 0;
-
-    for (let run = 1; run <= 1000; run++) {
-      const { locations, paths } = fn({
-        cols: config.cols,
-        rows: config.rows,
-        numPaths: config.numPaths,
-        minNodes: config.minNodes,
-        maxNodes: config.maxNodes,
-        random: seededRandom(run),
-      });
-      const errors = testMap(
-        { locations, paths, cols: config.cols, rows: config.rows },
-        config
-      );
-      if (errors.length === 0) {
-        passCount++;
-      } else {
-        failCount++;
-        break; // Stop after the first failure
+      for (let run = 1; run <= 1000; run++) {
+        const { locations, paths } = fn({
+          cols: config.cols,
+          rows: config.rows,
+          numPaths: config.numPaths,
+          minNodes: config.minNodes,
+          maxNodes: config.maxNodes,
+          random: seededRandom(run),
+        });
+        const errors = testMap(
+          { locations, paths, cols: config.cols, rows: config.rows },
+          config
+        );
+        if (errors.length === 0) {
+          passCount++;
+        } else {
+          failCount++;
+        }
       }
-    }
 
-    const percent = ((passCount / (passCount + failCount)) * 100).toFixed(2);
-    console.log(
-      `${name}: ${passCount}/${
-        passCount + failCount
-      } (${percent}%) success rate`
-    );
+      const percent = ((passCount / (passCount + failCount)) * 100).toFixed(2);
+      console.log(
+        `${name}: ${passCount}/${
+          passCount + failCount
+        } (${percent}%) success rate`
+      );
+    }
   }
 }
 
