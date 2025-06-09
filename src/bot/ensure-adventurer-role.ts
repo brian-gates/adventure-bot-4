@@ -17,7 +17,7 @@ export async function ensureAdventurerRole({
     });
   }
   console.log(
-    `[Bot] Adventurer role ID for guild ${guildId}: ${adventurerRole.id}`
+    `[Bot] Adventurer role ID for guild ${guildId}: ${adventurerRole.id}`,
   );
   return adventurerRole.id.toString();
 }
