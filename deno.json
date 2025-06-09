@@ -1,6 +1,6 @@
 {
   "importMap": "import_map.json",
-  "nodeModulesDir": true,
+  "nodeModulesDir": "auto",
   "lint": {},
   "fmt": {},
   "tasks": {
