@@ -35,10 +35,10 @@ export function locationType({
   }
 
   const currentLocation = map.locations.find(
-    (l) => l.row === row && l.col === col
+    (l) => l.row === row && l.col === col,
   );
   const preceedingPaths = map.paths.filter(
-    (p) => p.toLocationId === currentLocation?.id
+    (p) => p.toLocationId === currentLocation?.id,
   );
   const preceedingLocations = map.locations.filter((l) =>
     preceedingPaths.some((p) => p.fromLocationId === l.id)
@@ -60,17 +60,16 @@ export function locationType({
         : 3,
       [LocationType.shop]:
         row <= 5 && preceedingLocationTypes.includes(LocationType.shop) ? 0 : 1,
-      [LocationType.combat]:
-        row === 0
-          ? 0
-          : preceedingLocationTypes.includes(LocationType.combat)
-          ? 2
-          : 4,
+      [LocationType.combat]: row === 0
+        ? 0
+        : preceedingLocationTypes.includes(LocationType.combat)
+        ? 2
+        : 4,
       [LocationType.campfire]:
         row > 5 && preceedingLocationTypes.includes(LocationType.campfire)
           ? 1
           : 0,
     },
-    random
+    random,
   );
 }

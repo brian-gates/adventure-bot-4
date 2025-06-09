@@ -17,8 +17,9 @@ export function asciiMapString({
   const failingNodes = new Set<string>();
   const locationMap = new Map(locations.map((l) => [`${l.row},${l.col}`, l]));
   // Prepare edgeLines: edgeLines[row][col] is the edge char below node at (row+1, col)
-  const edgeLines: string[][] = Array.from({ length: rows - 1 }, () =>
-    Array(cols).fill("   ")
+  const edgeLines: string[][] = Array.from(
+    { length: rows - 1 },
+    () => Array(cols).fill("   "),
   );
   for (const path of paths) {
     const from = locations.find((l) => l.id === path.fromLocationId);
@@ -28,19 +29,22 @@ export function asciiMapString({
     const dc = to.col - from.col;
     if (dr === 1 && Math.abs(dc) <= 1) {
       const angle = getPathAngle({ path, locations });
-      if (angle === "|")
+      if (angle === "|") {
         edgeLines[from.row][from.col] =
           edgeLines[from.row][from.col].slice(0, 1) +
           "|" +
           edgeLines[from.row][from.col].slice(2);
-      if (angle === "/" && from.col < cols - 1)
+      }
+      if (angle === "/" && from.col < cols - 1) {
         edgeLines[from.row][from.col + 1] =
           edgeLines[from.row][from.col + 1].slice(0, 0) +
           "/" +
           edgeLines[from.row][from.col + 1].slice(1);
-      if (angle === "\\" && from.col > 0)
+      }
+      if (angle === "\\" && from.col > 0) {
         edgeLines[from.row][from.col - 1] =
           edgeLines[from.row][from.col - 1].slice(0, 2) + "\\";
+      }
     } else {
       console.log("Skipping non-adjacent path:", { from, to });
     }
@@ -59,8 +63,7 @@ export function asciiMapString({
     for (let col = 0; col < cols; col++) {
       const location = locationMap.get(`${row},${col}`);
       const key = `${row},${col}`;
-      const reachable =
-        boss &&
+      const reachable = boss &&
         isReachablePosition({
           row,
           col,

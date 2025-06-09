@@ -15,7 +15,7 @@ Deno.test("weightedRandom respects weights", () => {
   // b should be about 3x as likely as a
   if (!(results.b > results.a * 2 && results.b < results.a * 4)) {
     throw new Error(
-      `b should be about 3x as likely as a, got a=${results.a}, b=${results.b}`
+      `b should be about 3x as likely as a, got a=${results.a}, b=${results.b}`,
     );
   }
 });

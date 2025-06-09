@@ -25,8 +25,9 @@ Deno.test("Cursor advances sequence", () => {
   const rand1 = seededRandom(42, 5);
   const rand2 = seededRandom(42);
   for (let i = 0; i < 5; i++) rand2();
-  if (rand1() !== rand2())
+  if (rand1() !== rand2()) {
     throw new Error("Cursor did not advance sequence correctly");
+  }
 });
 
 Deno.test("Reproducibility after restart", () => {
@@ -37,8 +38,9 @@ Deno.test("Reproducibility after restart", () => {
   // Simulate process restart
   const rand2 = seededRandom(seed, cursor);
   const value2 = rand2();
-  if (value1 !== value2)
+  if (value1 !== value2) {
     throw new Error("Reproducibility failed after restart");
+  }
 });
 
 Deno.test("Batch generation matches single-step", () => {
@@ -49,7 +51,8 @@ Deno.test("Batch generation matches single-step", () => {
   for (let i = 0; i < batchSize; i++) {
     const randSingle = seededRandom(seed, i);
     const single = randSingle();
-    if (batch[i] !== single)
+    if (batch[i] !== single) {
       throw new Error(`Batch and single-step differ at index ${i}`);
+    }
   }
 });

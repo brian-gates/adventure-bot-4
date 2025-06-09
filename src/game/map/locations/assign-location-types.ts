@@ -21,7 +21,7 @@ function assignElites({
   const firstRow = rows[0];
   const lastRow = rows[rows.length - 1];
   const availableForElite = rows.filter(
-    (r) => r !== firstRow && r !== lastRow && r !== rows[1]
+    (r) => r !== firstRow && r !== lastRow && r !== rows[1],
   );
   // Simple random placement for now
   const eliteRowIndex = Math.floor(rand() * availableForElite.length);
@@ -53,20 +53,21 @@ function assignEvents({
   const firstRow = rows[0];
   const lastRow = rows[rows.length - 1];
   const availableForEvent = rows.filter(
-    (r) => r !== firstRow && r !== lastRow && !restRows.includes(r)
+    (r) => r !== firstRow && r !== lastRow && !restRows.includes(r),
   );
 
   for (const r of availableForEvent) {
-    const rowNodes =
-      byRow.get(r)?.filter((n: Location) => !nextAssign[n.id]) ?? [];
+    const rowNodes = byRow.get(r)?.filter((n: Location) => !nextAssign[n.id]) ??
+      [];
     if (!rowNodes.length) continue;
 
-    const prev =
-      byRow.get(r - 1)?.filter((n: Location) => nextAssign[n.id] === "event") ??
+    const prev = byRow.get(r - 1)?.filter((n: Location) =>
+      nextAssign[n.id] === "event"
+    ) ??
       [];
     const next =
       byRow.get(r + 1)?.filter((n: Location) => nextAssign[n.id] === "event") ??
-      [];
+        [];
 
     if (
       rowNodes.length === 2 &&
@@ -116,7 +117,7 @@ function assignCampfireAndTavern({
   // Assign Tavern
   let tavernAssigned = false;
   const availableForTavern = rows.filter(
-    (r) => r !== firstRow && r !== lastRow && r !== preBossRow
+    (r) => r !== firstRow && r !== lastRow && r !== preBossRow,
   );
 
   // Prioritize mid-row, then check others
@@ -129,7 +130,7 @@ function assignCampfireAndTavern({
     const rowNodes = byRow.get(r);
     const prevRowNodes = byRow.get(r - 1) || [];
     const hasEliteInPrevRow = prevRowNodes.some(
-      (node) => updatedMap[node.id] === "elite"
+      (node) => updatedMap[node.id] === "elite",
     );
 
     if (
@@ -154,7 +155,7 @@ function assignCampfireAndTavern({
 
 export function assignLocationTypes(
   { locations, paths }: { locations: Location[]; paths: Path[] },
-  opts: { seed?: number } = {}
+  opts: { seed?: number } = {},
 ) {
   const rand = seededRandom(opts.seed ?? 0);
   // Grouping by row using the immutable groupBy, result is a Map
