@@ -3,9 +3,9 @@ import type {
   Interaction,
 } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 import { prisma } from "~/db/index.ts";
-import { asciiMapString } from "~/game/map/generation/log-ascii-map.ts";
 import type { Location, LocationType, Map } from "~/game/map/index.ts";
 import { locationTypeImage } from "~/game/map/locations/location-type-image.ts";
+import { seedMapForGuild } from "~/game/map/seed-map.ts";
 
 const WIDTH = 600;
 const HEIGHT = 1800;
@@ -35,8 +35,7 @@ function getContrastBg(hex: string) {
   return luminance > 0.5 ? "#111" : "#fff";
 }
 
-async function getMap(guildId: string) {
-  console.log(`[map] Querying locations and paths for guild ${guildId}`);
+async function getMap(guildId: bigint) {
   const guild = await prisma.guild.findUnique({
     where: { guildId },
     include: {
@@ -49,13 +48,10 @@ async function getMap(guildId: string) {
     },
   });
   if (!guild?.map) {
-    throw new Error(`No map found for guildId: ${guildId}`);
+    const map = await seedMapForGuild({ guildId });
+    return map;
   }
-  const map = guild.map;
-  console.log(
-    `[map] Found ${map?.locations.length} locations, ${map?.paths.length} paths`,
-  );
-  return map;
+  return guild.map;
 }
 
 function renderMapSvg({
@@ -97,7 +93,7 @@ function renderMapSvg({
     const { x, y } = nodePos(loc);
     const dominant =
       iconDominantColors[loc.type as keyof typeof iconDominantColors] ??
-        "#3498db";
+        "#00FF00";
     const bg = getContrastBg(dominant);
     const isCurrent = currentLocationId && loc.id === currentLocationId;
     const stroke = isCurrent ? "#FFD700" : dominant;
@@ -147,7 +143,7 @@ export async function map({
   interaction: Interaction;
 }) {
   console.log(`[map] /map command handler called`);
-  const guildId = interaction.guildId?.toString();
+  const guildId = interaction.guildId;
   if (!guildId) {
     console.log(`[map] No guildId found for interaction`);
     try {
@@ -173,19 +169,7 @@ export async function map({
   }
   const svg = renderMapSvg(map);
   const png = await rasterizeSvgToPng(svg);
-  const ascii = asciiMapString({ map, color: false });
-  try {
-    await bot.helpers.editOriginalInteractionResponse(interaction.token, {
-      content: `Here is your map:\n\n\`\`\`\n${ascii}\n\`\`\``,
-    });
-  } catch (err) {
-    console.error(`[map] Error editing original interaction response:`, err);
-  }
   if (interaction.channelId) {
-    console.log(
-      `[map] Sending map image to channel ${interaction.channelId}`,
-      ascii,
-    );
     try {
       if (png) {
         await bot.helpers.sendMessage(interaction.channelId, {
@@ -214,4 +198,4 @@ export async function map({
   }
 }
 
-export { renderMapSvg };
+export { rasterizeSvgToPng, renderMapSvg };

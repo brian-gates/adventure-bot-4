@@ -1,18 +1,20 @@
 import {
   type Location,
   LocationType,
+  type MapGenerator,
   type Path,
-} from "~/generated/prisma/client.ts";
+} from "~/game/map/index.ts";
 import type { JsonValue } from "~/generated/prisma/internal/prismaNamespace.ts";
-import type { MapGenerator } from "../index.ts";
 
 export const branchingTrailblazerStrategy: MapGenerator = ({
-  cols,
-  rows,
+  cols = 7,
+  rows = 15,
   minNodes = 2,
   maxNodes = 5,
   random,
+  guildId,
 }) => {
+  const mapId = crypto.randomUUID();
   const allRows: { col: number; row: number }[][] = Array.from(
     { length: rows },
     () => [],
@@ -499,7 +501,6 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
   // Build final locations and paths based on the modified allRows and edgeSet
   const locations: Location[] = allRows.flat().map(({ col, row }, i) => ({
     id: `loc-${row}-${col}-${i}`,
-    channelId: "placeholder",
     row,
     col,
     type: LocationType.combat, // Default type, can be refined
@@ -508,7 +509,7 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
     attributes: {} as JsonValue,
     createdAt: new Date(),
     updatedAt: new Date(),
-    mapId: crypto.randomUUID(),
+    mapId,
   }));
 
   const paths: Path[] = Array.from(edgeSet).map((edge, i) => {
@@ -530,12 +531,11 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
       id: `path-${i}`,
       fromLocationId: fromLocation.id,
       toLocationId: toLocation.id,
-      channelId: "placeholder_path_channel_id", // Added placeholder
-      description: `Path from ${fromStr} to ${toStr}`, // Added placeholder
-      attributes: {} as JsonValue, // Added placeholder
+      description: `Path from ${fromStr} to ${toStr}`,
+      attributes: {},
       createdAt: new Date(),
       updatedAt: new Date(),
-      mapId: crypto.randomUUID(),
+      mapId,
     };
   });
 
@@ -544,11 +544,11 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
     paths,
     cols,
     rows,
-    id: crypto.randomUUID(),
-    channelId: "",
+    id: mapId,
     createdAt: new Date(),
     updatedAt: new Date(),
     currentLocationId: locations[0].id,
     locationId: locations[0].id,
+    guildId,
   };
 };

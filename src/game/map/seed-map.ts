@@ -3,10 +3,10 @@ import { seededRandom } from "~/game/seeded-random.ts";
 import { stringToSeed } from "../string-to-seed.ts";
 import { getMapGenerator } from "./generation/index.ts";
 
-export async function seedMapForGuild({ guildId }: { guildId: string }) {
+export async function seedMapForGuild({ guildId }: { guildId: bigint }) {
   console.log(`[seed-map] Seeding map for guild ${guildId}`);
   const existingMap = await prisma.map.findFirst({
-    where: { channelId: guildId },
+    where: { guildId },
   });
   if (existingMap) {
     return;
@@ -22,6 +22,7 @@ export async function seedMapForGuild({ guildId }: { guildId: string }) {
     minNodes: 2,
     maxNodes: 5,
     random: seededRandom(stringToSeed(seed)),
+    guildId,
   });
   console.log(
     `[seed-map] Built map: ${map.locations.length} locations, ${map.paths.length} paths`,
@@ -48,11 +49,13 @@ export async function seedMapForGuild({ guildId }: { guildId: string }) {
     attributes: {},
   }));
 
+  await prisma.map.deleteMany({ where: { guildId } });
+
   await prisma.$transaction([
     prisma.map.create({
       data: {
         id: map.id,
-        channelId: guildId,
+        guildId,
         cols: map.cols,
         rows: map.rows,
       },

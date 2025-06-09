@@ -5,7 +5,7 @@ export async function ensureAdventurerRole({
   guildId,
 }: {
   bot: Bot;
-  guildId: string;
+  guildId: bigint;
 }): Promise<string> {
   console.log(`[Bot] Ensuring Adventurer role exists in guild ${guildId}`);
   const roles = await bot.helpers.getRoles(guildId);

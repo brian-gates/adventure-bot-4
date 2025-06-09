@@ -2,20 +2,17 @@ import {
   type Location,
   LocationType,
   type Map,
+  type MapGenerator,
   type Path,
 } from "~/game/map/index.ts";
 
-export const slayTheSpireMapGenerator = ({
+export const slayTheSpireMapGenerator: MapGenerator = ({
   cols = 7,
   rows = 15,
   minNodes = 2,
   maxNodes = 5,
-}: {
-  cols?: number;
-  rows?: number;
-  minNodes?: number;
-  maxNodes?: number;
-} = {}) => {
+  guildId,
+}) => {
   const center = Math.floor(cols / 2);
   const allRows: { row: number; col: number }[][] = Array.from(
     { length: rows },
@@ -35,10 +32,10 @@ export const slayTheSpireMapGenerator = ({
     allRows[row].sort((a, b) => a.col - b.col);
   }
   const map: Map = {
+    guildId,
     cols,
     rows,
     id: crypto.randomUUID(),
-    channelId: "",
     createdAt: new Date(),
     updatedAt: new Date(),
     currentLocationId: null,
@@ -207,7 +204,6 @@ export const slayTheSpireMapGenerator = ({
     const [from, to] = s.split("->");
     return {
       id: crypto.randomUUID(),
-      channelId: "",
       fromLocationId: from,
       toLocationId: to,
       description: "",
@@ -215,6 +211,7 @@ export const slayTheSpireMapGenerator = ({
       createdAt: new Date(),
       updatedAt: new Date(),
       mapId: crypto.randomUUID(),
+      guildId,
     };
   });
   return {

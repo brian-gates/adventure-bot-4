@@ -1,13 +1,14 @@
-import type { MapGenerator } from "~/game/map/index.ts";
-import { LocationType } from "~/generated/prisma/enums.ts";
+import { LocationType, type MapGenerator } from "~/game/map/index.ts";
 
 export const trailblazingStrategy: MapGenerator = ({
-  cols,
-  rows,
+  cols = 7,
+  rows = 15,
   minNodes = 2,
   maxNodes = 5,
   random,
+  guildId,
 }) => {
+  const mapId = crypto.randomUUID();
   const center = Math.floor(cols / 2);
   const boss = { row: rows - 1, col: center };
   const campfireRow = rows - 2;
@@ -145,7 +146,6 @@ export const trailblazingStrategy: MapGenerator = ({
     }
     return {
       id: s,
-      channelId: "",
       row,
       col,
       name: `Node ${col},${row}`,
@@ -154,6 +154,7 @@ export const trailblazingStrategy: MapGenerator = ({
       type,
       createdAt: new Date(),
       updatedAt: new Date(),
+      mapId,
     };
   });
 
@@ -161,13 +162,13 @@ export const trailblazingStrategy: MapGenerator = ({
     const [from, to] = s.split("->");
     return {
       id: crypto.randomUUID(),
-      channelId: "",
       fromLocationId: from,
       toLocationId: to,
       description: "",
       attributes: {},
       createdAt: new Date(),
       updatedAt: new Date(),
+      mapId,
     };
   });
 
@@ -176,5 +177,11 @@ export const trailblazingStrategy: MapGenerator = ({
     paths,
     cols,
     rows,
+    guildId,
+    id: mapId,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    currentLocationId: locations[0].id,
+    locationId: locations[0].id,
   };
 };

@@ -12,12 +12,15 @@ import {
 import { Location, LocationType, Map, Path } from "~/game/map/index.ts";
 import { seededRandom } from "~/game/seeded-random.ts";
 
+const TEST_GUILD_ID = BigInt(1);
+const TEST_MAP_ID = "test-map";
+
 Deno.test(
   "emptyMap creates a map with correct dimensions and empty locations/paths",
   () => {
     const rows = 3;
     const cols = 4;
-    const map = emptyMap({ cols, rows });
+    const map = emptyMap({ cols, rows, guildId: TEST_GUILD_ID });
 
     assertEquals(
       map.cols,
@@ -37,7 +40,7 @@ Deno.test(
 Deno.test("emptyMap handles 1x1 dimension", () => {
   const rows = 1;
   const cols = 1;
-  const map = emptyMap({ cols, rows });
+  const map = emptyMap({ cols, rows, guildId: TEST_GUILD_ID });
 
   assertEquals(map.cols, cols);
   assertEquals(map.rows, rows);
@@ -47,7 +50,7 @@ Deno.test("emptyMap handles 1x1 dimension", () => {
 Deno.test("emptyMap handles 0 cols", () => {
   const rows = 3;
   const cols = 0;
-  const map = emptyMap({ cols, rows });
+  const map = emptyMap({ cols, rows, guildId: TEST_GUILD_ID });
   assertEquals(map.cols, cols);
   assertEquals(map.rows, rows);
   assertEquals(map.locations.length, 0);
@@ -56,7 +59,7 @@ Deno.test("emptyMap handles 0 cols", () => {
 Deno.test("emptyMap handles 0 rows", () => {
   const rows = 0;
   const cols = 3;
-  const map = emptyMap({ cols, rows });
+  const map = emptyMap({ cols, rows, guildId: TEST_GUILD_ID });
   assertEquals(map.cols, cols);
   assertEquals(map.rows, rows);
   assertEquals(map.locations.length, 0);
@@ -66,7 +69,12 @@ Deno.test("walkStrategy creates a complex map with a main path", () => {
   const rows = 5;
   const cols = 5;
 
-  const map = walkStrategy({ cols, rows, random: seededRandom(0) });
+  const map = walkStrategy({
+    cols,
+    rows,
+    random: seededRandom(0),
+    guildId: TEST_GUILD_ID,
+  });
 
   const startLocation = map.locations.find(
     (loc) => loc.row === 0 && loc.col === Math.floor(cols / 2),
@@ -105,7 +113,12 @@ Deno.test("walkStrategy creates a complex map with a main path", () => {
 Deno.test("walkStrategy with 1 row map", () => {
   const rows = 1;
   const cols = 3;
-  const map = walkStrategy({ cols, rows, random: () => 0.5 });
+  const map = walkStrategy({
+    cols,
+    rows,
+    random: () => 0.5,
+    guildId: TEST_GUILD_ID,
+  });
   // With 1 row, start and boss are the same node, no campfires
   assertEquals(map.locations.length, 1);
   assertEquals(map.paths.length, 0);
@@ -116,7 +129,12 @@ Deno.test(
   () => {
     const rows = 4;
     const cols = 5;
-    const map = walkStrategy({ cols, rows, random: seededRandom(0) });
+    const map = walkStrategy({
+      cols,
+      rows,
+      random: seededRandom(0),
+      guildId: TEST_GUILD_ID,
+    });
 
     // Find the true start location, not just the first one in the row
     const startLocation = map.locations.find(
@@ -148,14 +166,24 @@ Deno.test(
 
 Deno.test("ascii view", () => {
   logAsciiMap({
-    map: walkStrategy({ cols: 15, rows: 7, random: seededRandom(0) }),
+    map: walkStrategy({
+      cols: 15,
+      rows: 7,
+      random: seededRandom(0),
+      guildId: TEST_GUILD_ID,
+    }),
   });
 });
 
 Deno.test("all nodes are connected (no orphans, proper in/out degree)", () => {
   const rows = 7;
   const cols = 7;
-  const map = walkStrategy({ cols, rows, random: seededRandom(0) });
+  const map = walkStrategy({
+    cols,
+    rows,
+    random: seededRandom(0),
+    guildId: TEST_GUILD_ID,
+  });
 
   const bossLocation = map.locations.find((loc) => loc.type === "boss");
   assertExists(bossLocation, "Should have a boss location");
@@ -235,7 +263,6 @@ Deno.test(
           row: 0,
           col: 0,
           name: "A",
-          mapId: "1",
           type: LocationType.combat,
         }),
         createLocation({
@@ -243,7 +270,6 @@ Deno.test(
           row: 1,
           col: 0,
           name: "B",
-          mapId: "1",
           type: LocationType.combat,
         }),
         createLocation({
@@ -251,7 +277,6 @@ Deno.test(
           row: 0,
           col: 1,
           name: "C",
-          mapId: "1",
           type: LocationType.combat,
         }),
       ],
@@ -274,7 +299,6 @@ Deno.test("wouldCrossExistingPath returns true if crossing path exists", () => {
         row: 0,
         col: 0,
         name: "A",
-        mapId: "1",
         type: LocationType.combat,
       }),
       createLocation({
@@ -282,7 +306,6 @@ Deno.test("wouldCrossExistingPath returns true if crossing path exists", () => {
         row: 1,
         col: 0,
         name: "B",
-        mapId: "1",
         type: LocationType.combat,
       }),
       createLocation({
@@ -290,7 +313,6 @@ Deno.test("wouldCrossExistingPath returns true if crossing path exists", () => {
         row: 0,
         col: 1,
         name: "C",
-        mapId: "1",
         type: LocationType.combat,
       }),
     ],
@@ -331,7 +353,6 @@ function createMap({
 }: Partial<Map> = {}): Map {
   return {
     id: "1",
-    channelId: "1",
     createdAt: new Date(),
     updatedAt: new Date(),
     rows,
@@ -340,14 +361,15 @@ function createMap({
     locationId: null,
     locations,
     paths,
+    guildId: TEST_GUILD_ID,
   };
 }
+
 function createLocation({
   id = randomUUID(),
   row = 0,
   col = 0,
   name = "A",
-  mapId = "1",
   description = "A",
   attributes = {},
   type = LocationType.combat,
@@ -359,10 +381,10 @@ function createLocation({
     createdAt: new Date(),
     updatedAt: new Date(),
     name,
-    mapId,
     description,
     attributes,
     type,
+    mapId: TEST_MAP_ID,
   };
 }
 
@@ -370,7 +392,6 @@ function createPath({
   id = randomUUID(),
   fromLocationId = randomUUID(),
   toLocationId = randomUUID(),
-  mapId = "1",
   createdAt = new Date(),
   updatedAt = new Date(),
   description = "A",
@@ -379,10 +400,10 @@ function createPath({
     id,
     fromLocationId,
     toLocationId,
-    mapId,
     createdAt,
     updatedAt,
     description,
     attributes: {},
+    mapId: TEST_MAP_ID,
   };
 }

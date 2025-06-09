@@ -6,7 +6,7 @@ async function logBotGuildPermissions({
   guildId,
 }: {
   bot: Bot;
-  guildId: string;
+  guildId: bigint;
 }) {
   const botId = bot.applicationId.toString();
   const member = await bot.helpers.getMember(guildId, botId);
@@ -27,7 +27,7 @@ export async function registerCommandsAndPermissions({
   guildId,
 }: {
   bot: Bot;
-  guildId: string;
+  guildId: bigint;
 }) {
   await logBotGuildPermissions({ bot, guildId });
   console.log(`[Bot] Registering commands for guild ${guildId}`);

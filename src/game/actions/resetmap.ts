@@ -12,7 +12,7 @@ export async function resetmap({
   bot: Bot;
   interaction: Interaction;
 }) {
-  const guildId = interaction.guildId?.toString();
+  const guildId = interaction.guildId;
   if (!guildId) {
     await bot.helpers.editOriginalInteractionResponse(interaction.token, {
       content: "This command can only be used in a server.",
@@ -20,9 +20,9 @@ export async function resetmap({
     return;
   }
   try {
-    const map = await prisma.map.findFirst({ where: { channelId: guildId } });
+    const map = await prisma.map.findFirst({ where: { guildId } });
     if (map) {
-      await prisma.map.deleteMany({ where: { channelId: guildId } });
+      await prisma.map.deleteMany({ where: { guildId } });
       // Wait for cascading deletes to complete
       let tries = 0;
       while (tries < 10) {

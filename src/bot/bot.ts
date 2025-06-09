@@ -3,9 +3,9 @@ import {
   Intents,
   InteractionResponseTypes,
 } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
+import { registerCommandsAndPermissions } from "~/bot/register-commands-and-permissions.ts";
 import { actions } from "~/game/actions/index.ts";
-import { seedMapForGuild } from "../game/map/seed-map.ts";
-import { registerCommandsAndPermissions } from "./register-commands-and-permissions.ts";
+import { seedMapForGuild } from "~/game/map/seed-map.ts";
 
 export { startBot } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 
@@ -20,10 +20,10 @@ export function makeBot({ token, botId }: { token: string; botId: bigint }) {
       Intents.GuildMembers,
     events: {
       guildCreate: async (bot, guild) => {
-        await seedMapForGuild({ guildId: guild.id.toString() });
+        await seedMapForGuild({ guildId: guild.id });
         await registerCommandsAndPermissions({
           bot,
-          guildId: guild.id.toString(),
+          guildId: guild.id,
         });
         console.log(
           `[Bot] Registered commands and seeded map for guild ${guild.id}`,

@@ -1,22 +1,23 @@
-import type { Location, Map, Path, Position } from "~/game/map/index.ts";
-import { LocationType } from "~/generated/prisma/client.ts";
+import {
+  type Location,
+  LocationType,
+  type Map,
+  type MapGenerator,
+  type Path,
+  type Position,
+} from "~/game/map/index.ts";
 import { logAsciiMap } from "../log-ascii-map.ts";
 import { locationType } from "./location-types.ts";
 
-export const walkStrategy = ({
+export const walkStrategy: MapGenerator = ({
   cols = 7,
   rows = 15,
   numPaths = 4,
   random = Math.random,
   onStep,
-}: {
-  cols?: number;
-  rows?: number;
-  numPaths?: number;
-  random?: () => number;
-  onStep?: (map: Map) => void;
-} = {}) => {
-  let map = emptyMap({ cols, rows });
+  guildId,
+}) => {
+  let map = emptyMap({ cols, rows, guildId });
   // Place boss node in the last row, centered
   const bossCol = Math.floor(cols / 2);
   const boss = createLocation({
@@ -79,16 +80,16 @@ function walkPath({
 export function emptyMap({
   cols = 7,
   rows = 15,
-  channelId = "demo",
+  guildId,
 }: {
   cols: number;
   rows: number;
-  channelId?: string;
+  guildId: bigint;
 }): Map {
   const now = new Date();
   return {
     id: crypto.randomUUID(),
-    channelId,
+    guildId,
     locations: [],
     paths: [],
     cols,
@@ -336,24 +337,4 @@ export function isValidNextStep({
     return false;
   }
   return true;
-}
-
-export function isInCampfireCone({
-  position,
-  map,
-}: {
-  position: Position;
-  map: Map;
-}) {
-  const center = Math.floor(map.cols / 2);
-  const leftCampfire = center - 2;
-  const rightCampfire = center + 2;
-
-  const stepsFromCampfire = map.rows - 2 - position.row;
-  if (stepsFromCampfire < 0) return false;
-
-  const leftBound = Math.max(0, leftCampfire - stepsFromCampfire);
-  const rightBound = Math.min(map.cols - 1, rightCampfire + stepsFromCampfire);
-
-  return position.col >= leftBound && position.col <= rightBound;
 }

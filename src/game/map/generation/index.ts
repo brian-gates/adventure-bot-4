@@ -22,7 +22,7 @@ export const strategies = [
   // { name: "branching-trailblazer", fn: branchingTrailblazerStrategy },
   { name: "rowwise-branching", fn: rowwiseBranchingMapGenerator },
   { name: "slay-the-spire", fn: slayTheSpireMapGenerator },
-];
+] satisfies { name: string; fn: MapGenerator }[];
 
 export function getMapGenerator(strategy: string): MapGenerator {
   switch (strategy) {

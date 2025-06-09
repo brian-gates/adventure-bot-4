@@ -12,7 +12,7 @@ export const setseed = async ({
   bot: Bot;
   interaction: Interaction;
 }) => {
-  const guildId = interaction.guildId?.toString();
+  const guildId = interaction.guildId;
   if (!guildId) {
     await bot.helpers.editOriginalInteractionResponse(interaction.token, {
       content: "This command can only be used in a server.",
@@ -32,7 +32,7 @@ export const setseed = async ({
       update: { seed, randomCursor: 0 },
       create: { guildId, seed },
     });
-    await prisma.map.deleteMany({ where: { channelId: guildId } });
+    await prisma.map.deleteMany({ where: { guildId } });
     await seedMapForGuild({ guildId });
     await bot.helpers.editOriginalInteractionResponse(interaction.token, {
       content: `Seed set to \

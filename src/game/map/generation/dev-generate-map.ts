@@ -92,6 +92,7 @@ function renderCurrent() {
     maxNodes,
     random: seededRandom(stringToSeed(seed.toString())),
     onStep: (map: Map) => frames.push(map),
+    guildId: BigInt(1),
   });
   frameIndex = frames.length - 1; // Start at the end by default
   renderFrame();

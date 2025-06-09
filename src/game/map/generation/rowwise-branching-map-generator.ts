@@ -1,22 +1,18 @@
 import {
   type Location,
   LocationType,
+  type MapGenerator,
   type Path,
-} from "~/generated/prisma/client.ts";
+} from "~/game/map/index.ts";
 
-export const rowwiseBranchingMapGenerator = ({
+export const rowwiseBranchingMapGenerator: MapGenerator = ({
   cols = 7,
   rows = 15,
   minNodes = 2,
   maxNodes = 5,
   random = Math.random,
-}: {
-  cols?: number;
-  rows?: number;
-  minNodes?: number;
-  maxNodes?: number;
-  random?: () => number;
-} = {}) => {
+  guildId,
+}) => {
   const center = Math.floor(cols / 2);
   const allRows: { row: number; col: number }[][] = Array.from(
     { length: rows },
@@ -98,10 +94,10 @@ export const rowwiseBranchingMapGenerator = ({
     cols,
     rows,
     id: crypto.randomUUID(),
-    channelId: "",
     createdAt: new Date(),
     updatedAt: new Date(),
     currentLocationId: locations[0].id,
     locationId: locations[0].id,
+    guildId,
   };
 };
