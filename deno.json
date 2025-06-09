@@ -2,7 +2,9 @@
   "importMap": "import_map.json",
   "nodeModulesDir": "auto",
   "lint": {},
-  "fmt": {},
+  "fmt": {
+    "exclude": ["pnpm-lock.yaml"]
+  },
   "tasks": {
     "test": "deno test --allow-env --allow-read --allow-ffi",
     "dev": "deno run -A src/bot/index.ts",
