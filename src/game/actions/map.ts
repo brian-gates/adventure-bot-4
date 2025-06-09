@@ -77,30 +77,36 @@ function renderMapSvg({
     y: PAD_Y + (rows - 1 - loc.row) * scaleY,
   });
 
-  let svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${WIDTH}' height='${HEIGHT}' viewBox='0 0 ${WIDTH} ${HEIGHT}'>`;
+  let svg =
+    `<svg xmlns='http://www.w3.org/2000/svg' width='${WIDTH}' height='${HEIGHT}' viewBox='0 0 ${WIDTH} ${HEIGHT}'>`;
   for (const path of paths) {
     const from = locations.find((l) => l.id === path.fromLocationId);
     const to = locations.find((l) => l.id === path.toLocationId);
     if (from && to) {
       const { x: x1, y: y1 } = nodePos(from);
       const { x: x2, y: y2 } = nodePos(to);
-      svg += `<line x1='${x1}' y1='${y1}' x2='${x2}' y2='${y2}' stroke='#888' stroke-width='2'/>`;
+      svg +=
+        `<line x1='${x1}' y1='${y1}' x2='${x2}' y2='${y2}' stroke='#888' stroke-width='2'/>`;
     }
   }
   for (const loc of locations) {
     const { x, y } = nodePos(loc);
     const dominant =
       iconDominantColors[loc.type as keyof typeof iconDominantColors] ??
-      "#00FF00";
+        "#00FF00";
     const bg = getContrastBg(dominant);
     const isCurrent = currentLocationId && loc.id === currentLocationId;
     const stroke = isCurrent ? "#FFD700" : dominant;
     const strokeWidth = isCurrent ? 4 : 2;
-    svg += `<circle cx='${x}' cy='${y}' r='${nodeRadius}' fill='${bg}' stroke='${stroke}' stroke-width='${strokeWidth}'/>`;
+    svg +=
+      `<circle cx='${x}' cy='${y}' r='${nodeRadius}' fill='${bg}' stroke='${stroke}' stroke-width='${strokeWidth}'/>`;
     const icon = locationTypeImage[loc.type];
     if (!icon) {
       console.warn(`Missing icon for node type: ${loc.type}`);
-      svg += `<text x="${x}" y="${y}" fill="#fff" font-size="10" text-anchor="middle" alignment-baseline="middle">${loc.type[0]}</text>`;
+      svg +=
+        `<text x="${x}" y="${y}" fill="#fff" font-size="10" text-anchor="middle" alignment-baseline="middle">${
+          loc.type[0]
+        }</text>`;
     } else {
       svg += `<image href='${icon}' x='${x - iconSize / 2}' y='${
         y - iconSize / 2
@@ -184,7 +190,7 @@ export async function map({
     } catch (err) {
       console.error(
         `[map] Error sending map image to channel ${interaction.channelId}:`,
-        err
+        err,
       );
     }
   } else {

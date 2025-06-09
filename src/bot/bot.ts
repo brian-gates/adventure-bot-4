@@ -14,8 +14,7 @@ export function makeBot({ token, botId }: { token: string; botId: bigint }) {
   const botInstance = createBot({
     token,
     botId,
-    intents:
-      Intents.Guilds |
+    intents: Intents.Guilds |
       Intents.GuildMessages |
       Intents.MessageContent |
       Intents.GuildMembers,
@@ -27,7 +26,7 @@ export function makeBot({ token, botId }: { token: string; botId: bigint }) {
           guildId: guild.id,
         });
         console.log(
-          `[Bot] Registered commands and seeded map for guild ${guild.id}`
+          `[Bot] Registered commands and seeded map for guild ${guild.id}`,
         );
       },
       interactionCreate: async (bot, interaction) => {
@@ -37,8 +36,9 @@ export function makeBot({ token, botId }: { token: string; botId: bigint }) {
             interaction.data?.name === "heal")
         ) {
           const inputRaw = interaction.data.options?.[0]?.value;
-          const input =
-            typeof inputRaw === "string" ? inputRaw.toLowerCase() : "";
+          const input = typeof inputRaw === "string"
+            ? inputRaw.toLowerCase()
+            : "";
           const membersRaw = interaction.guildId
             ? await bot.helpers.getMembers(interaction.guildId, { limit: 1000 })
             : [];
@@ -60,7 +60,7 @@ export function makeBot({ token, botId }: { token: string; botId: bigint }) {
             {
               type: 8,
               data: { choices: allChoices },
-            }
+            },
           );
           return;
         }
@@ -68,7 +68,7 @@ export function makeBot({ token, botId }: { token: string; botId: bigint }) {
           interaction.type === 2 &&
           interaction.data?.name &&
           (Object.keys(actions) as (keyof typeof actions)[]).includes(
-            interaction.data.name as keyof typeof actions
+            interaction.data.name as keyof typeof actions,
           )
         ) {
           await bot.helpers.sendInteractionResponse(
@@ -76,7 +76,7 @@ export function makeBot({ token, botId }: { token: string; botId: bigint }) {
             interaction.token,
             {
               type: InteractionResponseTypes.DeferredChannelMessageWithSource,
-            }
+            },
           );
           await actions[interaction.data.name as keyof typeof actions]({
             bot,

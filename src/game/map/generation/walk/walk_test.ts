@@ -25,16 +25,16 @@ Deno.test(
     assertEquals(
       map.cols,
       cols,
-      "Map should have the correct number of columns"
+      "Map should have the correct number of columns",
     );
     assertEquals(map.rows, rows, "Map should have the correct number of rows");
     assertEquals(
       map.locations.length,
       0,
-      "Map locations should be initially empty"
+      "Map locations should be initially empty",
     );
     assertEquals(map.paths.length, 0, "Map paths should be initially empty");
-  }
+  },
 );
 
 Deno.test("emptyMap handles 1x1 dimension", () => {
@@ -77,7 +77,7 @@ Deno.test("walkStrategy creates a complex map with a main path", () => {
   });
 
   const startLocation = map.locations.find(
-    (loc) => loc.row === 0 && loc.col === Math.floor(cols / 2)
+    (loc) => loc.row === 0 && loc.col === Math.floor(cols / 2),
   );
   assertExists(startLocation, "Should have a starting location");
 
@@ -86,27 +86,27 @@ Deno.test("walkStrategy creates a complex map with a main path", () => {
 
   // Check that the first path segment from the start location exists
   const firstPath = map.paths.find(
-    (p) => p.fromLocationId === startLocation.id
+    (p) => p.fromLocationId === startLocation.id,
   );
   assertExists(firstPath, "A path should originate from the start location");
 
   const secondLocation = map.locations.find(
-    (l) => l.id === firstPath.toLocationId
+    (l) => l.id === firstPath.toLocationId,
   );
   assertExists(secondLocation);
   assertEquals(
     secondLocation.row,
     1,
-    "The first path should lead to a location on row 1"
+    "The first path should lead to a location on row 1",
   );
 
   // Check that at least one path leads to the boss
   const path_to_boss = map.paths.find(
-    (p) => p.toLocationId === bossLocation.id
+    (p) => p.toLocationId === bossLocation.id,
   );
   assertExists(
     path_to_boss,
-    "There should be at least one path leading to the boss"
+    "There should be at least one path leading to the boss",
   );
 });
 
@@ -138,19 +138,19 @@ Deno.test(
 
     // Find the true start location, not just the first one in the row
     const startLocation = map.locations.find(
-      (l) => l.row === 0 && l.col === Math.floor(cols / 2)
+      (l) => l.row === 0 && l.col === Math.floor(cols / 2),
     );
     assertExists(startLocation, "The start location (0,2) must exist.");
 
     // Find the first path segment from the true start
     const firstPath = map.paths.find(
-      (p) => p.fromLocationId === startLocation.id
+      (p) => p.fromLocationId === startLocation.id,
     );
     assertExists(firstPath, "Path from start location should exist");
 
     // Find the next location on that path
     const nextLocation = map.locations.find(
-      (l) => l.id === firstPath.toLocationId
+      (l) => l.id === firstPath.toLocationId,
     );
     assertExists(nextLocation, "The location after the start should exist");
 
@@ -159,9 +159,9 @@ Deno.test(
     assertEquals(
       nextLocation.col,
       startLocation.col,
-      "First step should be straight ahead"
+      "First step should be straight ahead",
     );
-  }
+  },
 );
 
 Deno.test("ascii view", () => {
@@ -188,50 +188,50 @@ Deno.test("all nodes are connected (no orphans, proper in/out degree)", () => {
   const bossLocation = map.locations.find((loc) => loc.type === "boss");
   assertExists(bossLocation, "Should have a boss location");
   const startLocation = map.locations.find(
-    (loc) => loc.row === 0 && loc.col === Math.floor(cols / 2)
+    (loc) => loc.row === 0 && loc.col === Math.floor(cols / 2),
   );
   assertExists(startLocation, "Should have a starting location");
 
   for (const loc of map.locations) {
     const incoming = map.paths.filter((p) => p.toLocationId === loc.id).length;
     const outgoing = map.paths.filter(
-      (p) => p.fromLocationId === loc.id
+      (p) => p.fromLocationId === loc.id,
     ).length;
     if (loc.id === startLocation.id) {
       // Start node: only outgoing
       assertEquals(
         incoming,
         0,
-        `Start node ${loc.id} should have no incoming paths`
+        `Start node ${loc.id} should have no incoming paths`,
       );
       assertEquals(
         outgoing > 0,
         true,
-        `Start node ${loc.id} should have outgoing paths`
+        `Start node ${loc.id} should have outgoing paths`,
       );
     } else if (loc.id === bossLocation.id) {
       // Boss node: only incoming
       assertEquals(
         outgoing,
         0,
-        `Boss node ${loc.id} should have no outgoing paths`
+        `Boss node ${loc.id} should have no outgoing paths`,
       );
       assertEquals(
         incoming > 0,
         true,
-        `Boss node ${loc.id} should have incoming paths`
+        `Boss node ${loc.id} should have incoming paths`,
       );
     } else {
       // All other nodes: at least one in and one out
       assertEquals(
         incoming > 0,
         true,
-        `Node ${loc.id} should have at least one incoming path`
+        `Node ${loc.id} should have at least one incoming path`,
       );
       assertEquals(
         outgoing > 0,
         true,
-        `Node ${loc.id} should have at least one outgoing path`
+        `Node ${loc.id} should have at least one outgoing path`,
       );
     }
   }
@@ -288,7 +288,7 @@ Deno.test(
       map,
     });
     assertEquals(result, false);
-  }
+  },
 );
 
 Deno.test("wouldCrossExistingPath returns true if crossing path exists", () => {
@@ -342,7 +342,7 @@ Deno.test(
       map,
     });
     assertEquals(result, false);
-  }
+  },
 );
 
 function createMap({

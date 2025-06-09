@@ -25,10 +25,9 @@ export async function attack({
   const channelId = interaction.channelId!;
   const targetPlayer = await getTargetPlayer({ interaction });
   if (!targetPlayer) throw new Error("Target player not found");
-  const { seed } =
-    (await prisma.guild.findUnique({
-      where: { guildId: BigInt(interaction.guildId ?? "0") },
-    })) ??
+  const { seed } = (await prisma.guild.findUnique({
+    where: { guildId: BigInt(interaction.guildId ?? "0") },
+  })) ??
     (() => {
       throw new Error("Guild not found");
     })();

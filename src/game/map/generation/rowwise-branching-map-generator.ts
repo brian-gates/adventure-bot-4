@@ -1,6 +1,6 @@
 import {
-  LocationType,
   type Location,
+  LocationType,
   type MapGenerator,
   type Path,
 } from "~/game/map/index.ts";
@@ -16,7 +16,7 @@ export const rowwiseBranchingMapGenerator: MapGenerator = ({
   const center = Math.floor(cols / 2);
   const allRows: { row: number; col: number }[][] = Array.from(
     { length: rows },
-    (_, i) => (i === 0 || i === rows - 1 ? [{ row: i, col: center }] : [])
+    (_, i) => (i === 0 || i === rows - 1 ? [{ row: i, col: center }] : []),
   );
   for (let row = 1; row < rows - 1; row++) {
     const count = Math.floor(random() * (maxNodes - minNodes + 1)) + minNodes;

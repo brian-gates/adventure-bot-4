@@ -4,7 +4,7 @@ import type { Location, Path } from "~/generated/prisma/client.ts";
 const defaultNode = (
   col: number,
   row: number,
-  mapId: string
+  mapId: string,
 ): Omit<Location, "name" | "id"> => ({
   col,
   row,
@@ -54,10 +54,10 @@ const gridStrategy: MapGenerator = ({
     row.map((cell) =>
       cell
         ? locations.push({
-            ...cell,
-            name: `Node ${cell.col},${cell.row}`,
-            id: `${cell.row},${cell.col}`,
-          }) - 1
+          ...cell,
+          name: `Node ${cell.col},${cell.row}`,
+          id: `${cell.row},${cell.col}`,
+        }) - 1
         : null
     )
   );

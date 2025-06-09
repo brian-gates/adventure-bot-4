@@ -12,13 +12,13 @@ async function logBotGuildPermissions({
   const member = await bot.helpers.getMember(guildId, botId);
   const permissions = member.permissions;
   console.log(
-    `[Bot] Bot permissions bitfield in guild ${guildId}: ${permissions}`
+    `[Bot] Bot permissions bitfield in guild ${guildId}: ${permissions}`,
   );
   const perms = permissions ? BigInt(permissions) : 0n;
   const hasManageRoles = (perms & 0x10000000n) !== 0n;
   const hasAdmin = (perms & 0x8n) !== 0n;
   console.log(
-    `[Bot] MANAGE_ROLES: ${hasManageRoles}, ADMINISTRATOR: ${hasAdmin}`
+    `[Bot] MANAGE_ROLES: ${hasManageRoles}, ADMINISTRATOR: ${hasAdmin}`,
   );
 }
 
