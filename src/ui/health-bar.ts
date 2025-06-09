@@ -17,18 +17,15 @@ export async function healthBar({
   const effectiveHeal = Math.max(0, Math.min(heal, max - current));
   const healWidth = Math.round((effectiveHeal / max) * width);
   const damageWidth = Math.round((damage / max) * width);
-  const greenBox =
-    healthWidth > 0
-      ? `drawbox=x=0:y=0:w=${healthWidth}:h=${height}:color=green@1:t=fill,`
-      : "";
-  const whiteBox =
-    healWidth > 0
-      ? `drawbox=x=${healthWidth}:y=0:w=${healWidth}:h=${height}:color=white@1:t=fill,`
-      : "";
-  const redBox =
-    damageWidth > 0
-      ? `drawbox=x=${healthWidth}:y=0:w=${damageWidth}:h=${height}:color=#b71c1c@1:t=fill,`
-      : "";
+  const greenBox = healthWidth > 0
+    ? `drawbox=x=0:y=0:w=${healthWidth}:h=${height}:color=green@1:t=fill,`
+    : "";
+  const whiteBox = healWidth > 0
+    ? `drawbox=x=${healthWidth}:y=0:w=${healWidth}:h=${height}:color=white@1:t=fill,`
+    : "";
+  const redBox = damageWidth > 0
+    ? `drawbox=x=${healthWidth}:y=0:w=${damageWidth}:h=${height}:color=#b71c1c@1:t=fill,`
+    : "";
   // Input: solid black background
   const ffmpegArgs = [
     "-f", // input format
@@ -70,7 +67,8 @@ export async function healthBar({
     stderr: "piped",
   });
   const { code, stdout, stderr } = await command.output();
-  if (code !== 0)
+  if (code !== 0) {
     throw new Error("FFmpeg error: " + new TextDecoder().decode(stderr));
+  }
   return stdout;
 }

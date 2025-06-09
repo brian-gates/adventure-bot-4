@@ -23,16 +23,16 @@ function render(message?: string) {
     console.log("No maps found in the database.");
   } else {
     console.log(
-      `Map ${index + 1}/${maps.length} (id: ${map.id}, channelId: ${
-        map.channelId
-      })`
+      `Map ${
+        index + 1
+      }/${maps.length} (id: ${map.id}, channelId: ${map.channelId})`,
     );
 
     console.log(asciiMapString({ map }));
   }
   if (message) console.log("\n" + message);
   console.log(
-    "\n←/→: prev/next map, R: reseed/regenerate, N: seed new map, S: save SVG, Q: quit"
+    "\n←/→: prev/next map, R: reseed/regenerate, N: seed new map, S: save SVG, Q: quit",
   );
 }
 
@@ -41,7 +41,7 @@ render();
 async function promptSeed(): Promise<string | undefined> {
   console.log("Enter new seed (or leave blank to cancel): ");
   const buf = new Uint8Array(256);
-  const n = <number>await Deno.stdin.read(buf);
+  const n = <number> await Deno.stdin.read(buf);
   if (!n) return undefined;
   const input = new TextDecoder().decode(buf.subarray(0, n)).trim();
   return input || undefined;
@@ -79,7 +79,7 @@ for await (const key of new Keypress()) {
   } else if (key.key === "n") {
     console.log("Enter guild id for new map: ");
     const buf = new Uint8Array(256);
-    const n = <number>await Deno.stdin.read(buf);
+    const n = <number> await Deno.stdin.read(buf);
     if (!n) {
       render("No guild id entered.");
       continue;

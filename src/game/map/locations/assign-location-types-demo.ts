@@ -57,7 +57,7 @@ for (const cols of [4, 5, 6, 7]) {
       const { locations, paths } = generateMap({ cols, rows });
       const { locations: typed } = assignLocationTypes(
         { locations, paths },
-        { seed }
+        { seed },
       );
       const byRow = typed.reduce<Record<number, typeof typed>>((acc, l) => {
         acc[l.row] = acc[l.row] ? [...acc[l.row], l] : [l];
@@ -102,7 +102,7 @@ for (const cols of [4, 5, 6, 7]) {
               typed,
             });
             throw new Error(
-              `Row ${row} with 2 nodes should have less than 2 events`
+              `Row ${row} with 2 nodes should have less than 2 events`,
             );
           }
           const prev = byRow[row - 1] || [];

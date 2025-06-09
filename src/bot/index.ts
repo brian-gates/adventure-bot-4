@@ -7,5 +7,5 @@ await startBot(
   makeBot({
     token: Deno.env.get("DISCORD_TOKEN")!,
     botId: BigInt(Deno.env.get("DISCORD_BOT_ID")!),
-  })
+  }),
 );

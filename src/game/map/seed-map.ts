@@ -11,8 +11,7 @@ export async function seedMapForGuild({ guildId }: { guildId: string }) {
   if (existingMap) {
     return;
   }
-  const { seed } =
-    (await prisma.guild.findUnique({ where: { guildId } })) ??
+  const { seed } = (await prisma.guild.findUnique({ where: { guildId } })) ??
     (() => {
       throw new Error(`No guild found for guildId: ${guildId}`);
     })();
@@ -25,7 +24,7 @@ export async function seedMapForGuild({ guildId }: { guildId: string }) {
     random: seededRandom(stringToSeed(seed)),
   });
   console.log(
-    `[seed-map] Built map: ${map.locations.length} locations, ${map.paths.length} paths`
+    `[seed-map] Built map: ${map.locations.length} locations, ${map.paths.length} paths`,
   );
 
   // Prepare data for createMany

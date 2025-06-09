@@ -20,7 +20,7 @@ export const rowwiseBranchingMapGenerator = ({
   const center = Math.floor(cols / 2);
   const allRows: { row: number; col: number }[][] = Array.from(
     { length: rows },
-    (_, i) => (i === 0 || i === rows - 1 ? [{ row: i, col: center }] : [])
+    (_, i) => (i === 0 || i === rows - 1 ? [{ row: i, col: center }] : []),
   );
   for (let row = 1; row < rows - 1; row++) {
     const count = Math.floor(random() * (maxNodes - minNodes + 1)) + minNodes;
@@ -36,7 +36,7 @@ export const rowwiseBranchingMapGenerator = ({
   }
   const nodeMap = new Map<string, Location>();
   const locations: Location[] = [];
-  for (const row of allRows)
+  for (const row of allRows) {
     for (const { row: r, col } of row) {
       const id = `${r},${col}`;
       const loc: Location = {
@@ -54,6 +54,7 @@ export const rowwiseBranchingMapGenerator = ({
       nodeMap.set(id, loc);
       locations.push(loc);
     }
+  }
   const edgeSet = new Set<string>();
   for (let row = 0; row < rows - 1; row++) {
     const fromNodes = allRows[row];

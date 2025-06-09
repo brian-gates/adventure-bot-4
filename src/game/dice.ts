@@ -14,7 +14,7 @@ async function getRollEmoji(
   bot: Bot,
   guildId: bigint | undefined,
   sides: number,
-  roll: number
+  roll: number,
 ): Promise<string> {
   if (!guildId || (sides !== 20 && sides !== 4)) return "";
   const num = roll.toString().padStart(2, "0");

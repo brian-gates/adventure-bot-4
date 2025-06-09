@@ -33,8 +33,7 @@ export async function heal({
   await setPlayerHealth({ id: targetPlayer.id, health: newHealth });
 
   const prompt = narrateHeal({
-    authorId:
-      interaction.user?.id?.toString() ??
+    authorId: interaction.user?.id?.toString() ??
       interaction.member?.user?.id?.toString() ??
       "",
     targetId: targetPlayer.id,

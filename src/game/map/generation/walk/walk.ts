@@ -109,22 +109,23 @@ export function wouldCrossExistingPath({
   to: Position;
   map: Map;
 }) {
-  if (Math.abs(from.col - to.col) !== 1 || to.row - from.row !== 1)
+  if (Math.abs(from.col - to.col) !== 1 || to.row - from.row !== 1) {
     return false;
+  }
 
   const colOffset = to.col > from.col ? 1 : -1;
   // The two nodes that would form a crossing path
   const nodeA = map.locations.find(
-    (loc) => loc.row === from.row && loc.col === from.col + colOffset
+    (loc) => loc.row === from.row && loc.col === from.col + colOffset,
   );
   const nodeB = map.locations.find(
-    (loc) => loc.row === to.row && loc.col === from.col
+    (loc) => loc.row === to.row && loc.col === from.col,
   );
   if (!nodeA || !nodeB) return false;
   return !!map.paths.find(
     (path) =>
       (path.fromLocationId === nodeA.id && path.toLocationId === nodeB.id) ||
-      (path.fromLocationId === nodeB.id && path.toLocationId === nodeA.id)
+      (path.fromLocationId === nodeB.id && path.toLocationId === nodeA.id),
   );
 }
 
@@ -141,7 +142,7 @@ function step({
 }) {
   const map = structuredClone(initialMap);
   let initialPosition = map.locations.find(
-    (loc) => loc.row === position.row && loc.col === position.col
+    (loc) => loc.row === position.row && loc.col === position.col,
   );
   if (!initialPosition) {
     initialPosition = createLocation({
@@ -165,7 +166,7 @@ function step({
   ].filter(
     (pos) =>
       isValidNextStep({ map, position: pos }) &&
-      !wouldCrossExistingPath({ from: initialPosition, to: pos, map })
+      !wouldCrossExistingPath({ from: initialPosition, to: pos, map }),
   );
 
   // Enforce at least two lanes per row
@@ -182,7 +183,7 @@ function step({
   if (!possibleSteps.length) {
     logAsciiMap({ map });
     throw new Error(
-      `No valid next step from ${initialPosition?.id} at ${position.row},${position.col}`
+      `No valid next step from ${initialPosition?.id} at ${position.row},${position.col}`,
     );
   }
 
@@ -190,7 +191,7 @@ function step({
     possibleSteps[Math.floor(random() * possibleSteps.length)].col;
 
   const existingLocationAtNextStep = map.locations.find(
-    (loc) => loc.row === nextRow && loc.col === nextCol
+    (loc) => loc.row === nextRow && loc.col === nextCol,
   );
 
   let newLocation: Location;
@@ -211,7 +212,7 @@ function step({
         fromLocationId: initialPosition.id,
         toLocationId: newLocation.id,
         mapId: map.id,
-      })
+      }),
     );
   }
 

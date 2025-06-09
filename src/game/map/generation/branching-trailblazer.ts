@@ -1,6 +1,6 @@
 import {
-  LocationType,
   type Location,
+  LocationType,
   type Path,
 } from "~/generated/prisma/client.ts";
 import type { JsonValue } from "~/generated/prisma/internal/prismaNamespace.ts";
@@ -15,7 +15,7 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
 }) => {
   const allRows: { col: number; row: number }[][] = Array.from(
     { length: rows },
-    () => []
+    () => [],
   );
 
   const edgeSet = new Set<string>();
@@ -31,8 +31,8 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
       minNodes,
       Math.min(
         maxNodes,
-        Math.floor(random() * (maxNodes - minNodes + 1)) + minNodes
-      )
+        Math.floor(random() * (maxNodes - minNodes + 1)) + minNodes,
+      ),
     );
     const availableCols = Array.from({ length: cols }, (_, i) => i);
     const rowCols: number[] = [];
@@ -44,7 +44,7 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
     // Ensure minNodes are present even if random selection failed
     while (rowCols.length < minNodes) {
       const missing = Array.from({ length: cols }, (_, i) => i).filter(
-        (c) => !rowCols.includes(c)
+        (c) => !rowCols.includes(c),
       );
       if (missing.length === 0) break;
       const col = missing[Math.floor(random() * missing.length)];
@@ -79,7 +79,7 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
     for (const from of fromNodes) {
       // Check for outgoing connections to adjacent columns in the next row
       const hasOutgoing = updatedToNodes.some(
-        (to) => Math.abs(to.col - from.col) <= 1
+        (to) => Math.abs(to.col - from.col) <= 1,
       );
 
       if (!hasOutgoing) {
@@ -100,10 +100,10 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
         } else {
           // No adjacent nodes exist in the next row. Check if we can add a node in an adjacent column.
           const potentialCols = [from.col - 1, from.col, from.col + 1].filter(
-            (c) => c >= 0 && c < cols
+            (c) => c >= 0 && c < cols,
           ); // Check adjacent and directly below columns
           const availablePotentialCols = potentialCols.filter(
-            (c) => !updatedToNodes.some((n) => n.col === c)
+            (c) => !updatedToNodes.some((n) => n.col === c),
           ); // Filter out cols that already have nodes
 
           // Only attempt to add a node if the next row is not the last row and we are allowed to add nodes based on maxNodes.
@@ -126,8 +126,8 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
               allRows[row + 1].sort((a, b) => a.col - b.col);
               allRows[row + 1] = Array.from(
                 new Map(
-                  allRows[row + 1].map((item) => [item.col, item])
-                ).values()
+                  allRows[row + 1].map((item) => [item.col, item]),
+                ).values(),
               );
               // Mark stable as false since we added a node
               stable = false; // Assuming 'stable' is accessible
@@ -135,18 +135,16 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
               console.log(
                 `BranchingTrailblazer: Could not add node at ${
                   row + 1
-                },${targetCol} for outgoing connectivity due to maxNodes constraint.`
+                },${targetCol} for outgoing connectivity due to maxNodes constraint.`,
               );
               targetCol = undefined; // Cannot add node, so no target column to connect to
             }
           } else {
             // Cannot add a node (either it's the last row, no adjacent columns available, or maxNodes reached).
             console.log(
-              `BranchingTrailblazer: Node at ${from.row},${
-                from.col
-              } cannot ensure outgoing connectivity to row ${
+              `BranchingTrailblazer: Node at ${from.row},${from.col} cannot ensure outgoing connectivity to row ${
                 row + 1
-              } within adjacent columns.`
+              } within adjacent columns.`,
             );
             targetCol = undefined; // Cannot establish adjacent connection
           }
@@ -159,12 +157,13 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
           (to) =>
             targetCol !== undefined &&
             to.col === targetCol &&
-            Math.abs(to.col - from.col) <= 1
+            Math.abs(to.col - from.col) <= 1,
         );
 
         // Only add the edge if targetNode exists, is adjacent, and doesn't create a crossing
         if (targetNode && Math.abs(from.col - targetNode.col) <= 1) {
-          const edgeString = `${from.row},${from.col}->${targetNode.row},${targetNode.col}`;
+          const edgeString =
+            `${from.row},${from.col}->${targetNode.row},${targetNode.col}`;
 
           // Check if adding this edge would create a crossing with existing edges in the edgeSet *for this row pair*
           let wouldCross = false;
@@ -177,8 +176,9 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
           });
 
           for (const existingEdgeString of existingEdgesInRowPair) {
-            const [existingFromStr, existingToStr] =
-              existingEdgeString.split("->");
+            const [existingFromStr, existingToStr] = existingEdgeString.split(
+              "->",
+            );
             const [existingFromCol] = existingFromStr.split(",").map(Number);
             const [existingToCol] = existingToStr.split(",").map(Number);
             if (
@@ -186,7 +186,7 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
             ) {
               wouldCross = true;
               console.log(
-                `BranchingTrailblazer: Could not add edge ${edgeString} for outgoing connectivity due to crossing with ${existingEdgeString}.`
+                `BranchingTrailblazer: Could not add edge ${edgeString} for outgoing connectivity due to crossing with ${existingEdgeString}.`,
               );
               break; // Found a crossing, no need to check further
             }
@@ -214,7 +214,7 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
       console.log(
         `BranchingTrailblazer: Cannot add node to row ${
           row - 1
-        } for incoming connectivity as it is the first row.`
+        } for incoming connectivity as it is the first row.`,
       );
       continue; // Skip incoming connectivity for this row if the previous is empty and is the first row
     }
@@ -223,7 +223,7 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
 
     for (const to of toNodes) {
       const hasIncoming = updatedFromNodes.some(
-        (from) => Math.abs(from.col - to.col) <= 1
+        (from) => Math.abs(from.col - to.col) <= 1,
       );
 
       if (!hasIncoming) {
@@ -244,10 +244,10 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
         } else {
           // No adjacent nodes exist in the previous row. Check if we can add a node in an adjacent column.
           const potentialCols = [to.col - 1, to.col, to.col + 1].filter(
-            (c) => c >= 0 && c < cols
+            (c) => c >= 0 && c < cols,
           ); // Check adjacent and directly above columns
           const availablePotentialCols = potentialCols.filter(
-            (c) => !updatedFromNodes.some((n) => n.col === c)
+            (c) => !updatedFromNodes.some((n) => n.col === c),
           ); // Filter out cols that already have nodes
 
           // Only attempt to add a node if the previous row is not the first row and we are allowed to add nodes based on maxNodes.
@@ -269,8 +269,8 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
               allRows[row - 1].sort((a, b) => a.col - b.col);
               allRows[row - 1] = Array.from(
                 new Map(
-                  allRows[row - 1].map((item) => [item.col, item])
-                ).values()
+                  allRows[row - 1].map((item) => [item.col, item]),
+                ).values(),
               );
               // Mark stable as false since we added a node
               stable = false; // Assuming 'stable' is accessible
@@ -278,7 +278,7 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
               console.log(
                 `BranchingTrailblazer: Could not add node at ${
                   row - 1
-                },${targetCol} for incoming connectivity due to maxNodes constraint.`
+                },${targetCol} for incoming connectivity due to maxNodes constraint.`,
               );
               // Cannot add node, so the node in the current row will necessarily lack an incoming edge.
             }
@@ -286,11 +286,9 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
             // Cannot add a node (either it's the first row, no adjacent columns available, or maxNodes reached).
             // The node in the current row will necessarily lack an incoming edge.
             console.log(
-              `BranchingTrailblazer: Node at ${to.row},${
-                to.col
-              } cannot ensure incoming connectivity from row ${
+              `BranchingTrailblazer: Node at ${to.row},${to.col} cannot ensure incoming connectivity from row ${
                 row - 1
-              } within adjacent columns.`
+              } within adjacent columns.`,
             );
           }
         }
@@ -303,7 +301,7 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
   for (let row = 1; row < rows - 1; row++) {
     while (allRows[row].length < minNodes) {
       const missing = Array.from({ length: cols }, (_, i) => i).filter(
-        (c) => !allRows[row].some((n) => n.col === c)
+        (c) => !allRows[row].some((n) => n.col === c),
       );
       if (missing.length === 0) break;
       const col = missing[Math.floor(random() * missing.length)];
@@ -319,7 +317,7 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
     }
     // Deduplicate one last time after all adjustments
     allRows[row] = Array.from(
-      new Map(allRows[row].map((item) => [item.col, item])).values()
+      new Map(allRows[row].map((item) => [item.col, item])).values(),
     );
   }
 
@@ -340,8 +338,9 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
 
   // Initial edge generation based on connectivity enforcement, before stabilization
   for (let row = 0; row < rows - 1; row++) {
-    if (!Array.isArray(allRows[row]) || !Array.isArray(allRows[row + 1]))
+    if (!Array.isArray(allRows[row]) || !Array.isArray(allRows[row + 1])) {
       continue;
+    }
 
     const fromNodes = allRows[row];
     const toNodes = allRows[row + 1];
@@ -381,7 +380,7 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
     stable = true;
     iteration++; // Increment iteration counter
     console.log(
-      `BranchingTrailblazer stabilization loop iteration: ${iteration}`
+      `BranchingTrailblazer stabilization loop iteration: ${iteration}`,
     ); // Log iteration
 
     // Recalculate nodeSet based on current allRows (nodes shouldn't change in stabilization, but for safety)
@@ -395,8 +394,9 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
     // Rebuild edgesByRow based on the persistent edgeSet
     edgesByRow = [];
     for (let row = 0; row < rows - 1; row++) {
-      if (!Array.isArray(allRows[row]) || !Array.isArray(allRows[row + 1]))
+      if (!Array.isArray(allRows[row]) || !Array.isArray(allRows[row + 1])) {
         continue;
+      }
 
       // Edges for this row pair in this iteration
       const currentEdges: Array<{
@@ -418,8 +418,9 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
           const [toRow, toCol] = toStr.split(",").map(Number);
           const fromNode = allRows[fromRow].find((n) => n.col === fromCol);
           const toNode = allRows[toRow].find((n) => n.col === toCol);
-          if (!fromNode || !toNode)
+          if (!fromNode || !toNode) {
             throw new Error(`Node not found for edge ${edgeString}`);
+          }
           currentEdges.push({ from: fromNode, to: toNode });
         });
       edgesByRow[row] = currentEdges;
@@ -455,7 +456,7 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
     // Remove collected edges from the edgeSet after identifying all crossings
     for (const edgeString of edgesToRemove) {
       console.log(
-        `BranchingTrailblazer: Removing crossing edge ${edgeString}.`
+        `BranchingTrailblazer: Removing crossing edge ${edgeString}.`,
       );
       edgeSet.delete(edgeString);
     }
@@ -475,7 +476,7 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
       const row1Nodes = allRows[1];
       if (row1Nodes && row1Nodes.length > 0) {
         const adjacentRow1Nodes = row1Nodes.filter(
-          (n) => Math.abs(n.col - startNode.col) <= 1
+          (n) => Math.abs(n.col - startNode.col) <= 1,
         );
         if (adjacentRow1Nodes.length > 0) {
           const closestToNode = adjacentRow1Nodes.reduce((prev, curr) => {
@@ -483,10 +484,11 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
             const distCurr = Math.abs(curr.col - startNode.col);
             return distCurr < distPrev ? curr : prev;
           }, adjacentRow1Nodes[0]);
-          const addedEdgeString = `${startNode.row},${startNode.col}->${closestToNode.row},${closestToNode.col}`;
+          const addedEdgeString =
+            `${startNode.row},${startNode.col}->${closestToNode.row},${closestToNode.col}`;
           edgeSet.add(addedEdgeString);
           console.log(
-            `BranchingTrailblazer: Added missing outgoing edge for start node: ${addedEdgeString}`
+            `BranchingTrailblazer: Added missing outgoing edge for start node: ${addedEdgeString}`,
           );
           stable = false;
         }
@@ -514,10 +516,10 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
     const [fromRow, fromCol] = fromStr.split(",").map(Number);
     const [toRow, toCol] = toStr.split(",").map(Number);
     const fromLocation = locations.find(
-      (loc) => loc.row === fromRow && loc.col === fromCol
+      (loc) => loc.row === fromRow && loc.col === fromCol,
     );
     const toLocation = locations.find(
-      (loc) => loc.row === toRow && loc.col === toCol
+      (loc) => loc.row === toRow && loc.col === toCol,
     );
 
     if (!fromLocation || !toLocation) {

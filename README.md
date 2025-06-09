@@ -1,13 +1,17 @@
 # Adventure Bot 4
 
-A Discord bot powered by LLM intent inference, written in Deno with a pure functional style.
+A Discord bot powered by LLM intent inference, written in Deno with a pure
+functional style.
 
 ## Prerequisites
 
-- [Deno](https://deno.com/manual/getting_started/installation) (v1.40+ recommended)
+- [Deno](https://deno.com/manual/getting_started/installation) (v1.40+
+  recommended)
 - [Ollama](https://github.com/ollama/ollama) (for LLM intent inference)
-- A Discord bot application ([create one here](https://discord.com/developers/applications))
-- Permissions for your bot: `MESSAGE CONTENT INTENT`, `GUILD MEMBERS INTENT`, and appropriate channel/message permissions
+- A Discord bot application
+  ([create one here](https://discord.com/developers/applications))
+- Permissions for your bot: `MESSAGE CONTENT INTENT`, `GUILD MEMBERS INTENT`,
+  and appropriate channel/message permissions
 
 ## Setup
 
@@ -20,11 +24,13 @@ cd ai-chat
 
 ### 2. Install Deno
 
-Follow the [official Deno installation guide](https://deno.com/manual/getting_started/installation).
+Follow the
+[official Deno installation guide](https://deno.com/manual/getting_started/installation).
 
 ### 3. Create a Discord bot and invite it to your server
 
-- Go to the [Discord Developer Portal](https://discord.com/developers/applications)
+- Go to the
+  [Discord Developer Portal](https://discord.com/developers/applications)
 - Create a new application
 - Add a bot to the application
 - Copy the bot token
@@ -50,7 +56,8 @@ DATABASE_URL=postgres://postgres:postgres@localhost:5444/adventure
 ```
 
 - `DISCORD_TOKEN`: Your bot's token from the Discord Developer Portal
-- `DISCORD_BOT_ID`: Your bot's user ID (right-click your bot in Discord > Copy User ID)
+- `DISCORD_BOT_ID`: Your bot's user ID (right-click your bot in Discord > Copy
+  User ID)
 - `DATABASE_URL`: (Optional) Your database connection string, if needed
 
 ### 5. Run the bot
@@ -70,7 +77,9 @@ deno run -A src/bot/index.ts
 
 ### Ollama Setup
 
-Ollama is required to run the local LLM for intent inference. See the [Ollama GitHub repo](https://github.com/ollama/ollama) for full installation instructions.
+Ollama is required to run the local LLM for intent inference. See the
+[Ollama GitHub repo](https://github.com/ollama/ollama) for full installation
+instructions.
 
 **Quick install (macOS/Linux):**
 

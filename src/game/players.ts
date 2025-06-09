@@ -9,7 +9,7 @@ export function inferTarget({
 }) {
   if (target) {
     const found = validPlayers.find(
-      (p) => (p.nick ?? p.username).toLowerCase() === target.toLowerCase()
+      (p) => (p.nick ?? p.username).toLowerCase() === target.toLowerCase(),
     );
     if (found) return found;
   }
