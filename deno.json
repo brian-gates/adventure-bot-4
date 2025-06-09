@@ -4,6 +4,7 @@
   "lint": {},
   "fmt": {},
   "tasks": {
+    "test": "deno test --allow-env --allow-read --allow-ffi",
     "dev": "deno run -A src/bot/index.ts",
     "generate": "npx prisma generate",
     "migrate": "npx prisma migrate dev",
