@@ -3,7 +3,7 @@ import { seededRandom } from "~/game/seeded-random.ts";
 import { stringToSeed } from "../string-to-seed.ts";
 import { getMapGenerator } from "./generation/index.ts";
 
-export async function seedMapForGuild({ guildId }: { guildId: string }) {
+export async function seedMapForGuild({ guildId }: { guildId: bigint }) {
   console.log(`[seed-map] Seeding map for guild ${guildId}`);
   const existingMap = await prisma.map.findFirst({
     where: { guildId },

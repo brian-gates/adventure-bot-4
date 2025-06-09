@@ -12,7 +12,7 @@ import {
 import { Location, LocationType, Map, Path } from "~/game/map/index.ts";
 import { seededRandom } from "~/game/seeded-random.ts";
 
-const TEST_GUILD_ID = "test-guild";
+const TEST_GUILD_ID = BigInt(1);
 const TEST_MAP_ID = "test-map";
 
 Deno.test(
@@ -364,6 +364,7 @@ function createMap({
     guildId: TEST_GUILD_ID,
   };
 }
+
 function createLocation({
   id = randomUUID(),
   row = 0,

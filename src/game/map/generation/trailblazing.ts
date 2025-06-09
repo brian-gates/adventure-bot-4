@@ -9,8 +9,6 @@ export const trailblazingStrategy: MapGenerator = ({
   guildId,
 }) => {
   const mapId = crypto.randomUUID();
-  // Convert guildId to BigInt for DB compatibility
-  const guildIdBigInt = typeof guildId === "string" ? BigInt(guildId) : guildId;
   const center = Math.floor(cols / 2);
   const boss = { row: rows - 1, col: center };
   const campfireRow = rows - 2;
@@ -179,7 +177,7 @@ export const trailblazingStrategy: MapGenerator = ({
     paths,
     cols,
     rows,
-    guildId: guildIdBigInt.toString(),
+    guildId,
     id: mapId,
     createdAt: new Date(),
     updatedAt: new Date(),

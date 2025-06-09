@@ -88,7 +88,7 @@ for await (const key of new Keypress()) {
       continue;
     }
     try {
-      await seedMapForGuild({ guildId });
+      await seedMapForGuild({ guildId: BigInt(guildId) });
       maps = await prisma.map.findMany({
         include: { locations: true, paths: true },
       });

@@ -84,7 +84,7 @@ export function emptyMap({
 }: {
   cols: number;
   rows: number;
-  guildId: string;
+  guildId: bigint;
 }): Map {
   const now = new Date();
   return {

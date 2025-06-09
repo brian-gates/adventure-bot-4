@@ -10,7 +10,7 @@ export async function adventure({
   interaction: Interaction;
 }) {
   if (!interaction.channelId || !interaction.guildId) return;
-  const guildId = interaction.guildId.toString();
+  const guildId = interaction.guildId;
   const guild = await prisma.guild.findUnique({ where: { guildId } });
   if (!guild?.locationId) {
     await bot.helpers.sendMessage(interaction.channelId, {

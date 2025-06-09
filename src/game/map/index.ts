@@ -13,7 +13,7 @@ export type MapGenerator = (opts: {
   numPaths?: number;
   random: () => number;
   onStep?: (map: Map) => void;
-  guildId: string;
+  guildId: bigint;
 }) => Map;
 
 export { LocationType } from "~/generated/prisma/client.ts";

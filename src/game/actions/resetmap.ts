@@ -12,7 +12,7 @@ export async function resetmap({
   bot: Bot;
   interaction: Interaction;
 }) {
-  const guildId = interaction.guildId?.toString();
+  const guildId = interaction.guildId;
   if (!guildId) {
     await bot.helpers.editOriginalInteractionResponse(interaction.token, {
       content: "This command can only be used in a server.",

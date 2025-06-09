@@ -129,7 +129,7 @@ if (import.meta.main) {
           minNodes: config.minNodes,
           maxNodes: config.maxNodes,
           random: seededRandom(run),
-          guildId: "test",
+          guildId: BigInt(1),
           onStep: () => {},
         });
         const errors = testMap(map, config);

@@ -21,10 +21,10 @@ export function makeBot({ token, botId }: { token: string; botId: bigint }) {
       Intents.GuildMembers,
     events: {
       guildCreate: async (bot, guild) => {
-        await seedMapForGuild({ guildId: guild.id.toString() });
+        await seedMapForGuild({ guildId: guild.id });
         await registerCommandsAndPermissions({
           bot,
-          guildId: guild.id.toString(),
+          guildId: guild.id,
         });
         console.log(
           `[Bot] Registered commands and seeded map for guild ${guild.id}`

@@ -35,7 +35,7 @@ function getContrastBg(hex: string) {
   return luminance > 0.5 ? "#111" : "#fff";
 }
 
-async function getMap(guildId: string) {
+async function getMap(guildId: bigint) {
   const guild = await prisma.guild.findUnique({
     where: { guildId },
     include: {
@@ -137,7 +137,7 @@ export async function map({
   interaction: Interaction;
 }) {
   console.log(`[map] /map command handler called`);
-  const guildId = interaction.guildId?.toString();
+  const guildId = interaction.guildId;
   if (!guildId) {
     console.log(`[map] No guildId found for interaction`);
     try {
