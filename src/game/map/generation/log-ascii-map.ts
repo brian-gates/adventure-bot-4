@@ -6,7 +6,13 @@ import type {
 } from "~/generated/prisma/client.ts";
 import { isReachablePosition } from "./walk/walk.ts";
 
-export function asciiMapString({ map }: { map: Map }) {
+export function asciiMapString({
+  map,
+  color = true,
+}: {
+  map: Map;
+  color?: boolean;
+}) {
   const { locations, paths, cols, rows } = map;
   const failingNodes = new Set<string>();
   const locationMap = new Map(locations.map((l) => [`${l.row},${l.col}`, l]));
@@ -16,21 +22,28 @@ export function asciiMapString({ map }: { map: Map }) {
   );
   for (const path of paths) {
     const from = locations.find((l) => l.id === path.fromLocationId);
-    const angle = getPathAngle({ path, locations });
-    if (!from || !angle) continue;
-    const row = from.row;
-    const col = from.col;
-    if (row >= rows - 1) continue;
-    if (angle === "|")
-      edgeLines[row][col] =
-        edgeLines[row][col].slice(0, 1) + "|" + edgeLines[row][col].slice(2);
-    if (angle === "/" && col < cols - 1)
-      edgeLines[row][col + 1] =
-        edgeLines[row][col + 1].slice(0, 0) +
-        "/" +
-        edgeLines[row][col + 1].slice(1);
-    if (angle === "\\" && col > 0)
-      edgeLines[row][col - 1] = edgeLines[row][col - 1].slice(0, 2) + "\\";
+    const to = locations.find((l) => l.id === path.toLocationId);
+    if (!from || !to) continue;
+    const dr = to.row - from.row;
+    const dc = to.col - from.col;
+    if (dr === 1 && Math.abs(dc) <= 1) {
+      const angle = getPathAngle({ path, locations });
+      if (angle === "|")
+        edgeLines[from.row][from.col] =
+          edgeLines[from.row][from.col].slice(0, 1) +
+          "|" +
+          edgeLines[from.row][from.col].slice(2);
+      if (angle === "/" && from.col < cols - 1)
+        edgeLines[from.row][from.col + 1] =
+          edgeLines[from.row][from.col + 1].slice(0, 0) +
+          "/" +
+          edgeLines[from.row][from.col + 1].slice(1);
+      if (angle === "\\" && from.col > 0)
+        edgeLines[from.row][from.col - 1] =
+          edgeLines[from.row][from.col - 1].slice(0, 2) + "\\";
+    } else {
+      console.log("Skipping non-adjacent path:", { from, to });
+    }
   }
   // Find boss for reachability
   const boss = locations.find((l) => l.type === "boss");
@@ -58,13 +71,13 @@ export function asciiMapString({ map }: { map: Map }) {
           cols,
         });
       if (location) {
-        const color = locationTypeColor[location.type];
+        const char = locationTypeChar[location.type] ?? "O";
         if (failingNodes.has(key)) {
-          nodeLine += ` ${colorRed(locationTypeChar[location.type] ?? "O")} `;
+          nodeLine += color ? ` ${colorRed(char)} ` : ` ${char} `;
         } else {
-          nodeLine += ` ${color}${
-            locationTypeChar[location.type] ?? "O"
-          }${resetColor} `;
+          nodeLine += color
+            ? ` ${locationTypeColor[location.type]}${char}${resetColor} `
+            : ` ${char} `;
         }
       } else {
         nodeLine += reachable ? " . " : "███";
@@ -103,7 +116,7 @@ export function getPathAngle({
   return null;
 }
 
-const locationTypeChar: Record<LocationType | "boss" | "campfire", string> = {
+const locationTypeChar: Record<LocationType, string> = {
   combat: "X",
   elite: "E",
   tavern: "T",
@@ -114,10 +127,7 @@ const locationTypeChar: Record<LocationType | "boss" | "campfire", string> = {
   shop: "S",
 };
 
-const locationTypeColor: Record<
-  LocationType | "boss" | "campfire" | "shop",
-  string
-> = {
+const locationTypeColor: Record<LocationType, string> = {
   combat: "\x1b[32m", // Green
   elite: "\x1b[35m", // Magenta
   tavern: "\x1b[36m", // Cyan

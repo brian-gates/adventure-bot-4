@@ -22,7 +22,18 @@ export async function resetmap({
   try {
     const map = await prisma.map.findFirst({ where: { channelId: guildId } });
     if (map) {
-      await prisma.map.delete({ where: { id: map.id } });
+      await prisma.map.deleteMany({ where: { channelId: guildId } });
+      // Wait for cascading deletes to complete
+      let tries = 0;
+      while (tries < 10) {
+        console.log(`[resetmap] Waiting for cascading deletes to complete...`);
+        const locs = await prisma.location.findMany({
+          where: { mapId: map.id },
+        });
+        if (locs.length === 0) break;
+        await new Promise((r) => setTimeout(r, 50));
+        tries++;
+      }
     }
     await seedMapForGuild({ guildId });
     await bot.helpers.editOriginalInteractionResponse(interaction.token, {

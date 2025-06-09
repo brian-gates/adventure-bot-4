@@ -6,26 +6,23 @@ export type Position = {
 };
 
 export type MapGenerator = (opts: {
-  rows: number;
-  cols: number;
+  cols?: number;
+  rows?: number;
   minNodes?: number;
   maxNodes?: number;
   numPaths?: number;
-  random: () => number;
+  random?: () => number;
   onStep?: (map: Map) => void;
 }) => Map;
 
 export { LocationType } from "~/generated/prisma/client.ts";
 export type { Location, Path } from "~/generated/prisma/client.ts";
 
-async function getMapWithLocationsAndPaths(mapId: string) {
-  const map = await prisma.map.findUnique({
+function getMapById(mapId: string) {
+  return prisma.map.findUnique({
     where: { id: mapId },
     include: { locations: true, paths: true },
   });
-  return map;
 }
 
-export type Map = NonNullable<
-  Awaited<ReturnType<typeof getMapWithLocationsAndPaths>>
->;
+export type Map = NonNullable<Awaited<ReturnType<typeof getMapById>>>;

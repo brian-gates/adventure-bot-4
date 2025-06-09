@@ -7,9 +7,9 @@
     "dev": "deno run -A src/bot/index.ts",
     "generate": "npx prisma generate",
     "migrate": "npx prisma migrate dev",
-    "clear-map": "deno run -A src/game/clear-map.ts $GUILD_ID",
+    "clear-map": "deno run -A src/game/map/clear-map.ts $GUILD_ID",
     "maps": "deno run -A src/game/map/generation/dev-generate-map.ts",
     "generate-map-icons": "deno run --allow-read --allow-write scripts/generate-map-icon-data-uris.ts",
-    "browse-maps": "deno run -A src/game/map/generation/browse-db-maps.ts"
+    "browse-maps": "deno run -A src/game/map/generation/browse-maps.ts"
   }
 }

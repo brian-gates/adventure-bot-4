@@ -1,4 +1,3 @@
-import { seededRandom } from "~/game/seeded-random.ts";
 import {
   type Location,
   LocationType,
@@ -6,18 +5,18 @@ import {
 } from "~/generated/prisma/client.ts";
 
 export const rowwiseBranchingMapGenerator = ({
-  cols,
-  rows,
+  cols = 7,
+  rows = 15,
   minNodes = 2,
   maxNodes = 5,
-  random = seededRandom(0),
+  random = Math.random,
 }: {
-  cols: number;
-  rows: number;
+  cols?: number;
+  rows?: number;
   minNodes?: number;
   maxNodes?: number;
   random?: () => number;
-}) => {
+} = {}) => {
   const center = Math.floor(cols / 2);
   const allRows: { row: number; col: number }[][] = Array.from(
     { length: rows },
@@ -42,7 +41,7 @@ export const rowwiseBranchingMapGenerator = ({
       const id = `${r},${col}`;
       const loc: Location = {
         id,
-        channelId: "",
+        mapId: "",
         row: r,
         col,
         name: `Node ${col},${r}`,
@@ -51,7 +50,7 @@ export const rowwiseBranchingMapGenerator = ({
         type: LocationType.combat,
         createdAt: new Date(),
         updatedAt: new Date(),
-      } as Location;
+      };
       nodeMap.set(id, loc);
       locations.push(loc);
     }
@@ -83,14 +82,14 @@ export const rowwiseBranchingMapGenerator = ({
     const [from, to] = s.split("->");
     return {
       id: crypto.randomUUID(),
-      channelId: "",
+      mapId: "",
       fromLocationId: from,
       toLocationId: to,
       description: "",
       attributes: {},
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as Path;
+    };
   });
   return {
     locations,

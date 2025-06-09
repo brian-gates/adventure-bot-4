@@ -3,11 +3,8 @@ import { prisma } from "~/db/index.ts";
 await load({ export: true });
 
 const main = async () => {
-  const deletedPaths = await prisma.path.deleteMany({});
-  const deletedLocations = await prisma.location.deleteMany({});
-  console.log(
-    `Deleted ${deletedPaths.count} paths and ${deletedLocations.count} locations (all guilds)`
-  );
+  const deletedMaps = await prisma.map.deleteMany({});
+  console.log(`Deleted ${deletedMaps.count} maps`);
 };
 
 main().then(() => Deno.exit(0));

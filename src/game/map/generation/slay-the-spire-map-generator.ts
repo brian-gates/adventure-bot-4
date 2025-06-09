@@ -5,16 +5,17 @@ import {
   type Path,
 } from "~/game/map/index.ts";
 
-export const slayTheSpireMapGenerator = (opts: {
-  cols: number;
-  rows: number;
+export const slayTheSpireMapGenerator = ({
+  cols = 7,
+  rows = 15,
+  minNodes = 2,
+  maxNodes = 5,
+}: {
+  cols?: number;
+  rows?: number;
   minNodes?: number;
   maxNodes?: number;
-}) => {
-  const cols = Number(opts.cols);
-  const rows = Number(opts.rows);
-  const minNodes = opts.minNodes === undefined ? 2 : Number(opts.minNodes);
-  const maxNodes = opts.maxNodes === undefined ? 5 : Number(opts.maxNodes);
+} = {}) => {
   const center = Math.floor(cols / 2);
   const allRows: { row: number; col: number }[][] = Array.from(
     { length: rows },

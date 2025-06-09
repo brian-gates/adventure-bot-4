@@ -66,7 +66,10 @@ export function locationType({
           : preceedingLocationTypes.includes(LocationType.combat)
           ? 2
           : 4,
-      [LocationType.campfire]: row > 5 ? 1 : 0,
+      [LocationType.campfire]:
+        row > 5 && preceedingLocationTypes.includes(LocationType.campfire)
+          ? 1
+          : 0,
     },
     random
   );

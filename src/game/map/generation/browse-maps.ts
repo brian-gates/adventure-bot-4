@@ -1,6 +1,8 @@
 import { load } from "https://deno.land/std@0.224.0/dotenv/mod.ts";
 import { Keypress } from "https://deno.land/x/cliffy@v1.0.0-rc.4/keypress/mod.ts";
 import { prisma } from "~/db/index.ts";
+import { renderMapSvg } from "~/game/actions/map.ts";
+import { seedMapForGuild } from "~/game/map/seed-map.ts";
 import { asciiMapString } from "./log-ascii-map.ts";
 
 await load({ export: true });
@@ -19,16 +21,19 @@ function render(message?: string) {
   const map = maps[index];
   if (!map) {
     console.log("No maps found in the database.");
-    return;
+  } else {
+    console.log(
+      `Map ${index + 1}/${maps.length} (id: ${map.id}, channelId: ${
+        map.channelId
+      })`
+    );
+
+    console.log(asciiMapString({ map }));
   }
-  console.log(
-    `Map ${index + 1}/${maps.length} (id: ${map.id}, channelId: ${
-      map.channelId
-    })`
-  );
-  console.log(asciiMapString({ map }));
   if (message) console.log("\n" + message);
-  console.log("\n←/→: prev/next map, R: reseed/regenerate, Q: quit");
+  console.log(
+    "\n←/→: prev/next map, R: reseed/regenerate, N: seed new map, S: save SVG, Q: quit"
+  );
 }
 
 render();
@@ -58,17 +63,54 @@ for await (const key of new Keypress()) {
       continue;
     }
     try {
-      await prisma.map.delete({ where: { id: map.id } });
-      // Assume you have a function to regenerate the map for a given mapId and seed
-      const { seedMapForGuild } = await import("~/game/map/seed-map.ts");
+      await prisma.map.deleteMany({ where: { id: map.id } });
+      await prisma.guild.update({
+        where: { guildId: map.channelId },
+        data: { seed: newSeed },
+      });
       await seedMapForGuild({ guildId: map.channelId });
-      // Reload maps from DB
       maps = await prisma.map.findMany({
         include: { locations: true, paths: true },
       });
       render("Map reseeded and regenerated.");
     } catch (err) {
       render("Error reseeding/regenerating: " + err);
+    }
+  } else if (key.key === "n") {
+    console.log("Enter guild id for new map: ");
+    const buf = new Uint8Array(256);
+    const n = <number>await Deno.stdin.read(buf);
+    if (!n) {
+      render("No guild id entered.");
+      continue;
+    }
+    const guildId = new TextDecoder().decode(buf.subarray(0, n)).trim();
+    if (!guildId) {
+      render("No guild id entered.");
+      continue;
+    }
+    try {
+      await seedMapForGuild({ guildId });
+      maps = await prisma.map.findMany({
+        include: { locations: true, paths: true },
+      });
+      render(`Seeded new map for guild ${guildId}.`);
+    } catch (err) {
+      render("Error seeding new map: " + err);
+    }
+  } else if (key.key === "s") {
+    const map = maps[index];
+    if (!map) {
+      render("No map to save.");
+      continue;
+    }
+    try {
+      const svg = renderMapSvg(map);
+      const fileName = `map-${map.id}.svg`;
+      await Deno.writeTextFile(fileName, svg);
+      render(`SVG saved to ${fileName}`);
+    } catch (err) {
+      render("Error saving SVG: " + err);
     }
   } else if (key.key === "q" || key.sequence === "\u0003") {
     Deno.exit(0);

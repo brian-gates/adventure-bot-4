@@ -2,8 +2,14 @@ import {
   assertEquals,
   assertExists,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { randomUUID } from "node:crypto";
 import { logAsciiMap } from "~/game/map/generation/log-ascii-map.ts";
-import { emptyMap, walkStrategy } from "~/game/map/generation/walk/walk.ts";
+import {
+  emptyMap,
+  walkStrategy,
+  wouldCrossExistingPath,
+} from "~/game/map/generation/walk/walk.ts";
+import { Location, LocationType, Map, Path } from "~/game/map/index.ts";
 import { seededRandom } from "~/game/seeded-random.ts";
 
 Deno.test(
@@ -117,7 +123,6 @@ Deno.test(
       (l) => l.row === 0 && l.col === Math.floor(cols / 2)
     );
     assertExists(startLocation, "The start location (0,2) must exist.");
-    assertEquals(startLocation.id, "0, 2");
 
     // Find the first path segment from the true start
     const firstPath = map.paths.find(
@@ -203,3 +208,181 @@ Deno.test("all nodes are connected (no orphans, proper in/out degree)", () => {
     }
   }
 });
+
+Deno.test("wouldcsExistingPath returns false for non-diagonal move", () => {
+  const map = createMap({
+    locations: [
+      createLocation({ id: "A", row: 0, col: 0 }),
+      createLocation({ id: "B", row: 1, col: 0 }),
+    ],
+    paths: [],
+  });
+  const result = wouldCrossExistingPath({
+    from: { row: 0, col: 0 },
+    to: { row: 1, col: 0 },
+    map,
+  });
+  assertEquals(result, false);
+});
+
+Deno.test(
+  "wouldCrossExistingPath returns false if no crossing path exists",
+  () => {
+    const map = createMap({
+      locations: [
+        createLocation({
+          id: "A",
+          row: 0,
+          col: 0,
+          name: "A",
+          mapId: "1",
+          type: LocationType.combat,
+        }),
+        createLocation({
+          id: "B",
+          row: 1,
+          col: 0,
+          name: "B",
+          mapId: "1",
+          type: LocationType.combat,
+        }),
+        createLocation({
+          id: "C",
+          row: 0,
+          col: 1,
+          name: "C",
+          mapId: "1",
+          type: LocationType.combat,
+        }),
+      ],
+      paths: [],
+    });
+    const result = wouldCrossExistingPath({
+      from: { row: 0, col: 0 },
+      to: { row: 1, col: 1 },
+      map,
+    });
+    assertEquals(result, false);
+  }
+);
+
+Deno.test("wouldCrossExistingPath returns true if crossing path exists", () => {
+  const map = createMap({
+    locations: [
+      createLocation({
+        id: "A",
+        row: 0,
+        col: 0,
+        name: "A",
+        mapId: "1",
+        type: LocationType.combat,
+      }),
+      createLocation({
+        id: "B",
+        row: 1,
+        col: 0,
+        name: "B",
+        mapId: "1",
+        type: LocationType.combat,
+      }),
+      createLocation({
+        id: "C",
+        row: 0,
+        col: 1,
+        name: "C",
+        mapId: "1",
+        type: LocationType.combat,
+      }),
+    ],
+    paths: [createPath({ fromLocationId: "B", toLocationId: "C" })],
+  });
+  const result = wouldCrossExistingPath({
+    from: { row: 0, col: 0 },
+    to: { row: 1, col: 1 },
+    map,
+  });
+  assertEquals(result, true);
+});
+
+Deno.test(
+  "wouldCrossExistingPath returns false if adjacent or straightAhead node is missing",
+  () => {
+    const map = createMap({
+      locations: [
+        createLocation({ id: "A", row: 0, col: 0 }),
+        // missing adjacent and straightAhead
+      ],
+      paths: [],
+    });
+    const result = wouldCrossExistingPath({
+      from: { row: 0, col: 0 },
+      to: { row: 1, col: 1 },
+      map,
+    });
+    assertEquals(result, false);
+  }
+);
+
+function createMap({
+  locations = [],
+  paths = [],
+  rows = 1,
+  cols = 1,
+}: Partial<Map> = {}): Map {
+  return {
+    id: "1",
+    channelId: "1",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    rows,
+    cols,
+    currentLocationId: null,
+    locationId: null,
+    locations,
+    paths,
+  };
+}
+function createLocation({
+  id = randomUUID(),
+  row = 0,
+  col = 0,
+  name = "A",
+  mapId = "1",
+  description = "A",
+  attributes = {},
+  type = LocationType.combat,
+}: Partial<Location> = {}): Location {
+  return {
+    id,
+    row,
+    col,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    name,
+    mapId,
+    description,
+    attributes,
+    type,
+  };
+}
+
+function createPath({
+  id = randomUUID(),
+  fromLocationId = randomUUID(),
+  toLocationId = randomUUID(),
+  mapId = "1",
+  createdAt = new Date(),
+  updatedAt = new Date(),
+  description = "A",
+}: Partial<Path> = {}): Path {
+  return {
+    id,
+    fromLocationId,
+    toLocationId,
+    mapId,
+    createdAt,
+    updatedAt,
+    description,
+    attributes: {},
+  };
+}

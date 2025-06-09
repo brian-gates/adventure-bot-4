@@ -1,15 +1,21 @@
-import type {
-  Location,
-  Map,
-  MapGenerator,
-  Path,
-  Position,
-} from "~/game/map/index.ts";
+import type { Location, Map, Path, Position } from "~/game/map/index.ts";
 import { LocationType } from "~/generated/prisma/client.ts";
 import { logAsciiMap } from "../log-ascii-map.ts";
 import { locationType } from "./location-types.ts";
 
-export const walkStrategy: MapGenerator = ({ cols, rows, random, onStep }) => {
+export const walkStrategy = ({
+  cols = 7,
+  rows = 15,
+  numPaths = 4,
+  random = Math.random,
+  onStep,
+}: {
+  cols?: number;
+  rows?: number;
+  numPaths?: number;
+  random?: () => number;
+  onStep?: (map: Map) => void;
+} = {}) => {
   let map = emptyMap({ cols, rows });
   // Place boss node in the last row, centered
   const bossCol = Math.floor(cols / 2);
@@ -21,9 +27,9 @@ export const walkStrategy: MapGenerator = ({ cols, rows, random, onStep }) => {
   });
   map.locations = [...(map.locations ?? []), boss];
 
-  // Walk four lanes from start to finish
+  // Walk lanes from start to finish
   const startCol = Math.floor(cols / 2);
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < numPaths; i++) {
     ({ map } = walkPath({
       position: {
         row: 0,
@@ -71,8 +77,8 @@ function walkPath({
 }
 
 export function emptyMap({
-  cols,
-  rows,
+  cols = 7,
+  rows = 15,
   channelId = "demo",
 }: {
   cols: number;
@@ -94,7 +100,7 @@ export function emptyMap({
   };
 }
 
-function wouldCrossExistingPath({
+export function wouldCrossExistingPath({
   from,
   to,
   map,
@@ -103,26 +109,23 @@ function wouldCrossExistingPath({
   to: Position;
   map: Map;
 }) {
-  // Only check for diagonal moves
   if (Math.abs(from.col - to.col) !== 1 || to.row - from.row !== 1)
     return false;
-  for (const path of map.paths) {
-    const [fromRow, fromCol] = path.fromLocationId.split(",").map(Number);
-    const [toRow, toCol] = path.toLocationId.split(",").map(Number);
-    // Only consider paths between adjacent rows and columns
-    if (Math.abs(fromCol - toCol) === 1 && toRow - fromRow === 1) {
-      // Check for crossing: (a->b) crosses (c->d) if they swap columns
-      if (
-        from.row === fromRow &&
-        to.row === toRow &&
-        from.col === toCol &&
-        to.col === fromCol
-      ) {
-        return true;
-      }
-    }
-  }
-  return false;
+
+  const colOffset = to.col > from.col ? 1 : -1;
+  // The two nodes that would form a crossing path
+  const nodeA = map.locations.find(
+    (loc) => loc.row === from.row && loc.col === from.col + colOffset
+  );
+  const nodeB = map.locations.find(
+    (loc) => loc.row === to.row && loc.col === from.col
+  );
+  if (!nodeA || !nodeB) return false;
+  return !!map.paths.find(
+    (path) =>
+      (path.fromLocationId === nodeA.id && path.toLocationId === nodeB.id) ||
+      (path.fromLocationId === nodeB.id && path.toLocationId === nodeA.id)
+  );
 }
 
 function step({
@@ -162,7 +165,7 @@ function step({
   ].filter(
     (pos) =>
       isValidNextStep({ map, position: pos }) &&
-      !wouldCrossExistingPath({ from: position, to: pos, map })
+      !wouldCrossExistingPath({ from: initialPosition, to: pos, map })
   );
 
   // Enforce at least two lanes per row
@@ -231,7 +234,7 @@ function createLocation({
   map: Map;
 }): Location {
   return {
-    id: `${row}, ${col}`,
+    id: crypto.randomUUID(),
     mapId: map.id,
     name: `Location ${row}, ${col}`,
     description: `A location at ${row}, ${col}`,
@@ -258,8 +261,8 @@ function createPath({
   mapId: string;
 }): Path {
   return {
+    id: crypto.randomUUID(),
     mapId,
-    id: `${fromLocationId} ➡️ ${toLocationId}`,
     fromLocationId,
     toLocationId,
     createdAt: new Date(),
