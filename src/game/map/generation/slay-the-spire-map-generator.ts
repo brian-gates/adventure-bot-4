@@ -2,28 +2,25 @@ import {
   type Location,
   LocationType,
   type Map,
+  type MapGenerator,
   type Path,
 } from "~/game/map/index.ts";
 
-export const slayTheSpireMapGenerator = ({
+export const slayTheSpireMapGenerator: MapGenerator = ({
   cols = 7,
   rows = 15,
   minNodes = 2,
   maxNodes = 5,
-}: {
-  cols?: number;
-  rows?: number;
-  minNodes?: number;
-  maxNodes?: number;
-} = {}) => {
+  guildId,
+}) => {
   const center = Math.floor(cols / 2);
   const allRows: { row: number; col: number }[][] = Array.from(
     { length: rows },
-    (_, i) => (i === 0 || i === rows - 1 ? [{ row: i, col: center }] : []),
+    (_, i) => (i === 0 || i === rows - 1 ? [{ row: i, col: center }] : [])
   );
   for (let row = 1; row < rows - 1; row++) {
-    const count = Math.floor(Math.random() * (maxNodes - minNodes + 1)) +
-      minNodes;
+    const count =
+      Math.floor(Math.random() * (maxNodes - minNodes + 1)) + minNodes;
     const used = new Set<number>();
     while (allRows[row].length < count) {
       const col = Math.floor(Math.random() * cols);
@@ -35,10 +32,10 @@ export const slayTheSpireMapGenerator = ({
     allRows[row].sort((a, b) => a.col - b.col);
   }
   const map: Map = {
+    guildId,
     cols,
     rows,
     id: crypto.randomUUID(),
-    channelId: "",
     createdAt: new Date(),
     updatedAt: new Date(),
     currentLocationId: null,
@@ -75,7 +72,7 @@ export const slayTheSpireMapGenerator = ({
     const toNodes = allRows[row + 1];
     for (const from of fromNodes) {
       const adjacents = toNodes.filter(
-        (to) => Math.abs(to.col - from.col) <= 1,
+        (to) => Math.abs(to.col - from.col) <= 1
       );
       const numTargets = Math.min(2, adjacents.length);
       const targets = [...adjacents]
@@ -112,7 +109,7 @@ export const slayTheSpireMapGenerator = ({
       );
       if (!hasIncoming) {
         const adjacents = fromNodes.filter(
-          (from) => Math.abs(from.col - to.col) <= 1,
+          (from) => Math.abs(from.col - to.col) <= 1
         );
         if (adjacents.length > 0) {
           const from = adjacents[Math.floor(Math.random() * adjacents.length)];
@@ -146,7 +143,7 @@ export const slayTheSpireMapGenerator = ({
       );
       if (!hasOutgoing) {
         const toNodes = allRows[row + 1].filter(
-          (to) => Math.abs(to.col - from.col) <= 1,
+          (to) => Math.abs(to.col - from.col) <= 1
         );
         if (toNodes.length > 0) {
           const to = toNodes[Math.floor(Math.random() * toNodes.length)];
@@ -180,7 +177,7 @@ export const slayTheSpireMapGenerator = ({
       );
       if (!hasIncoming) {
         const prevRow = allRows[row - 1].filter(
-          (n) => Math.abs(n.col - node.col) <= 1,
+          (n) => Math.abs(n.col - node.col) <= 1
         );
         if (prevRow.length > 0) {
           const from = prevRow[Math.floor(Math.random() * prevRow.length)];
@@ -193,7 +190,7 @@ export const slayTheSpireMapGenerator = ({
       );
       if (!hasOutgoing) {
         const nextRow = allRows[row + 1].filter(
-          (n) => Math.abs(n.col - node.col) <= 1,
+          (n) => Math.abs(n.col - node.col) <= 1
         );
         if (nextRow.length > 0) {
           const to = nextRow[Math.floor(Math.random() * nextRow.length)];
@@ -207,7 +204,6 @@ export const slayTheSpireMapGenerator = ({
     const [from, to] = s.split("->");
     return {
       id: crypto.randomUUID(),
-      channelId: "",
       fromLocationId: from,
       toLocationId: to,
       description: "",
@@ -215,6 +211,7 @@ export const slayTheSpireMapGenerator = ({
       createdAt: new Date(),
       updatedAt: new Date(),
       mapId: crypto.randomUUID(),
+      guildId,
     };
   });
   return {

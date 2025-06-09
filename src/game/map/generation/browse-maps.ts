@@ -1,7 +1,7 @@
 import { load } from "https://deno.land/std@0.224.0/dotenv/mod.ts";
 import { Keypress } from "https://deno.land/x/cliffy@v1.0.0-rc.4/keypress/mod.ts";
 import { prisma } from "~/db/index.ts";
-import { renderMapSvg } from "~/game/actions/map.ts";
+import { rasterizeSvgToPng, renderMapSvg } from "~/game/actions/map.ts";
 import { seedMapForGuild } from "~/game/map/seed-map.ts";
 import { asciiMapString } from "./log-ascii-map.ts";
 
@@ -23,16 +23,14 @@ function render(message?: string) {
     console.log("No maps found in the database.");
   } else {
     console.log(
-      `Map ${
-        index + 1
-      }/${maps.length} (id: ${map.id}, channelId: ${map.channelId})`,
+      `Map ${index + 1}/${maps.length} (id: ${map.id}, guildId: ${map.guildId})`
     );
 
     console.log(asciiMapString({ map }));
   }
   if (message) console.log("\n" + message);
   console.log(
-    "\n←/→: prev/next map, R: reseed/regenerate, N: seed new map, S: save SVG, Q: quit",
+    "\n←/→: prev/next map, R: reseed/regenerate, N: seed new map, S: save SVG, Q: quit"
   );
 }
 
@@ -41,7 +39,7 @@ render();
 async function promptSeed(): Promise<string | undefined> {
   console.log("Enter new seed (or leave blank to cancel): ");
   const buf = new Uint8Array(256);
-  const n = <number> await Deno.stdin.read(buf);
+  const n = <number>await Deno.stdin.read(buf);
   if (!n) return undefined;
   const input = new TextDecoder().decode(buf.subarray(0, n)).trim();
   return input || undefined;
@@ -65,10 +63,10 @@ for await (const key of new Keypress()) {
     try {
       await prisma.map.deleteMany({ where: { id: map.id } });
       await prisma.guild.update({
-        where: { guildId: map.channelId },
+        where: { guildId: map.guildId },
         data: { seed: newSeed },
       });
-      await seedMapForGuild({ guildId: map.channelId });
+      await seedMapForGuild({ guildId: map.guildId });
       maps = await prisma.map.findMany({
         include: { locations: true, paths: true },
       });
@@ -79,7 +77,7 @@ for await (const key of new Keypress()) {
   } else if (key.key === "n") {
     console.log("Enter guild id for new map: ");
     const buf = new Uint8Array(256);
-    const n = <number> await Deno.stdin.read(buf);
+    const n = <number>await Deno.stdin.read(buf);
     if (!n) {
       render("No guild id entered.");
       continue;
@@ -108,9 +106,12 @@ for await (const key of new Keypress()) {
       const svg = renderMapSvg(map);
       const fileName = `map-${map.id}.svg`;
       await Deno.writeTextFile(fileName, svg);
-      render(`SVG saved to ${fileName}`);
+      const png = await rasterizeSvgToPng(svg);
+      const pngFileName = `map-${map.id}.png`;
+      await Deno.writeFile(pngFileName, png);
+      render(`SVG saved to ${fileName}, PNG saved to ${pngFileName}`);
     } catch (err) {
-      render("Error saving SVG: " + err);
+      render("Error saving SVG/PNG: " + err);
     }
   } else if (key.key === "q" || key.sequence === "\u0003") {
     Deno.exit(0);

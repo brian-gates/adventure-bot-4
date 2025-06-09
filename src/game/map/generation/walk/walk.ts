@@ -1,22 +1,23 @@
-import type { Location, Map, Path, Position } from "~/game/map/index.ts";
-import { LocationType } from "~/generated/prisma/client.ts";
+import {
+  LocationType,
+  type Location,
+  type Map,
+  type MapGenerator,
+  type Path,
+  type Position,
+} from "~/game/map/index.ts";
 import { logAsciiMap } from "../log-ascii-map.ts";
 import { locationType } from "./location-types.ts";
 
-export const walkStrategy = ({
+export const walkStrategy: MapGenerator = ({
   cols = 7,
   rows = 15,
   numPaths = 4,
   random = Math.random,
   onStep,
-}: {
-  cols?: number;
-  rows?: number;
-  numPaths?: number;
-  random?: () => number;
-  onStep?: (map: Map) => void;
-} = {}) => {
-  let map = emptyMap({ cols, rows });
+  guildId,
+}) => {
+  let map = emptyMap({ cols, rows, guildId });
   // Place boss node in the last row, centered
   const bossCol = Math.floor(cols / 2);
   const boss = createLocation({
@@ -79,16 +80,16 @@ function walkPath({
 export function emptyMap({
   cols = 7,
   rows = 15,
-  channelId = "demo",
+  guildId,
 }: {
   cols: number;
   rows: number;
-  channelId?: string;
+  guildId: string;
 }): Map {
   const now = new Date();
   return {
     id: crypto.randomUUID(),
-    channelId,
+    guildId,
     locations: [],
     paths: [],
     cols,
@@ -116,16 +117,16 @@ export function wouldCrossExistingPath({
   const colOffset = to.col > from.col ? 1 : -1;
   // The two nodes that would form a crossing path
   const nodeA = map.locations.find(
-    (loc) => loc.row === from.row && loc.col === from.col + colOffset,
+    (loc) => loc.row === from.row && loc.col === from.col + colOffset
   );
   const nodeB = map.locations.find(
-    (loc) => loc.row === to.row && loc.col === from.col,
+    (loc) => loc.row === to.row && loc.col === from.col
   );
   if (!nodeA || !nodeB) return false;
   return !!map.paths.find(
     (path) =>
       (path.fromLocationId === nodeA.id && path.toLocationId === nodeB.id) ||
-      (path.fromLocationId === nodeB.id && path.toLocationId === nodeA.id),
+      (path.fromLocationId === nodeB.id && path.toLocationId === nodeA.id)
   );
 }
 
@@ -142,7 +143,7 @@ function step({
 }) {
   const map = structuredClone(initialMap);
   let initialPosition = map.locations.find(
-    (loc) => loc.row === position.row && loc.col === position.col,
+    (loc) => loc.row === position.row && loc.col === position.col
   );
   if (!initialPosition) {
     initialPosition = createLocation({
@@ -166,7 +167,7 @@ function step({
   ].filter(
     (pos) =>
       isValidNextStep({ map, position: pos }) &&
-      !wouldCrossExistingPath({ from: initialPosition, to: pos, map }),
+      !wouldCrossExistingPath({ from: initialPosition, to: pos, map })
   );
 
   // Enforce at least two lanes per row
@@ -183,7 +184,7 @@ function step({
   if (!possibleSteps.length) {
     logAsciiMap({ map });
     throw new Error(
-      `No valid next step from ${initialPosition?.id} at ${position.row},${position.col}`,
+      `No valid next step from ${initialPosition?.id} at ${position.row},${position.col}`
     );
   }
 
@@ -191,7 +192,7 @@ function step({
     possibleSteps[Math.floor(random() * possibleSteps.length)].col;
 
   const existingLocationAtNextStep = map.locations.find(
-    (loc) => loc.row === nextRow && loc.col === nextCol,
+    (loc) => loc.row === nextRow && loc.col === nextCol
   );
 
   let newLocation: Location;
@@ -212,7 +213,7 @@ function step({
         fromLocationId: initialPosition.id,
         toLocationId: newLocation.id,
         mapId: map.id,
-      }),
+      })
     );
   }
 
@@ -336,24 +337,4 @@ export function isValidNextStep({
     return false;
   }
   return true;
-}
-
-export function isInCampfireCone({
-  position,
-  map,
-}: {
-  position: Position;
-  map: Map;
-}) {
-  const center = Math.floor(map.cols / 2);
-  const leftCampfire = center - 2;
-  const rightCampfire = center + 2;
-
-  const stepsFromCampfire = map.rows - 2 - position.row;
-  if (stepsFromCampfire < 0) return false;
-
-  const leftBound = Math.max(0, leftCampfire - stepsFromCampfire);
-  const rightBound = Math.min(map.cols - 1, rightCampfire + stepsFromCampfire);
-
-  return position.col >= leftBound && position.col <= rightBound;
 }

@@ -3,9 +3,9 @@ import type {
   Interaction,
 } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 import { prisma } from "~/db/index.ts";
-import { asciiMapString } from "~/game/map/generation/log-ascii-map.ts";
 import type { Location, LocationType, Map } from "~/game/map/index.ts";
 import { locationTypeImage } from "~/game/map/locations/location-type-image.ts";
+import { seedMapForGuild } from "~/game/map/seed-map.ts";
 
 const WIDTH = 600;
 const HEIGHT = 1800;
@@ -36,7 +36,6 @@ function getContrastBg(hex: string) {
 }
 
 async function getMap(guildId: string) {
-  console.log(`[map] Querying locations and paths for guild ${guildId}`);
   const guild = await prisma.guild.findUnique({
     where: { guildId },
     include: {
@@ -49,13 +48,10 @@ async function getMap(guildId: string) {
     },
   });
   if (!guild?.map) {
-    throw new Error(`No map found for guildId: ${guildId}`);
+    const map = await seedMapForGuild({ guildId });
+    return map;
   }
-  const map = guild.map;
-  console.log(
-    `[map] Found ${map?.locations.length} locations, ${map?.paths.length} paths`,
-  );
-  return map;
+  return guild.map;
 }
 
 function renderMapSvg({
@@ -81,36 +77,30 @@ function renderMapSvg({
     y: PAD_Y + (rows - 1 - loc.row) * scaleY,
   });
 
-  let svg =
-    `<svg xmlns='http://www.w3.org/2000/svg' width='${WIDTH}' height='${HEIGHT}' viewBox='0 0 ${WIDTH} ${HEIGHT}'>`;
+  let svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${WIDTH}' height='${HEIGHT}' viewBox='0 0 ${WIDTH} ${HEIGHT}'>`;
   for (const path of paths) {
     const from = locations.find((l) => l.id === path.fromLocationId);
     const to = locations.find((l) => l.id === path.toLocationId);
     if (from && to) {
       const { x: x1, y: y1 } = nodePos(from);
       const { x: x2, y: y2 } = nodePos(to);
-      svg +=
-        `<line x1='${x1}' y1='${y1}' x2='${x2}' y2='${y2}' stroke='#888' stroke-width='2'/>`;
+      svg += `<line x1='${x1}' y1='${y1}' x2='${x2}' y2='${y2}' stroke='#888' stroke-width='2'/>`;
     }
   }
   for (const loc of locations) {
     const { x, y } = nodePos(loc);
     const dominant =
       iconDominantColors[loc.type as keyof typeof iconDominantColors] ??
-        "#3498db";
+      "#00FF00";
     const bg = getContrastBg(dominant);
     const isCurrent = currentLocationId && loc.id === currentLocationId;
     const stroke = isCurrent ? "#FFD700" : dominant;
     const strokeWidth = isCurrent ? 4 : 2;
-    svg +=
-      `<circle cx='${x}' cy='${y}' r='${nodeRadius}' fill='${bg}' stroke='${stroke}' stroke-width='${strokeWidth}'/>`;
+    svg += `<circle cx='${x}' cy='${y}' r='${nodeRadius}' fill='${bg}' stroke='${stroke}' stroke-width='${strokeWidth}'/>`;
     const icon = locationTypeImage[loc.type];
     if (!icon) {
       console.warn(`Missing icon for node type: ${loc.type}`);
-      svg +=
-        `<text x="${x}" y="${y}" fill="#fff" font-size="10" text-anchor="middle" alignment-baseline="middle">${
-          loc.type[0]
-        }</text>`;
+      svg += `<text x="${x}" y="${y}" fill="#fff" font-size="10" text-anchor="middle" alignment-baseline="middle">${loc.type[0]}</text>`;
     } else {
       svg += `<image href='${icon}' x='${x - iconSize / 2}' y='${
         y - iconSize / 2
@@ -173,19 +163,7 @@ export async function map({
   }
   const svg = renderMapSvg(map);
   const png = await rasterizeSvgToPng(svg);
-  const ascii = asciiMapString({ map, color: false });
-  try {
-    await bot.helpers.editOriginalInteractionResponse(interaction.token, {
-      content: `Here is your map:\n\n\`\`\`\n${ascii}\n\`\`\``,
-    });
-  } catch (err) {
-    console.error(`[map] Error editing original interaction response:`, err);
-  }
   if (interaction.channelId) {
-    console.log(
-      `[map] Sending map image to channel ${interaction.channelId}`,
-      ascii,
-    );
     try {
       if (png) {
         await bot.helpers.sendMessage(interaction.channelId, {
@@ -206,7 +184,7 @@ export async function map({
     } catch (err) {
       console.error(
         `[map] Error sending map image to channel ${interaction.channelId}:`,
-        err,
+        err
       );
     }
   } else {
@@ -214,4 +192,4 @@ export async function map({
   }
 }
 
-export { renderMapSvg };
+export { rasterizeSvgToPng, renderMapSvg };

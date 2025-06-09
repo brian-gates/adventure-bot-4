@@ -1,13 +1,16 @@
-import type { MapGenerator } from "~/game/map/index.ts";
-import { LocationType } from "~/generated/prisma/enums.ts";
+import { LocationType, type MapGenerator } from "~/game/map/index.ts";
 
 export const trailblazingStrategy: MapGenerator = ({
-  cols,
-  rows,
+  cols = 7,
+  rows = 15,
   minNodes = 2,
   maxNodes = 5,
   random,
+  guildId,
 }) => {
+  const mapId = crypto.randomUUID();
+  // Convert guildId to BigInt for DB compatibility
+  const guildIdBigInt = typeof guildId === "string" ? BigInt(guildId) : guildId;
   const center = Math.floor(cols / 2);
   const boss = { row: rows - 1, col: center };
   const campfireRow = rows - 2;
@@ -28,7 +31,7 @@ export const trailblazingStrategy: MapGenerator = ({
 
   const allRows: { row: number; col: number }[][] = Array.from(
     { length: rows },
-    () => [],
+    () => []
   );
   allRows[0] = [{ row: 0, col: center }];
   allRows[rows - 1] = [{ row: rows - 1, col: center }];
@@ -53,7 +56,7 @@ export const trailblazingStrategy: MapGenerator = ({
     const existing = allRows[row].map((n) => n.col);
     const needed = Math.max(minNodes - existing.length, 0);
     const availableCols = Array.from({ length: cols }, (_, i) => i).filter(
-      (c) => !existing.includes(c),
+      (c) => !existing.includes(c)
     );
     const extraCols = availableCols
       .sort(() => Math.random() - 0.5)
@@ -70,7 +73,7 @@ export const trailblazingStrategy: MapGenerator = ({
   );
 
   const edgeSet = new Set<string>(
-    campfires.map((cf) => `${cf.row},${cf.col}->${boss.row},${boss.col}`),
+    campfires.map((cf) => `${cf.row},${cf.col}->${boss.row},${boss.col}`)
   );
 
   for (let row = 0; row < rows - 1; row++) {
@@ -78,7 +81,7 @@ export const trailblazingStrategy: MapGenerator = ({
     const toNodes = allRows[row + 1];
     fromNodes.forEach((from) => {
       const adjacents = toNodes.filter(
-        (to) => Math.abs(to.col - from.col) <= 1,
+        (to) => Math.abs(to.col - from.col) <= 1
       );
       if (adjacents.length > 0) {
         const to = adjacents[Math.floor(random() * adjacents.length)];
@@ -95,7 +98,7 @@ export const trailblazingStrategy: MapGenerator = ({
       );
       if (!hasIncoming) {
         const adjacents = fromNodes.filter(
-          (from) => Math.abs(from.col - to.col) <= 1,
+          (from) => Math.abs(from.col - to.col) <= 1
         );
         if (adjacents.length > 0) {
           const from = adjacents[Math.floor(random() * adjacents.length)];
@@ -145,7 +148,6 @@ export const trailblazingStrategy: MapGenerator = ({
     }
     return {
       id: s,
-      channelId: "",
       row,
       col,
       name: `Node ${col},${row}`,
@@ -154,6 +156,7 @@ export const trailblazingStrategy: MapGenerator = ({
       type,
       createdAt: new Date(),
       updatedAt: new Date(),
+      mapId,
     };
   });
 
@@ -161,13 +164,13 @@ export const trailblazingStrategy: MapGenerator = ({
     const [from, to] = s.split("->");
     return {
       id: crypto.randomUUID(),
-      channelId: "",
       fromLocationId: from,
       toLocationId: to,
       description: "",
       attributes: {},
       createdAt: new Date(),
       updatedAt: new Date(),
+      mapId,
     };
   });
 
@@ -176,5 +179,11 @@ export const trailblazingStrategy: MapGenerator = ({
     paths,
     cols,
     rows,
+    guildId: guildIdBigInt.toString(),
+    id: mapId,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    currentLocationId: locations[0].id,
+    locationId: locations[0].id,
   };
 };

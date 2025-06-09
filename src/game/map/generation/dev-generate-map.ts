@@ -42,11 +42,9 @@ async function exportAnimationFrames() {
   const content = frames
     .map(
       (frame, i) =>
-        `Frame ${i + 1}/${frames.length}\n${
-          asciiMapString({
-            map: frame,
-          })
-        }`,
+        `Frame ${i + 1}/${frames.length}\n${asciiMapString({
+          map: frame,
+        })}`
     )
     .join(delimiter);
   await Deno.writeTextFile(fileName, content);
@@ -60,7 +58,7 @@ function renderFrame() {
   console.log(
     `\nSeed: ${seed} | Frame: ${frameIndex + 1}/${frames.length}${
       isPlaying ? " | Playing... (P to stop)" : ""
-    }`,
+    }`
   );
   const strat = strategies[stratIndex];
   const errors = testMap(map, { minNodes, maxNodes });
@@ -73,10 +71,10 @@ function renderFrame() {
     }
   }
   console.log(
-    `\nCurrent: strat=${strat.name}, cols=${cols}, rows=${rows}, minNodes=${minNodes}, maxNodes=${maxNodes}`,
+    `\nCurrent: strat=${strat.name}, cols=${cols}, rows=${rows}, minNodes=${minNodes}, maxNodes=${maxNodes}`
   );
   console.log(
-    "\n←/→: prev/next map, ↑/↓: scrub animation, P: play, X: export, A: next algo, E: edit params, Q: quit",
+    "\n←/→: prev/next map, ↑/↓: scrub animation, P: play, X: export, A: next algo, E: edit params, Q: quit"
   );
 }
 
@@ -92,6 +90,7 @@ function renderCurrent() {
     maxNodes,
     random: seededRandom(stringToSeed(seed.toString())),
     onStep: (map: Map) => frames.push(map),
+    guildId: "test",
   });
   frameIndex = frames.length - 1; // Start at the end by default
   renderFrame();
@@ -147,7 +146,7 @@ if (import.meta.main) {
         strat = await promptChoice(
           "Algorithm",
           strategies.map((s) => s.name),
-          strat,
+          strat
         );
         stratIndex = strategies.findIndex((s) => s.name === strat);
         cols = await promptInt("Columns", cols);

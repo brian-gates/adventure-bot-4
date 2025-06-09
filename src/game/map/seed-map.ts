@@ -6,12 +6,13 @@ import { getMapGenerator } from "./generation/index.ts";
 export async function seedMapForGuild({ guildId }: { guildId: string }) {
   console.log(`[seed-map] Seeding map for guild ${guildId}`);
   const existingMap = await prisma.map.findFirst({
-    where: { channelId: guildId },
+    where: { guildId },
   });
   if (existingMap) {
     return;
   }
-  const { seed } = (await prisma.guild.findUnique({ where: { guildId } })) ??
+  const { seed } =
+    (await prisma.guild.findUnique({ where: { guildId } })) ??
     (() => {
       throw new Error(`No guild found for guildId: ${guildId}`);
     })();
@@ -22,9 +23,10 @@ export async function seedMapForGuild({ guildId }: { guildId: string }) {
     minNodes: 2,
     maxNodes: 5,
     random: seededRandom(stringToSeed(seed)),
+    guildId,
   });
   console.log(
-    `[seed-map] Built map: ${map.locations.length} locations, ${map.paths.length} paths`,
+    `[seed-map] Built map: ${map.locations.length} locations, ${map.paths.length} paths`
   );
 
   // Prepare data for createMany
@@ -48,11 +50,13 @@ export async function seedMapForGuild({ guildId }: { guildId: string }) {
     attributes: {},
   }));
 
+  await prisma.map.deleteMany({ where: { guildId } });
+
   await prisma.$transaction([
     prisma.map.create({
       data: {
         id: map.id,
-        channelId: guildId,
+        guildId,
         cols: map.cols,
         rows: map.rows,
       },

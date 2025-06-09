@@ -32,7 +32,7 @@ export const setseed = async ({
       update: { seed, randomCursor: 0 },
       create: { guildId, seed },
     });
-    await prisma.map.deleteMany({ where: { channelId: guildId } });
+    await prisma.map.deleteMany({ where: { guildId } });
     await seedMapForGuild({ guildId });
     await bot.helpers.editOriginalInteractionResponse(interaction.token, {
       content: `Seed set to \

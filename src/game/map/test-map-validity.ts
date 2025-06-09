@@ -4,7 +4,7 @@ import { seededRandom } from "~/game/seeded-random.ts";
 
 function testMap(
   { locations, paths, cols, rows }: Map,
-  { minNodes, maxNodes }: { minNodes: number; maxNodes: number },
+  { minNodes, maxNodes }: { minNodes: number; maxNodes: number }
 ) {
   const errors: string[] = [];
   const byRow: Record<number, Location[]> = {};
@@ -26,7 +26,7 @@ function testMap(
     const n = byRow[r]?.length ?? 0;
     if (n < minNodes || n > maxNodes) {
       errors.push(
-        `Row ${r} has ${n} nodes (should be ${minNodes}-${maxNodes})`,
+        `Row ${r} has ${n} nodes (should be ${minNodes}-${maxNodes})`
       );
     }
     const colsSet = new Set(byRow[r]?.map((n) => n.col));
@@ -44,17 +44,17 @@ function testMap(
       errors.push(
         `Invalid edge from ${
           "from" in path ? path.from : path.fromLocationId
-        } to ${"to" in path ? path.to : path.toLocationId}`,
+        } to ${"to" in path ? path.to : path.toLocationId}`
       );
     }
     if (to && from && to.row !== from.row + 1) {
       errors.push(
-        `Edge from row ${from.row} to ${to.row} (should be to next row)`,
+        `Edge from row ${from.row} to ${to.row} (should be to next row)`
       );
     }
     if (to && from && Math.abs(to.col - from.col) > 1) {
       errors.push(
-        `Edge from col ${from.col} to ${to.col} (should be adjacent)`,
+        `Edge from col ${from.col} to ${to.col} (should be adjacent)`
       );
     }
   }
@@ -105,7 +105,7 @@ function testMap(
           (from1.col > from2.col && to1.col < to2.col)
         ) {
           errors.push(
-            `X crossing between (${from1.row},${from1.col})->(${to1.row},${to1.col}) and (${from2.row},${from2.col})->(${to2.row},${to2.col})`,
+            `X crossing between (${from1.row},${from1.col})->(${to1.row},${to1.col}) and (${from2.row},${from2.col})->(${to2.row},${to2.col})`
           );
         }
       }
@@ -129,6 +129,8 @@ if (import.meta.main) {
           minNodes: config.minNodes,
           maxNodes: config.maxNodes,
           random: seededRandom(run),
+          guildId: "test",
+          onStep: () => {},
         });
         const errors = testMap(map, config);
         if (errors.length === 0) {
@@ -142,7 +144,7 @@ if (import.meta.main) {
       console.log(
         `${name}: ${passCount}/${
           passCount + failCount
-        } (${percent}%) success rate`,
+        } (${percent}%) success rate`
       );
     }
   }

@@ -63,7 +63,7 @@ model Path {
 }
 
 model Guild {
-    guildId      String   @id
+    guildId      BigInt   @id
     updatedAt    DateTime @updatedAt
     seed         String   @default(uuid())
     randomCursor Int      @default(0)
@@ -74,7 +74,7 @@ model Guild {
 
 model Map {
     id                String     @id @default(uuid())
-    channelId         String     @unique
+    guildId           BigInt     @unique
     locations         Location[] @relation("MapLocations")
     paths             Path[]
     createdAt         DateTime   @default(now())

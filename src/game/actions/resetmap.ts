@@ -20,9 +20,9 @@ export async function resetmap({
     return;
   }
   try {
-    const map = await prisma.map.findFirst({ where: { channelId: guildId } });
+    const map = await prisma.map.findFirst({ where: { guildId } });
     if (map) {
-      await prisma.map.deleteMany({ where: { channelId: guildId } });
+      await prisma.map.deleteMany({ where: { guildId } });
       // Wait for cascading deletes to complete
       let tries = 0;
       while (tries < 10) {
