@@ -20,7 +20,7 @@ Deno.test(
   () => {
     const rows = 3;
     const cols = 4;
-    const map = emptyMap({ cols, rows, guildId: TEST_GUILD_ID });
+    const map = emptyMap({ cols, rows });
 
     assertEquals(
       map.cols,
@@ -40,7 +40,7 @@ Deno.test(
 Deno.test("emptyMap handles 1x1 dimension", () => {
   const rows = 1;
   const cols = 1;
-  const map = emptyMap({ cols, rows, guildId: TEST_GUILD_ID });
+  const map = emptyMap({ cols, rows });
 
   assertEquals(map.cols, cols);
   assertEquals(map.rows, rows);
@@ -50,7 +50,7 @@ Deno.test("emptyMap handles 1x1 dimension", () => {
 Deno.test("emptyMap handles 0 cols", () => {
   const rows = 3;
   const cols = 0;
-  const map = emptyMap({ cols, rows, guildId: TEST_GUILD_ID });
+  const map = emptyMap({ cols, rows });
   assertEquals(map.cols, cols);
   assertEquals(map.rows, rows);
   assertEquals(map.locations.length, 0);
@@ -59,7 +59,7 @@ Deno.test("emptyMap handles 0 cols", () => {
 Deno.test("emptyMap handles 0 rows", () => {
   const rows = 0;
   const cols = 3;
-  const map = emptyMap({ cols, rows, guildId: TEST_GUILD_ID });
+  const map = emptyMap({ cols, rows });
   assertEquals(map.cols, cols);
   assertEquals(map.rows, rows);
   assertEquals(map.locations.length, 0);
@@ -361,7 +361,6 @@ function createMap({
     locationId: null,
     locations,
     paths,
-    guildId: TEST_GUILD_ID,
   };
 }
 

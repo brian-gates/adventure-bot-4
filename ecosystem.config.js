@@ -12,6 +12,7 @@ module.exports = {
         DATABASE_URL: "postgres://postgres:postgres@localhost:5444/adventure",
       },
       watch: false,
+      exp_backoff_restart_delay: 1000,
     },
     {
       name: "prisma-studio",

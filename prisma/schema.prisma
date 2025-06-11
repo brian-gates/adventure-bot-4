@@ -58,23 +58,22 @@ model Path {
     attributes     Json
     createdAt      DateTime @default(now())
     updatedAt      DateTime @updatedAt
-    map            Map      @relation(fields: [mapId], references: [id], onDelete: Cascade)
-    mapId          String
+    map            Map?      @relation(fields: [mapId], references: [id], onDelete: Cascade)
+    mapId          String?
 }
 
 model Guild {
-    guildId      BigInt   @id
+    id           BigInt   @id
     updatedAt    DateTime @updatedAt
     seed         String   @default(uuid())
     randomCursor Int      @default(0)
     locationId   String?
-    map          Map?     @relation(fields: [mapId], references: [id])
-    mapId        String?
+    map          Map?      @relation(fields: [mapId], references: [id])
+    mapId        String?   @unique
 }
 
 model Map {
     id                String     @id @default(uuid())
-    guildId           BigInt     @unique
     locations         Location[] @relation("MapLocations")
     paths             Path[]
     createdAt         DateTime   @default(now())
@@ -83,7 +82,7 @@ model Map {
     cols              Int
     currentLocation   Location?  @relation("MapCurrentLocation", fields: [currentLocationId], references: [id])
     currentLocationId String?
-    Guild             Guild[]
     Location          Location?  @relation(fields: [locationId], references: [id])
     locationId        String?
+    guild             Guild?     @relation
 }

@@ -11,7 +11,7 @@ export async function adventure({
 }) {
   if (!interaction.channelId || !interaction.guildId) return;
   const guildId = interaction.guildId;
-  const guild = await prisma.guild.findUnique({ where: { guildId } });
+  const guild = await prisma.guild.findUnique({ where: { id: guildId } });
   if (!guild?.locationId) {
     await bot.helpers.sendMessage(interaction.channelId, {
       content: "No current location set for this guild.",

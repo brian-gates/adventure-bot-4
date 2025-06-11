@@ -11,6 +11,7 @@ let maps = await prisma.map.findMany({
   include: {
     locations: true,
     paths: true,
+    guild: true,
   },
 });
 
@@ -25,7 +26,7 @@ function render(message?: string) {
     console.log(
       `Map ${
         index + 1
-      }/${maps.length} (id: ${map.id}, guildId: ${map.guildId})`,
+      }/${maps.length} (id: ${map.id}, guildId: ${map.guild?.id})`,
     );
 
     console.log(asciiMapString({ map }));
@@ -64,13 +65,18 @@ for await (const key of new Keypress()) {
     }
     try {
       await prisma.map.deleteMany({ where: { id: map.id } });
+      const guild = await prisma.guild.findUnique({ where: { mapId: map.id } });
+      if (!guild) {
+        render("No guild found for map.");
+        continue;
+      }
       await prisma.guild.update({
-        where: { guildId: map.guildId },
+        where: { id: guild.id },
         data: { seed: newSeed },
       });
-      await seedMapForGuild({ guildId: map.guildId });
+      await seedMapForGuild({ id: guild.id });
       maps = await prisma.map.findMany({
-        include: { locations: true, paths: true },
+        include: { locations: true, paths: true, guild: true },
       });
       render("Map reseeded and regenerated.");
     } catch (err) {
@@ -90,9 +96,9 @@ for await (const key of new Keypress()) {
       continue;
     }
     try {
-      await seedMapForGuild({ guildId: BigInt(guildId) });
+      await seedMapForGuild({ id: BigInt(guildId) });
       maps = await prisma.map.findMany({
-        include: { locations: true, paths: true },
+        include: { locations: true, paths: true, guild: true },
       });
       render(`Seeded new map for guild ${guildId}.`);
     } catch (err) {
