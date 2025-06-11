@@ -67,8 +67,15 @@ export async function seedMapForGuild({ id }: { id: bigint }) {
     }),
     prisma.guild.upsert({
       where: { id },
-      update: { locationId: map.locations[0].id, map: { connect: { id: map.id } } },
-      create: { id, locationId: map.locations[0].id, map: { connect: { id: map.id } } },
+      update: {
+        locationId: map.locations[0].id,
+        map: { connect: { id: map.id } },
+      },
+      create: {
+        id,
+        locationId: map.locations[0].id,
+        map: { connect: { id: map.id } },
+      },
     }),
   ]);
 

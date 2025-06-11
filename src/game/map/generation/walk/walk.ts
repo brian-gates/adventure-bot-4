@@ -38,7 +38,6 @@ export const walkStrategy: MapGenerator = ({
     }));
   }
 
-
   return map;
 };
 
@@ -166,12 +165,16 @@ function step({
   ].filter(
     (pos) =>
       isValidNextStep({ map, position: pos }) &&
-      !wouldCrossExistingPath({ from: initialPosition, to: pos, map })
+      !wouldCrossExistingPath({ from: initialPosition, to: pos, map }),
   );
 
   if (avoidOccupied) {
-    const occupiedCols = map.locations.filter((l) => l.row === nextRow).map((l) => l.col);
-    const notOccupied = possibleSteps.filter((pos) => !occupiedCols.includes(pos.col));
+    const occupiedCols = map.locations.filter((l) => l.row === nextRow).map((
+      l,
+    ) => l.col);
+    const notOccupied = possibleSteps.filter((pos) =>
+      !occupiedCols.includes(pos.col)
+    );
     if (notOccupied.length > 0) {
       possibleSteps = notOccupied;
     }

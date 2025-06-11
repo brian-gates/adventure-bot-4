@@ -1,6 +1,6 @@
 import { prisma } from "./index.ts";
 
-export async function findOrCreateGuild({ id }: { id: bigint; }) {
+export async function findOrCreateGuild({ id }: { id: bigint }) {
   const guild = await prisma.guild.findUnique({ where: { id } });
   if (!guild) {
     await prisma.guild.create({ data: { id } });
