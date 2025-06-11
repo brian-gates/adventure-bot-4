@@ -17,16 +17,21 @@ export const walkStrategy: MapGenerator = ({
   onStep,
 }) => {
   let map = emptyMap({ cols, rows });
-  const boss = createLocation({
-    row: rows - 1,
-    col: Math.floor(cols / 2),
-    random,
-    map,
-  });
-  map.locations = [...(map.locations ?? []), boss];
-
+  // Use a map to ensure unique (row, col) locations
+  const locMap = new Map<string, Location>();
+  function getOrCreateLocation(row: number, col: number): Location {
+    const key = `${row},${col}`;
+    let loc = locMap.get(key);
+    if (!loc) {
+      loc = createLocation({ row, col, random, map });
+      locMap.set(key, loc);
+    }
+    return loc;
+  }
+  // Place boss
+  const boss = getOrCreateLocation(rows - 1, Math.floor(cols / 2));
+  map.locations = [boss];
   const startCol = Math.floor(cols / 2);
-
   for (let i = 1; i < numPaths; i++) {
     ({ map } = walkPath({
       position: { row: 0, col: startCol },
@@ -35,9 +40,28 @@ export const walkStrategy: MapGenerator = ({
       random,
       avoidOccupied: i == 2, // try to create at least two exclusive paths
       onStep,
+      getOrCreateLocation,
     }));
   }
-
+  // After all paths, set map.locations to all unique locations
+  map.locations = Array.from(locMap.values());
+  // Final check: ensure all path endpoint IDs are present in map.locations
+  const locationIds = new Set(map.locations.map((l) => l.id));
+  const allPathEndpointIds = map.paths.flatMap((
+    p,
+  ) => [p.fromLocationId, p.toLocationId]);
+  const missing = allPathEndpointIds.filter((id) => !locationIds.has(id));
+  if (missing.length > 0) {
+    // Debug output
+    console.error("walkStrategy: locationIds:", Array.from(locationIds));
+    console.error("walkStrategy: allPathEndpointIds:", allPathEndpointIds);
+    console.error("walkStrategy: missing:", [...new Set(missing)]);
+    throw new Error(
+      `walkStrategy: Missing location IDs for paths: ${
+        [...new Set(missing)].join(", ")
+      }`,
+    );
+  }
   return map;
 };
 
@@ -49,6 +73,7 @@ function walkPath({
   onStep,
   recordCols,
   avoidOccupied,
+  getOrCreateLocation,
 }: {
   position: Position;
   rows: number;
@@ -57,6 +82,7 @@ function walkPath({
   onStep?: (map: Map) => void;
   recordCols?: number[];
   avoidOccupied?: boolean;
+  getOrCreateLocation: (row: number, col: number) => Location;
 }): { position: Position; map: Map } {
   let map = structuredClone(initialMap);
   let position = structuredClone(initialPosition);
@@ -68,6 +94,7 @@ function walkPath({
       random,
       onStep,
       avoidOccupied,
+      getOrCreateLocation,
     }));
     if (recordCols) {
       recordCols[position.row] = position.col;
@@ -132,32 +159,25 @@ function step({
   random,
   onStep,
   avoidOccupied,
+  getOrCreateLocation,
 }: {
   map: Map;
   position: Position;
   random: () => number;
   onStep?: (map: Map) => void;
   avoidOccupied?: boolean;
+  getOrCreateLocation: (row: number, col: number) => Location;
 }) {
   const map = structuredClone(initialMap);
-  let initialPosition = map.locations.find(
-    (loc) => loc.row === position.row && loc.col === position.col,
-  );
-  if (!initialPosition) {
-    initialPosition = createLocation({
-      row: position.row,
-      col: position.col,
-      random,
-      map,
-    });
-    map.locations.push(initialPosition);
+  // Always get the from location from the deduplication map
+  const fromLocation = getOrCreateLocation(position.row, position.col);
+  if (!map.locations.find((l) => l.id === fromLocation.id)) {
+    map.locations.push(fromLocation);
   }
-
   const nextRow = position.row + 1;
   if (nextRow >= map.rows) {
     throw new Error("Out of bounds");
   }
-
   let possibleSteps = [
     { row: nextRow, col: position.col },
     { row: nextRow, col: position.col + 1 },
@@ -165,9 +185,8 @@ function step({
   ].filter(
     (pos) =>
       isValidNextStep({ map, position: pos }) &&
-      !wouldCrossExistingPath({ from: initialPosition, to: pos, map }),
+      !wouldCrossExistingPath({ from: fromLocation, to: pos, map }),
   );
-
   if (avoidOccupied) {
     const occupiedCols = map.locations.filter((l) => l.row === nextRow).map((
       l,
@@ -179,8 +198,6 @@ function step({
       possibleSteps = notOccupied;
     }
   }
-
-  // Enforce at least two lanes per row
   const nextRowNodes = map.locations.filter((l) => l.row === nextRow);
   if (nextRowNodes.length === 1 && possibleSteps.length > 1) {
     const occupiedCol = nextRowNodes[0].col;
@@ -189,43 +206,26 @@ function step({
       possibleSteps = altSteps;
     }
   }
-
   if (!possibleSteps.length) {
     logAsciiMap({ map });
     throw new Error(
-      `No valid next step from ${initialPosition?.id} at ${position.row},${position.col}`,
+      `No valid next step from ${fromLocation?.id} at ${position.row},${position.col}`,
     );
   }
-
   const nextCol =
     possibleSteps[Math.floor(random() * possibleSteps.length)].col;
-
-  const existingLocationAtNextStep = map.locations.find(
-    (loc) => loc.row === nextRow && loc.col === nextCol,
+  // Always get the to location from the deduplication map
+  const toLocation = getOrCreateLocation(nextRow, nextCol);
+  if (!map.locations.find((l) => l.id === toLocation.id)) {
+    map.locations.push(toLocation);
+  }
+  map.paths.push(
+    createPath({
+      fromLocationId: fromLocation.id,
+      toLocationId: toLocation.id,
+      mapId: map.id,
+    }),
   );
-
-  let newLocation: Location;
-  if (existingLocationAtNextStep) {
-    newLocation = existingLocationAtNextStep;
-  } else {
-    newLocation = createLocation({
-      row: nextRow,
-      col: nextCol,
-      random,
-      map,
-    });
-    map.locations.push(newLocation);
-  }
-  if (initialPosition?.id && newLocation.id) {
-    map.paths.push(
-      createPath({
-        fromLocationId: initialPosition.id,
-        toLocationId: newLocation.id,
-        mapId: map.id,
-      }),
-    );
-  }
-
   if (onStep) onStep(map);
   return {
     map,

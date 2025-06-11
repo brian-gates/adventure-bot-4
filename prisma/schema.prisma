@@ -44,7 +44,7 @@ model Location {
     toPaths     Path[]       @relation("ToLocation")
     guilds      Guild[]      @relation("GuildCurrentLocation")
     map         Map          @relation(fields: [mapId], references: [id], onDelete: Cascade)
-    mapId       String       @unique
+    mapId       String
 }
 
 model Path {

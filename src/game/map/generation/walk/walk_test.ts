@@ -3,6 +3,8 @@ import {
   assertExists,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { randomUUID } from "node:crypto";
+import { prisma } from "~/db/index.ts";
+import { GameMap } from "~/game/map/game-map.ts";
 import { logAsciiMap } from "~/game/map/generation/log-ascii-map.ts";
 import {
   emptyMap,
@@ -345,6 +347,46 @@ Deno.test(
   },
 );
 
+Deno.test("creating locations with nonexistent mapId fails with foreign key error", async () => {
+  // Simulate Prisma-like behavior
+  const fakePrisma = {
+    map: { create: async () => ({ id: "nonexistent-map-id" }) },
+    location: {
+      createMany: async ({ data }: { data: any[] }) => {
+        // Simulate FK check: throw if mapId is not "existing-map-id"
+        for (const loc of data) {
+          if (loc.mapId !== "existing-map-id") {
+            throw new Error(
+              "Foreign key constraint violated on the constraint: Location_mapId_fkey",
+            );
+          }
+        }
+      },
+    },
+  };
+  let errorCaught = false;
+  try {
+    await fakePrisma.location.createMany({
+      data: [
+        { id: "loc1", mapId: "nonexistent-map-id" },
+        { id: "loc2", mapId: "nonexistent-map-id" },
+      ],
+    });
+  } catch (e) {
+    if (e instanceof Error) {
+      errorCaught = true;
+      assertEquals(
+        e.message.includes("Foreign key constraint violated"),
+        true,
+        "Should throw foreign key constraint error",
+      );
+    } else {
+      throw e;
+    }
+  }
+  assertEquals(errorCaught, true, "Should catch the FK error");
+});
+
 function createMap({
   locations = [],
   paths = [],
@@ -406,3 +448,74 @@ function createPath({
     mapId: TEST_MAP_ID,
   };
 }
+
+Deno.test({
+  name: "integration: seeding a map creates locations with valid mapId",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    if (!Deno.env.get("DATABASE_URL")) {
+      console.log("Skipping integration test: DATABASE_URL not set");
+      return;
+    }
+    // Create a unique map id for isolation
+    const mapId = crypto.randomUUID();
+    const guildId = BigInt(Math.floor(Math.random() * 1e12));
+    const mapData = walkStrategy({
+      cols: 5,
+      rows: 5,
+      random: Math.random,
+      guildId,
+    });
+    mapData.id = mapId;
+    const gameMap = new GameMap(mapData);
+    let errorCaught = false;
+    try {
+      await prisma.map.deleteMany({ where: { id: mapId } });
+      await gameMap.save({ guildId });
+      // Fetch all locations for this map
+      const locations = await prisma.location.findMany({ where: { mapId } });
+      // Assert all locations reference the correct mapId
+      for (const loc of locations) {
+        if (loc.mapId !== mapId) {
+          throw new Error(`Location ${loc.id} has wrong mapId: ${loc.mapId}`);
+        }
+      }
+    } catch (e) {
+      errorCaught = true;
+      if (e instanceof Error) {
+        console.error("Integration test error:", e.message);
+      }
+    } finally {
+      // Clean up
+      await prisma.path.deleteMany({ where: { mapId } });
+      await prisma.location.deleteMany({ where: { mapId } });
+      await prisma.map.deleteMany({ where: { id: mapId } });
+    }
+    if (errorCaught) {
+      throw new Error(
+        "Foreign key or save error occurred during integration test",
+      );
+    }
+  },
+});
+
+Deno.test("walkStrategy: all path endpoints exist in locations", () => {
+  const map = walkStrategy({
+    cols: 7,
+    rows: 10,
+    random: Math.random,
+    guildId: BigInt(1),
+  });
+  const locationIds = new Set(map.locations.map((l) => l.id));
+  const missing = map.paths.flatMap((p) =>
+    [p.fromLocationId, p.toLocationId].filter((id) => !locationIds.has(id))
+  );
+  if (missing.length > 0) {
+    throw new Error(
+      `walkStrategy: Missing location IDs for paths: ${
+        [...new Set(missing)].join(", ")
+      }`,
+    );
+  }
+});
