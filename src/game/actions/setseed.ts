@@ -28,12 +28,12 @@ export const setseed = async ({
   }
   try {
     await prisma.guild.upsert({
-      where: { guildId },
+      where: { id: guildId },
       update: { seed, randomCursor: 0 },
-      create: { guildId, seed },
+      create: { id: guildId, seed },
     });
-    await prisma.map.deleteMany({ where: { guildId } });
-    await seedMapForGuild({ guildId });
+    await prisma.map.deleteMany({ where: { guild: { is: { id: guildId } } } });
+    await seedMapForGuild({ id: guildId });
     await bot.helpers.editOriginalInteractionResponse(interaction.token, {
       content: `Seed set to \
 \`${seed}\`\nMap has been regenerated.`,

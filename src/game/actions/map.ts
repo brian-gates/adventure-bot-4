@@ -37,7 +37,7 @@ function getContrastBg(hex: string) {
 
 async function getMap(guildId: bigint) {
   const guild = await prisma.guild.findUnique({
-    where: { guildId },
+    where: { id: guildId },
     include: {
       map: {
         include: {
@@ -47,8 +47,9 @@ async function getMap(guildId: bigint) {
       },
     },
   });
+  console.log(`[getMap] Guild:`, guild);
   if (!guild?.map) {
-    const map = await seedMapForGuild({ guildId });
+    const map = await seedMapForGuild({ id: guildId });
     return map;
   }
   return guild.map;

@@ -20,9 +20,9 @@ export async function resetmap({
     return;
   }
   try {
-    const map = await prisma.map.findFirst({ where: { guildId } });
+    const map = await prisma.map.findFirst({ where: { guild: { is: { id: guildId } } } });
     if (map) {
-      await prisma.map.deleteMany({ where: { guildId } });
+      await prisma.map.deleteMany({ where: { guild: { is: { id: guildId } } } });
       // Wait for cascading deletes to complete
       let tries = 0;
       while (tries < 10) {
@@ -35,7 +35,7 @@ export async function resetmap({
         tries++;
       }
     }
-    await seedMapForGuild({ guildId });
+    await seedMapForGuild({ id: guildId });
     await bot.helpers.editOriginalInteractionResponse(interaction.token, {
       content: "Map has been cleared and regenerated.",
     });

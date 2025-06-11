@@ -1,20 +1,20 @@
 import { prisma } from "~/db/index.ts";
 import { seededRandom } from "~/game/seeded-random.ts";
+import { findOrCreateGuild } from "../../db/find-or-create-guild.ts";
 import { stringToSeed } from "../string-to-seed.ts";
 import { getMapGenerator } from "./generation/index.ts";
 
-export async function seedMapForGuild({ guildId }: { guildId: bigint }) {
-  console.log(`[seed-map] Seeding map for guild ${guildId}`);
+export async function seedMapForGuild({ id }: { id: bigint }) {
+  console.log(`[seed-map] Seeding map for guild ${id}`);
   const existingMap = await prisma.map.findFirst({
-    where: { guildId },
+    where: { guild: { is: { id } } },
   });
   if (existingMap) {
+    console.log(`[seed-map] Map already exists for guild ${id}`);
     return;
   }
-  const { seed } = (await prisma.guild.findUnique({ where: { guildId } })) ??
-    (() => {
-      throw new Error(`No guild found for guildId: ${guildId}`);
-    })();
+  const guild = await findOrCreateGuild({ id });
+  const { seed } = guild;
 
   const map = getMapGenerator("walk")({
     cols: 7,
@@ -22,7 +22,7 @@ export async function seedMapForGuild({ guildId }: { guildId: bigint }) {
     minNodes: 2,
     maxNodes: 5,
     random: seededRandom(stringToSeed(seed)),
-    guildId,
+    guildId: id,
   });
   console.log(
     `[seed-map] Built map: ${map.locations.length} locations, ${map.paths.length} paths`,
@@ -49,13 +49,10 @@ export async function seedMapForGuild({ guildId }: { guildId: bigint }) {
     attributes: {},
   }));
 
-  await prisma.map.deleteMany({ where: { guildId } });
-
   await prisma.$transaction([
     prisma.map.create({
       data: {
         id: map.id,
-        guildId,
         cols: map.cols,
         rows: map.rows,
       },
@@ -69,12 +66,12 @@ export async function seedMapForGuild({ guildId }: { guildId: bigint }) {
       skipDuplicates: true,
     }),
     prisma.guild.upsert({
-      where: { guildId },
-      update: { locationId: map.locations[0].id },
-      create: { guildId, locationId: map.locations[0].id },
+      where: { id },
+      update: { locationId: map.locations[0].id, map: { connect: { id: map.id } } },
+      create: { id, locationId: map.locations[0].id, map: { connect: { id: map.id } } },
     }),
   ]);
 
   console.log(`[seed-map] Created ${map.paths.length} paths`);
-  console.log(`[seed-map] Map seeded for guild ${guildId}`);
+  console.log(`[seed-map] Map seeded for guild ${id}`);
 }

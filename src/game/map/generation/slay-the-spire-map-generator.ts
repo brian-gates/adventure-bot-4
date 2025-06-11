@@ -32,7 +32,6 @@ export const slayTheSpireMapGenerator: MapGenerator = ({
     allRows[row].sort((a, b) => a.col - b.col);
   }
   const map: Map = {
-    guildId,
     cols,
     rows,
     id: crypto.randomUUID(),

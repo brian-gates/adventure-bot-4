@@ -48,21 +48,19 @@ export function locationType({
   return weightedRandom(
     {
       [LocationType.elite]:
-        row <= 5 && preceedingLocationTypes.includes(LocationType.elite)
+        row <= 5 || preceedingLocationTypes.includes(LocationType.elite) 
           ? 0
           : 1,
       [LocationType.treasure]:
-        row <= 5 && preceedingLocationTypes.includes(LocationType.treasure)
+        row <= 5 || preceedingLocationTypes.includes(LocationType.treasure)
           ? 0
           : 2,
       [LocationType.event]: preceedingLocationTypes.includes(LocationType.event)
         ? 1
         : 3,
       [LocationType.shop]:
-        row <= 5 && preceedingLocationTypes.includes(LocationType.shop) ? 0 : 1,
-      [LocationType.combat]: row === 0
-        ? 0
-        : preceedingLocationTypes.includes(LocationType.combat)
+        row <= 5 || preceedingLocationTypes.includes(LocationType.shop) ? 0 : 1,
+      [LocationType.combat]: preceedingLocationTypes.includes(LocationType.combat)
         ? 2
         : 4,
       [LocationType.campfire]:

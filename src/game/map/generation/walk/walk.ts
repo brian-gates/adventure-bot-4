@@ -12,45 +12,32 @@ import { locationType } from "./location-types.ts";
 export const walkStrategy: MapGenerator = ({
   cols = 7,
   rows = 15,
-  numPaths = 4,
+  numPaths = 5,
   random = Math.random,
   onStep,
-  guildId,
 }) => {
-  let map = emptyMap({ cols, rows, guildId });
-  // Place boss node in the last row, centered
-  const bossCol = Math.floor(cols / 2);
+  let map = emptyMap({ cols, rows });
   const boss = createLocation({
     row: rows - 1,
-    col: bossCol,
+    col: Math.floor(cols / 2),
     random,
     map,
   });
   map.locations = [...(map.locations ?? []), boss];
 
-  // Walk lanes from start to finish
   const startCol = Math.floor(cols / 2);
-  for (let i = 0; i < numPaths; i++) {
+
+  for (let i = 1; i < numPaths; i++) {
     ({ map } = walkPath({
-      position: {
-        row: 0,
-        col: startCol,
-      },
+      position: { row: 0, col: startCol },
       rows: rows - 1,
       map,
       random,
+      avoidOccupied: i == 2, // try to create at least two exclusive paths
       onStep,
     }));
   }
 
-  map.locations = map.locations.map((l) => ({
-    ...l,
-    type: locationType({
-      map,
-      position: { row: l.row, col: l.col },
-      random,
-    }),
-  }));
 
   return map;
 };
@@ -61,18 +48,31 @@ function walkPath({
   map: initialMap,
   random,
   onStep,
+  recordCols,
+  avoidOccupied,
 }: {
   position: Position;
   rows: number;
   map: Map;
   random: () => number;
   onStep?: (map: Map) => void;
+  recordCols?: number[];
+  avoidOccupied?: boolean;
 }): { position: Position; map: Map } {
   let map = structuredClone(initialMap);
   let position = structuredClone(initialPosition);
   if (onStep) onStep(map);
   while (position.row < rows) {
-    ({ map, position } = step({ map, position, random, onStep }));
+    ({ map, position } = step({
+      map,
+      position,
+      random,
+      onStep,
+      avoidOccupied,
+    }));
+    if (recordCols) {
+      recordCols[position.row] = position.col;
+    }
   }
   return { position, map };
 }
@@ -80,16 +80,13 @@ function walkPath({
 export function emptyMap({
   cols = 7,
   rows = 15,
-  guildId,
 }: {
   cols: number;
   rows: number;
-  guildId: bigint;
 }): Map {
   const now = new Date();
   return {
     id: crypto.randomUUID(),
-    guildId,
     locations: [],
     paths: [],
     cols,
@@ -135,11 +132,13 @@ function step({
   position,
   random,
   onStep,
+  avoidOccupied,
 }: {
   map: Map;
   position: Position;
   random: () => number;
   onStep?: (map: Map) => void;
+  avoidOccupied?: boolean;
 }) {
   const map = structuredClone(initialMap);
   let initialPosition = map.locations.find(
@@ -167,13 +166,20 @@ function step({
   ].filter(
     (pos) =>
       isValidNextStep({ map, position: pos }) &&
-      !wouldCrossExistingPath({ from: initialPosition, to: pos, map }),
+      !wouldCrossExistingPath({ from: initialPosition, to: pos, map })
   );
+
+  if (avoidOccupied) {
+    const occupiedCols = map.locations.filter((l) => l.row === nextRow).map((l) => l.col);
+    const notOccupied = possibleSteps.filter((pos) => !occupiedCols.includes(pos.col));
+    if (notOccupied.length > 0) {
+      possibleSteps = notOccupied;
+    }
+  }
 
   // Enforce at least two lanes per row
   const nextRowNodes = map.locations.filter((l) => l.row === nextRow);
   if (nextRowNodes.length === 1 && possibleSteps.length > 1) {
-    // Exclude the column already occupied
     const occupiedCol = nextRowNodes[0].col;
     const altSteps = possibleSteps.filter((pos) => pos.col !== occupiedCol);
     if (altSteps.length > 0) {
