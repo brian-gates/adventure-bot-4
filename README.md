@@ -4,7 +4,7 @@ A Discord bot powered by LLM intent inference.
 
 ## Prerequisites
 
-- [Deno](https://deno.com/manual/getting_started/installation) (v1.40+
+- [Deno](https://deno.com/manual/getting_started/installation) (v2.0.0+
   recommended)
 - [Ollama](https://github.com/ollama/ollama) (for LLM intent inference)
 - A Discord bot application
