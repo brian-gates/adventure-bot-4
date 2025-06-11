@@ -24,7 +24,7 @@ module.exports = {
     {
       name: "db",
       script: "docker",
-      args: "compose up", 
+      args: "compose up",
       log_date_format: "YYYY-MM-DD HH:mm:ss",
       autorestart: true,
     },
