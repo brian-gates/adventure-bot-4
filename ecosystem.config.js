@@ -16,7 +16,7 @@ module.exports = {
     },
     {
       name: "prisma-studio",
-      script: "npx",
+      script: "pnpm",
       args: "prisma studio --browser none",
       log_date_format: "YYYY-MM-DD HH:mm:ss",
       autorestart: true,

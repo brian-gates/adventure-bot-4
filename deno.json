@@ -7,7 +7,8 @@
   },
   "tasks": {
     "test": "deno test --allow-env --allow-read --allow-ffi",
-    "dev": "deno run -A src/bot/index.ts",
+    "test:watch": "deno test --allow-env --allow-read --allow-ffi --watch",
+    "bot": "deno run -A src/bot/index.ts",
     "generate": "pnpm prisma generate",
     "migrate": "pnpm prisma migrate dev",
     "clear-maps": "deno run -A src/game/map/clear-maps.ts",

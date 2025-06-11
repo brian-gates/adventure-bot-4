@@ -52,7 +52,7 @@ export function asciiMapString({
   // Find boss for reachability
   const boss = locations.find((l) => l.type === "boss");
   let out = "";
-  // Add column numbers at the top
+  // Center column numbers at the top
   out += "    ";
   for (let col = 0; col < cols; col++) {
     out += col.toString().padStart(3, " ");
