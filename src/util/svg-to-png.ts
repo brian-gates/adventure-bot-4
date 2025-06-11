@@ -1,4 +1,4 @@
-export const svgToPing = async (svg: string): Promise<Uint8Array> => {
+export const svgToPng = async (svg: string): Promise<Uint8Array> => {
   const p = new Deno.Command("rsvg-convert", {
     args: ["-f", "png"],
     stdin: "piped",

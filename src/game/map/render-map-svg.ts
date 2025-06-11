@@ -1,7 +1,12 @@
-import type { Location } from "../../generated/prisma/client.ts";
-import { GameMap } from "../map/game-map.ts";
-import { locationTypeImage } from "../map/locations/location-type-image.ts";
-import { getContrastBg, HEIGHT, iconDominantColors, WIDTH } from "./map.ts";
+import {
+  getContrastBg,
+  HEIGHT,
+  iconDominantColors,
+  WIDTH,
+} from "~/game/actions/map.ts";
+import { GameMap } from "~/game/map/game-map.ts";
+import { locationTypeImage } from "~/game/map/locations/location-type-image.ts";
+import type { Location } from "~/generated/prisma/client.ts";
 
 export function renderMapSvg(map: GameMap) {
   const { locations, paths, cols, rows } = map;

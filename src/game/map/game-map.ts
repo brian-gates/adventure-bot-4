@@ -5,7 +5,7 @@ import {
   type Map,
   type Path,
 } from "~/game/map/index.ts";
-import { renderMapSvg } from "../actions/render-map-svg.ts";
+import { renderMapSvg } from "./render-map-svg.ts";
 
 export class GameMap {
   private locationsById: Record<string, Location>;
@@ -57,6 +57,52 @@ export class GameMap {
     });
     if (!guild?.map) return null;
     return new GameMap(guild.map);
+  }
+
+  async save({ guildId }: { guildId: bigint }) {
+    const { locations, paths, id, cols, rows } = this;
+    const startLocation = this.map.locations
+      .filter((loc) => loc.type === "combat")
+      .reduce(
+        (bottom, loc) => (loc.row > bottom.row ? loc : bottom),
+        this.map.locations[0],
+      );
+
+    await prisma.$transaction(async (tx) => {
+      await tx.location.createMany({
+        data: locations.map((loc) => ({
+          ...loc,
+          attributes: {},
+        })),
+        skipDuplicates: true,
+      });
+      await tx.path.createMany({
+        data: paths.map((path) => ({
+          ...path,
+          attributes: {},
+        })),
+        skipDuplicates: true,
+      });
+      await tx.guild.upsert({
+        where: { id: guildId },
+        update: {
+          currentLocation: { connect: { id: startLocation.id } },
+          map: { connect: { id } },
+        },
+        create: {
+          id: guildId,
+          currentLocation: { connect: { id: startLocation.id } },
+          map: { connect: { id } },
+        },
+      });
+      await tx.map.create({
+        data: {
+          id,
+          cols,
+          rows,
+        },
+      });
+    });
   }
 
   get map() {
