@@ -19,10 +19,14 @@ export type MapGenerator = (opts: {
 export { LocationType } from "~/generated/prisma/client.ts";
 export type { Location, Path } from "~/generated/prisma/client.ts";
 
-function getMapById(mapId: string) {
+export function getMapById(mapId: string) {
   return prisma.map.findUnique({
     where: { id: mapId },
-    include: { locations: true, paths: true },
+    include: {
+      locations: true,
+      paths: true,
+      guild: { include: { currentLocation: true } },
+    },
   });
 }
 

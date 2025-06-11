@@ -49,35 +49,42 @@ export async function seedMapForGuild({ id }: { id: bigint }) {
     attributes: {},
   }));
 
-  await prisma.$transaction([
-    prisma.map.create({
+  const startLocation = map.locations
+    .filter((loc) => loc.type === "combat")
+    .reduce(
+      (bottom, loc) => (loc.row > bottom.row ? loc : bottom),
+      map.locations[0],
+    );
+
+  await prisma.$transaction(async (tx) => {
+    await tx.location.createMany({
+      data: locationsData,
+      skipDuplicates: true,
+    });
+    await tx.path.createMany({
+      data: pathsData,
+      skipDuplicates: true,
+    });
+    await tx.guild.upsert({
+      where: { id },
+      update: {
+        currentLocation: { connect: { id: startLocation.id } },
+        map: { connect: { id: map.id } },
+      },
+      create: {
+        id,
+        currentLocation: { connect: { id: startLocation.id } },
+        map: { connect: { id: map.id } },
+      },
+    });
+    await tx.map.create({
       data: {
         id: map.id,
         cols: map.cols,
         rows: map.rows,
       },
-    }),
-    prisma.location.createMany({
-      data: locationsData,
-      skipDuplicates: true,
-    }),
-    prisma.path.createMany({
-      data: pathsData,
-      skipDuplicates: true,
-    }),
-    prisma.guild.upsert({
-      where: { id },
-      update: {
-        locationId: map.locations[0].id,
-        map: { connect: { id: map.id } },
-      },
-      create: {
-        id,
-        locationId: map.locations[0].id,
-        map: { connect: { id: map.id } },
-      },
-    }),
-  ]);
+    });
+  });
 
   console.log(`[seed-map] Created ${map.paths.length} paths`);
   console.log(`[seed-map] Map seeded for guild ${id}`);

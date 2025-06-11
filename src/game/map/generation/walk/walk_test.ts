@@ -167,8 +167,8 @@ Deno.test(
 Deno.test("ascii view", () => {
   logAsciiMap({
     map: walkStrategy({
-      cols: 15,
-      rows: 7,
+      cols: 7,
+      rows: 14,
       random: seededRandom(0),
       guildId: TEST_GUILD_ID,
     }),
@@ -357,10 +357,10 @@ function createMap({
     updatedAt: new Date(),
     rows,
     cols,
-    currentLocationId: null,
-    locationId: null,
     locations,
     paths,
+    guildId: null,
+    guild: null,
   };
 }
 

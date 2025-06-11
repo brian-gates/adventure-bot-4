@@ -126,8 +126,7 @@ const gridStrategy: MapGenerator = ({
     id: mapId,
     createdAt: new Date(),
     updatedAt: new Date(),
-    currentLocationId: null,
-    locationId: null,
+    guild: null,
   };
 };
 

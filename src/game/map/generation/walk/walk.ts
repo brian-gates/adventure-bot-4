@@ -92,8 +92,8 @@ export function emptyMap({
     rows,
     createdAt: now,
     updatedAt: now,
-    currentLocationId: null,
-    locationId: null,
+    guildId: null,
+    guild: null,
   };
 }
 

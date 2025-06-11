@@ -52,10 +52,10 @@ export function asciiMapString({
   // Find boss for reachability
   const boss = locations.find((l) => l.type === "boss");
   let out = "";
-  // Add column numbers at the top
+  // Center column numbers at the top
   out += "    ";
   for (let col = 0; col < cols; col++) {
-    out += col.toString().padStart(3, " ");
+    out += center(col.toString(), 3);
   }
   out += "\n";
   for (let row = rows - 1; row >= 0; row--) {
@@ -141,3 +141,11 @@ const locationTypeColor: Record<LocationType, string> = {
   shop: "\x1b[90m", // Bright Black (Gray)
 };
 const resetColor = "\x1b[0m";
+
+function center(str: string, width: number) {
+  const len = str.length;
+  if (len >= width) return str;
+  const left = Math.floor((width - len) / 2);
+  const right = width - len - left;
+  return " ".repeat(left) + str + " ".repeat(right);
+}

@@ -31,21 +31,20 @@ model Player {
 }
 
 model Location {
-    id                    String       @id
-    row                   Int
-    col                   Int
-    name                  String
-    description           String
-    attributes            Json
-    type                  LocationType
-    createdAt             DateTime     @default(now())
-    updatedAt             DateTime     @updatedAt
-    fromPaths             Path[]       @relation("FromLocation")
-    toPaths               Path[]       @relation("ToLocation")
-    map                   Map          @relation("MapLocations", fields: [mapId], references: [id], onDelete: Cascade)
-    mapId                 String
-    mapsAsCurrentLocation Map[]        @relation("MapCurrentLocation")
-    Map                   Map[]
+    id          String       @id
+    row         Int
+    col         Int
+    name        String
+    description String
+    attributes  Json
+    type        LocationType
+    createdAt   DateTime     @default(now())
+    updatedAt   DateTime     @updatedAt
+    fromPaths   Path[]       @relation("FromLocation")
+    toPaths     Path[]       @relation("ToLocation")
+    guilds      Guild[]      @relation("GuildCurrentLocation")
+    map         Map          @relation(fields: [mapId], references: [id], onDelete: Cascade)
+    mapId       String       @unique
 }
 
 model Path {
@@ -58,31 +57,29 @@ model Path {
     attributes     Json
     createdAt      DateTime @default(now())
     updatedAt      DateTime @updatedAt
-    map            Map?      @relation(fields: [mapId], references: [id], onDelete: Cascade)
-    mapId          String?
+    map            Map      @relation(fields: [mapId], references: [id], onDelete: Cascade)
+    mapId          String
 }
 
 model Guild {
-    id           BigInt   @id
-    updatedAt    DateTime @updatedAt
-    seed         String   @default(uuid())
-    randomCursor Int      @default(0)
-    locationId   String?
-    map          Map?      @relation(fields: [mapId], references: [id])
-    mapId        String?   @unique
+    id                BigInt    @id
+    updatedAt         DateTime  @updatedAt
+    seed              String    @default(uuid())
+    randomCursor      Int       @default(0)
+    currentLocationId String?
+    currentLocation   Location? @relation("GuildCurrentLocation", fields: [currentLocationId], references: [id])
+    map               Map?
+    mapId             String?   @unique
 }
 
 model Map {
-    id                String     @id @default(uuid())
-    locations         Location[] @relation("MapLocations")
-    paths             Path[]
-    createdAt         DateTime   @default(now())
-    updatedAt         DateTime   @updatedAt
-    rows              Int
-    cols              Int
-    currentLocation   Location?  @relation("MapCurrentLocation", fields: [currentLocationId], references: [id])
-    currentLocationId String?
-    Location          Location?  @relation(fields: [locationId], references: [id])
-    locationId        String?
-    guild             Guild?     @relation
+    id        String     @id @default(uuid())
+    locations Location[]
+    paths     Path[]
+    createdAt DateTime   @default(now())
+    updatedAt DateTime   @updatedAt
+    rows      Int
+    cols      Int
+    guildId   BigInt?    @unique
+    guild     Guild?     @relation(fields: [guildId], references: [id])
 }

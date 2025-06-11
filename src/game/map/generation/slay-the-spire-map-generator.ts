@@ -37,10 +37,10 @@ export const slayTheSpireMapGenerator: MapGenerator = ({
     id: crypto.randomUUID(),
     createdAt: new Date(),
     updatedAt: new Date(),
-    currentLocationId: null,
-    locationId: null,
     locations: [],
     paths: [],
+    guildId: null,
+    guild: null,
   };
   const nodeMap = new Map<string, Location>();
   const locations: Location[] = [];
