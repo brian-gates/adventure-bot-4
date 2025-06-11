@@ -1,19 +1,14 @@
 import { load } from "https://deno.land/std@0.224.0/dotenv/mod.ts";
 import { Keypress } from "https://deno.land/x/cliffy@v1.0.0-rc.4/keypress/mod.ts";
 import { prisma } from "~/db/index.ts";
-import { rasterizeSvgToPng, renderMapSvg } from "~/game/actions/map.ts";
+import { GameMap } from "~/game/map/game-map.ts";
 import { seedMapForGuild } from "~/game/map/seed-map.ts";
+import { svgToPing } from "../../actions/svg-to-png.ts";
 import { asciiMapString } from "./log-ascii-map.ts";
 
 await load({ export: true });
 
-let maps = await prisma.map.findMany({
-  include: {
-    locations: true,
-    paths: true,
-    guild: true,
-  },
-});
+let maps = await GameMap.findAll();
 
 let index = 0;
 
@@ -75,9 +70,7 @@ for await (const key of new Keypress()) {
         data: { seed: newSeed },
       });
       await seedMapForGuild({ id: guild.id });
-      maps = await prisma.map.findMany({
-        include: { locations: true, paths: true, guild: true },
-      });
+      maps = await GameMap.findAll();
       render("Map reseeded and regenerated.");
     } catch (err) {
       render("Error reseeding/regenerating: " + err);
@@ -97,9 +90,7 @@ for await (const key of new Keypress()) {
     }
     try {
       await seedMapForGuild({ id: BigInt(guildId) });
-      maps = await prisma.map.findMany({
-        include: { locations: true, paths: true, guild: true },
-      });
+      maps = await GameMap.findAll();
       render(`Seeded new map for guild ${guildId}.`);
     } catch (err) {
       render("Error seeding new map: " + err);
@@ -111,10 +102,10 @@ for await (const key of new Keypress()) {
       continue;
     }
     try {
-      const svg = renderMapSvg(map);
+      const svg = map.toSvg();
       const fileName = `map-${map.id}.svg`;
       await Deno.writeTextFile(fileName, svg);
-      const png = await rasterizeSvgToPng(svg);
+      const png = await svgToPing(svg);
       const pngFileName = `map-${map.id}.png`;
       await Deno.writeFile(pngFileName, png);
       render(`SVG saved to ${fileName}, PNG saved to ${pngFileName}`);

@@ -183,5 +183,6 @@ export const trailblazingStrategy: MapGenerator = ({
     updatedAt: new Date(),
     currentLocationId: locations[0].id,
     locationId: locations[0].id,
+    guild: null,
   };
 };

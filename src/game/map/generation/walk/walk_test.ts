@@ -357,10 +357,10 @@ function createMap({
     updatedAt: new Date(),
     rows,
     cols,
-    currentLocationId: null,
-    locationId: null,
     locations,
     paths,
+    guildId: null,
+    guild: null,
   };
 }
 

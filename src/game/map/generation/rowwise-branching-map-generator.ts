@@ -99,5 +99,6 @@ export const rowwiseBranchingMapGenerator: MapGenerator = ({
     currentLocationId: locations[0].id,
     locationId: locations[0].id,
     guildId,
+    guild: null,
   };
 };

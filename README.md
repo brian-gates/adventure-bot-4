@@ -1,7 +1,6 @@
 # Adventure Bot 4
 
-A Discord bot powered by LLM intent inference, written in Deno with a pure
-functional style.
+A Discord bot powered by LLM intent inference.
 
 ## Prerequisites
 

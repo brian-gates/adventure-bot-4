@@ -4,7 +4,6 @@ import {
   type MapGenerator,
   type Path,
 } from "~/game/map/index.ts";
-import type { JsonValue } from "~/generated/prisma/internal/prismaNamespace.ts";
 
 export const branchingTrailblazerStrategy: MapGenerator = ({
   cols = 7,
@@ -506,7 +505,7 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
     type: LocationType.combat, // Default type, can be refined
     name: `Node ${row},${col}`,
     description: `Description for Node ${row},${col}`,
-    attributes: {} as JsonValue,
+    attributes: {},
     createdAt: new Date(),
     updatedAt: new Date(),
     mapId,
@@ -550,5 +549,6 @@ export const branchingTrailblazerStrategy: MapGenerator = ({
     currentLocationId: locations[0].id,
     locationId: locations[0].id,
     guildId,
+    guild: null,
   };
 };
