@@ -6,8 +6,8 @@
     "exclude": ["pnpm-lock.yaml"]
   },
   "tasks": {
-    "test": "deno test --allow-env --allow-read --allow-ffi",
-    "test:watch": "deno test --allow-env --allow-read --allow-ffi --watch",
+    "test": "deno test --allow-env --allow-read --allow-ffi --allow-import",
+    "test:watch": "deno test --allow-env --allow-read --allow-ffi --watch --allow-import",
     "bot": "deno run -A src/bot/index.ts",
     "generate": "pnpm prisma generate",
     "migrate": "pnpm prisma migrate dev",

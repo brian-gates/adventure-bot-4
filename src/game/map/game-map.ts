@@ -181,4 +181,74 @@ export class GameMap {
   get updatedAt() {
     return this.map.updatedAt;
   }
+
+  async save({ guildId }: { guildId: bigint }) {
+    const { locations, paths, id, cols, rows } = this.map;
+    const startLocation = this.map.locations
+      .filter((loc) => loc.type === "combat")
+      .reduce(
+        (bottom, loc) => (loc.row > bottom.row ? loc : bottom),
+        this.map.locations[0],
+      );
+
+    // First transaction: create the map and all locations
+    await prisma.$transaction(async (tx) => {
+      await tx.map.create({
+        data: {
+          id,
+          cols,
+          rows,
+        },
+      });
+      await tx.location.createMany({
+        data: locations.map((loc) => ({
+          ...loc,
+          mapId: id,
+          attributes: {},
+        })),
+        skipDuplicates: true,
+      });
+    });
+    // Fetch all location IDs after insert
+    const allLocationIds = new Set(
+      (await prisma.location.findMany({
+        where: { mapId: id },
+        select: { id: true },
+      })).map((l) => l.id),
+    );
+    // Check that all path endpoints exist
+    const missing = paths.flatMap((p) =>
+      [p.fromLocationId, p.toLocationId].filter((locId) =>
+        !allLocationIds.has(locId)
+      )
+    );
+    if (missing.length > 0) {
+      throw new Error(
+        `Missing location IDs for paths: ${[...new Set(missing)].join(", ")}`,
+      );
+    }
+    // Second transaction: create paths and upsert guild
+    await prisma.$transaction(async (tx) => {
+      await tx.path.createMany({
+        data: paths.map((path) => ({
+          ...path,
+          mapId: id,
+          attributes: {},
+        })),
+        skipDuplicates: true,
+      });
+      await tx.guild.upsert({
+        where: { id: guildId },
+        update: {
+          currentLocation: { connect: { id: startLocation.id } },
+          map: { connect: { id } },
+        },
+        create: {
+          id: guildId,
+          currentLocation: { connect: { id: startLocation.id } },
+          map: { connect: { id } },
+        },
+      });
+    });
+  }
 }
