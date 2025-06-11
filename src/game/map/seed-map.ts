@@ -1,8 +1,9 @@
 import { prisma } from "~/db/index.ts";
 import { seededRandom } from "~/game/seeded-random.ts";
-import { findOrCreateGuild } from "../../db/find-or-create-guild.ts";
+import { findOrCreateGuild } from "~/db/find-or-create-guild.ts";
 import { stringToSeed } from "../string-to-seed.ts";
 import { getMapGenerator } from "./generation/index.ts";
+import { GameMap } from "./game-map.ts";
 
 export async function seedMapForGuild({ id }: { id: bigint }) {
   console.log(`[seed-map] Seeding map for guild ${id}`);
@@ -27,27 +28,8 @@ export async function seedMapForGuild({ id }: { id: bigint }) {
   console.log(
     `[seed-map] Built map: ${map.locations.length} locations, ${map.paths.length} paths`,
   );
-
-  // Prepare data for createMany
-  const locationsData = map.locations.map((loc) => ({
-    id: loc.id,
-    mapId: map.id,
-    name: `Node ${loc.col},${loc.row}`,
-    description: "",
-    attributes: {},
-    row: loc.row,
-    col: loc.col,
-    type: loc.type,
-  }));
-
-  const pathsData = map.paths.map((path) => ({
-    id: path.id,
-    mapId: map.id,
-    fromLocationId: path.fromLocationId,
-    toLocationId: path.toLocationId,
-    description: "",
-    attributes: {},
-  }));
+  const gameMap = new GameMap(map);
+  await gameMap.save({ guildId: id });
 
   const startLocation = map.locations
     .filter((loc) => loc.type === "combat")
@@ -58,11 +40,17 @@ export async function seedMapForGuild({ id }: { id: bigint }) {
 
   await prisma.$transaction(async (tx) => {
     await tx.location.createMany({
-      data: locationsData,
+      data: map.locations.map((loc) => ({
+        ...loc,
+        attributes: {},
+      })),
       skipDuplicates: true,
     });
     await tx.path.createMany({
-      data: pathsData,
+      data: map.paths.map((path) => ({
+        ...path,
+        attributes: {},
+      })),
       skipDuplicates: true,
     });
     await tx.guild.upsert({

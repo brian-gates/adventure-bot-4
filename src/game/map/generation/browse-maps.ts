@@ -3,7 +3,7 @@ import { Keypress } from "https://deno.land/x/cliffy@v1.0.0-rc.4/keypress/mod.ts
 import { prisma } from "~/db/index.ts";
 import { GameMap } from "~/game/map/game-map.ts";
 import { seedMapForGuild } from "~/game/map/seed-map.ts";
-import { svgToPing } from "../../actions/svg-to-png.ts";
+import { svgToPng } from "../../../util/svg-to-png.ts";
 import { asciiMapString } from "./log-ascii-map.ts";
 
 await load({ export: true });
@@ -105,7 +105,7 @@ for await (const key of new Keypress()) {
       const svg = map.toSvg();
       const fileName = `map-${map.id}.svg`;
       await Deno.writeTextFile(fileName, svg);
-      const png = await svgToPing(svg);
+      const png = await svgToPng(svg);
       const pngFileName = `map-${map.id}.png`;
       await Deno.writeFile(pngFileName, png);
       render(`SVG saved to ${fileName}, PNG saved to ${pngFileName}`);

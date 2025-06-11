@@ -2,11 +2,11 @@ import type {
   Bot,
   Interaction,
 } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
+import { prisma } from "~/db/index.ts";
 import { GameMap } from "~/game/map/game-map.ts";
 import type { LocationType } from "~/game/map/index.ts";
-import { prisma } from "../../db/index.ts";
-import { renderMapSvg } from "./render-map-svg.ts";
-import { svgToPing } from "./svg-to-png.ts";
+import { renderMapSvg } from "~/game/map/render-map-svg.ts";
+import { svgToPng } from "~/util/svg-to-png.ts";
 
 export const WIDTH = 600;
 export const HEIGHT = 1800;
@@ -76,25 +76,14 @@ export async function map({
     return;
   }
   const svg = renderMapSvg(map);
-  const png = await svgToPing(svg);
+  const png = await svgToPng(svg);
   if (interaction.channelId) {
     try {
-      if (png) {
-        await bot.helpers.sendMessage(interaction.channelId, {
-          file: [
-            { blob: new Blob([png], { type: "image/png" }), name: "map.png" },
-          ],
-        });
-      } else {
-        await bot.helpers.sendMessage(interaction.channelId, {
-          file: [
-            {
-              blob: new Blob([svg], { type: "image/svg+xml" }),
-              name: "map.svg",
-            },
-          ],
-        });
-      }
+      await bot.helpers.sendMessage(interaction.channelId, {
+        file: [
+          { blob: new Blob([png], { type: "image/png" }), name: "map.png" },
+        ],
+      });
     } catch (err) {
       console.error(
         `[map] Error sending map image to channel ${interaction.channelId}:`,
@@ -105,5 +94,3 @@ export async function map({
     console.log(`[map] No channelId found for interaction`);
   }
 }
-
-export { renderMapSvg, svgToPing as rasterizeSvgToPng };
