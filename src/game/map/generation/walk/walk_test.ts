@@ -347,46 +347,6 @@ Deno.test(
   },
 );
 
-Deno.test("creating locations with nonexistent mapId fails with foreign key error", async () => {
-  // Simulate Prisma-like behavior
-  const fakePrisma = {
-    map: { create: async () => ({ id: "nonexistent-map-id" }) },
-    location: {
-      createMany: async ({ data }: { data: any[] }) => {
-        // Simulate FK check: throw if mapId is not "existing-map-id"
-        for (const loc of data) {
-          if (loc.mapId !== "existing-map-id") {
-            throw new Error(
-              "Foreign key constraint violated on the constraint: Location_mapId_fkey",
-            );
-          }
-        }
-      },
-    },
-  };
-  let errorCaught = false;
-  try {
-    await fakePrisma.location.createMany({
-      data: [
-        { id: "loc1", mapId: "nonexistent-map-id" },
-        { id: "loc2", mapId: "nonexistent-map-id" },
-      ],
-    });
-  } catch (e) {
-    if (e instanceof Error) {
-      errorCaught = true;
-      assertEquals(
-        e.message.includes("Foreign key constraint violated"),
-        true,
-        "Should throw foreign key constraint error",
-      );
-    } else {
-      throw e;
-    }
-  }
-  assertEquals(errorCaught, true, "Should catch the FK error");
-});
-
 function createMap({
   locations = [],
   paths = [],
