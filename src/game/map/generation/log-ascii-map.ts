@@ -4,7 +4,7 @@ import type {
   LocationType,
   Path,
 } from "~/generated/prisma/client.ts";
-import { isReachablePosition } from "./walk/walk.ts";
+import { isReachablePosition } from "./walk/walk-strategy.ts";
 
 export function asciiMapString({
   map,

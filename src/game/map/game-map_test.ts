@@ -1,6 +1,6 @@
 import { prisma } from "~/db/index.ts";
 import { GameMap } from "./game-map.ts";
-import { walkStrategy } from "./generation/walk/walk.ts";
+import { walkStrategy } from "./generation/walk/walk-strategy.ts";
 
 Deno.test({
   name:

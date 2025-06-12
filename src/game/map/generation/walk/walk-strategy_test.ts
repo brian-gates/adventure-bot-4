@@ -6,13 +6,13 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "~/db/index.ts";
 import { GameMap } from "~/game/map/game-map.ts";
 import { logAsciiMap } from "~/game/map/generation/log-ascii-map.ts";
+import { Location, LocationType, Map, Path } from "~/game/map/index.ts";
+import { seededRandom } from "~/game/seeded-random.ts";
 import {
   emptyMap,
   walkStrategy,
   wouldCrossExistingPath,
-} from "~/game/map/generation/walk/walk.ts";
-import { Location, LocationType, Map, Path } from "~/game/map/index.ts";
-import { seededRandom } from "~/game/seeded-random.ts";
+} from "./walk-strategy.ts";
 
 const TEST_GUILD_ID = BigInt(1);
 const TEST_MAP_ID = "test-map";
