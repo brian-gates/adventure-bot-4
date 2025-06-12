@@ -136,17 +136,25 @@ export class GameMap {
     return this.map.updatedAt;
   }
 
-  async save({ guildId }: { guildId: bigint }) {
+  get startLocation() {
+    const startCol = Math.floor(this.map.cols / 2);
+    return this.map.locations.find(
+      (loc) => loc.row === 0 && loc.col === startCol,
+    );
+  }
+
+  async save(
+    { guildId, prisma: db }: {
+      guildId: bigint;
+      prisma: typeof prisma;
+    },
+  ) {
     const { locations, paths, id, cols, rows } = this.map;
-    const startLocation = this.map.locations
-      .filter((loc) => loc.type === "combat")
-      .reduce(
-        (bottom, loc) => (loc.row > bottom.row ? loc : bottom),
-        this.map.locations[0],
-      );
+    const startLocation = this.startLocation;
+    if (!startLocation) throw new Error("No start location found");
 
     // First transaction: create the map and all locations
-    await prisma.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       await tx.map.create({
         data: {
           id,
@@ -165,7 +173,7 @@ export class GameMap {
     });
     // Fetch all location IDs after insert
     const allLocationIds = new Set(
-      (await prisma.location.findMany({
+      (await db.location.findMany({
         where: { mapId: id },
         select: { id: true },
       })).map((l) => l.id),
@@ -182,7 +190,7 @@ export class GameMap {
       );
     }
     // Second transaction: create paths and upsert guild
-    await prisma.$transaction(async (tx) => {
+    await db.$transaction(async (tx) => {
       await tx.path.createMany({
         data: paths.map((path) => ({
           ...path,
