@@ -1,7 +1,5 @@
 # Adventure Bot 4
 
-A Discord bot powered by LLM intent inference.
-
 ## Prerequisites
 
 - [Deno](https://deno.com/manual/getting_started/installation) (v2.0.0+
