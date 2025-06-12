@@ -1,5 +1,5 @@
 import type { MapGenerator } from "../index.ts";
-import { walkStrategy } from "./walk/walk.ts";
+import { walkStrategy } from "./walk/walk-strategy.ts";
 
 export { walkStrategy };
 

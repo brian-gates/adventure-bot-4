@@ -3,7 +3,7 @@ import { prisma } from "~/db/index.ts";
 import { seededRandom } from "~/game/seeded-random.ts";
 import { stringToSeed } from "../string-to-seed.ts";
 import { GameMap } from "./game-map.ts";
-import { getMapGenerator } from "./generation/index.ts";
+import { walkStrategy } from "./generation/walk/walk-strategy.ts";
 
 export async function seedMapForGuild({ id }: { id: bigint }) {
   console.log(`[seed-map] Seeding map for guild ${id}`);
@@ -17,7 +17,7 @@ export async function seedMapForGuild({ id }: { id: bigint }) {
   const guild = await findOrCreateGuild({ id });
   const { seed } = guild;
 
-  const map = getMapGenerator("walk")({
+  const map = walkStrategy({
     cols: 7,
     rows: 15,
     minNodes: 2,
