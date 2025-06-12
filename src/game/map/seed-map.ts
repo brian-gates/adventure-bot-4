@@ -30,7 +30,7 @@ export async function seedMapForGuild({ id }: { id: bigint }) {
   );
 
   const gameMap = new GameMap(map);
-  await gameMap.save({ guildId: id });
+  await gameMap.save({ guildId: id, prisma });
 
   console.log(`[seed-map] Created ${map.paths.length} paths`);
   console.log(`[seed-map] Map seeded for guild ${id}`);
