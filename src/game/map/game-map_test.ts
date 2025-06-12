@@ -25,32 +25,63 @@ Deno.test({
 
     let errorCaught = false;
     try {
-      await prisma.map.deleteMany({ where: { id: mapId } });
-      await gameMap.save({ guildId });
-      const locations = await prisma.location.findMany({ where: { mapId } });
-      const postLocationIds = new Set(locations.map((l) => l.id));
-      const paths = await prisma.path.findMany({ where: { mapId } });
-      const postPathEndpointIds = paths.flatMap((
-        p,
-      ) => [p.fromLocationId, p.toLocationId]);
-      // Assertion: all path endpoint IDs must be present in locations
-      const missing = postPathEndpointIds.filter((id) =>
-        !postLocationIds.has(id)
-      );
-      if (missing.length > 0) {
-        throw new Error(
-          `Missing location IDs for paths: ${[...new Set(missing)].join(", ")}`,
+      await prisma.$transaction(async (tx) => {
+        await tx.map.deleteMany({ where: { id: mapId } });
+        await gameMap.save({ guildId, prisma: prisma });
+        const locations = await tx.location.findMany({ where: { mapId } });
+        const postLocationIds = new Set(locations.map((l) => l.id));
+        const paths = await tx.path.findMany({ where: { mapId } });
+        const postPathEndpointIds = paths.flatMap((
+          p,
+        ) => [p.fromLocationId, p.toLocationId]);
+        // Assertion: all path endpoint IDs must be present in locations
+        const missing = postPathEndpointIds.filter((id) =>
+          !postLocationIds.has(id)
         );
-      }
+        if (missing.length > 0) {
+          throw new Error(
+            `Missing location IDs for paths: ${
+              [...new Set(missing)].join(", ")
+            }`,
+          );
+        }
+        // Assert getNextLocations from the starting position returns outbound paths
+        const startCol = Math.floor(mapData.cols / 2);
+        const startLoc = gameMap.locations.find((l) =>
+          l.row === 0 && l.col === startCol
+        );
+        if (!startLoc) throw new Error("No start location found");
+        const nextLocations = gameMap.getNextLocations({ id: startLoc.id });
+        if (!nextLocations.length) {
+          throw new Error(
+            "getNextLocations from start returns no outbound locations",
+          );
+        }
+        // Assert gameMap.startLocation matches the expected start node
+        if (!gameMap.startLocation) {
+          throw new Error("gameMap.startLocation is null");
+        }
+        if (
+          gameMap.startLocation.row !== 0 ||
+          gameMap.startLocation.col !== startCol
+        ) {
+          throw new Error(
+            `gameMap.startLocation is not at (0, ${startCol}), got (${gameMap.startLocation.row}, ${gameMap.startLocation.col})`,
+          );
+        }
+        // Force rollback
+        throw new Error("ROLLBACK");
+      });
     } catch (e) {
-      errorCaught = true;
-      if (e instanceof Error) {
-        console.error("Integration test error:", e.message);
+      // Only treat as error if not our forced rollback
+      if (e instanceof Error && e.message === "ROLLBACK") {
+        errorCaught = false;
+      } else {
+        errorCaught = true;
+        if (e instanceof Error) {
+          console.error("Integration test error:", e.message);
+        }
       }
-    } finally {
-      await prisma.path.deleteMany({ where: { mapId } });
-      await prisma.location.deleteMany({ where: { mapId } });
-      await prisma.map.deleteMany({ where: { id: mapId } });
     }
     if (errorCaught) {
       throw new Error(
