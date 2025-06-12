@@ -432,7 +432,7 @@ Deno.test({
     let errorCaught = false;
     try {
       await prisma.map.deleteMany({ where: { id: mapId } });
-      await gameMap.save({ guildId });
+      await gameMap.save({ guildId, prisma });
       // Fetch all locations for this map
       const locations = await prisma.location.findMany({ where: { mapId } });
       // Assert all locations reference the correct mapId
