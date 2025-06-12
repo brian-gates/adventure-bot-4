@@ -4,7 +4,7 @@ import { Map } from "~/game/map/index.ts";
 import { seededRandom } from "~/game/seeded-random.ts";
 import { stringToSeed } from "~/game/string-to-seed.ts";
 import { testMap } from "../test-map-validity.ts";
-import { strategies } from "./index.ts";
+import { walkStrategy } from "./index.ts";
 import { asciiMapString } from "./log-ascii-map.ts";
 
 async function promptInt(msg: string, def: number) {
@@ -16,16 +16,6 @@ async function promptInt(msg: string, def: number) {
   return Number.isNaN(n) ? def : n;
 }
 
-async function promptChoice(msg: string, options: string[], def: string) {
-  const input = await Input.prompt({
-    message: `${msg} (${options.join("/")}) [${def}]`,
-    default: def,
-  });
-  return input && options.includes(input) ? input : def;
-}
-
-let stratIndex = 0;
-let strat = strategies[stratIndex].name;
 let cols = 7;
 let rows = 15;
 let minNodes = 2;
@@ -62,7 +52,6 @@ function renderFrame() {
       isPlaying ? " | Playing... (P to stop)" : ""
     }`,
   );
-  const strat = strategies[stratIndex];
   const errors = testMap(map, { minNodes, maxNodes });
   console.log("\n[Checks]");
   if (errors.length === 0) {
@@ -73,7 +62,7 @@ function renderFrame() {
     }
   }
   console.log(
-    `\nCurrent: strat=${strat.name}, cols=${cols}, rows=${rows}, minNodes=${minNodes}, maxNodes=${maxNodes}`,
+    `\nCurrent: cols=${cols}, rows=${rows}, minNodes=${minNodes}, maxNodes=${maxNodes}`,
   );
   console.log(
     "\n←/→: prev/next map, ↑/↓: scrub animation, P: play, X: export, A: next algo, E: edit params, Q: quit",
@@ -84,8 +73,7 @@ function renderCurrent() {
   frames = [];
   frameIndex = 0;
   isPlaying = false;
-  const strat = strategies[stratIndex];
-  strat.fn({
+  walkStrategy({
     cols,
     rows,
     minNodes,
@@ -140,17 +128,7 @@ if (import.meta.main) {
         }
       } else if (key.key === "x") {
         await exportAnimationFrames();
-      } else if (key.key === "a") {
-        stratIndex = (stratIndex + 1) % strategies.length;
-        strat = strategies[stratIndex].name;
-        renderCurrent();
       } else if (key.key === "e") {
-        strat = await promptChoice(
-          "Algorithm",
-          strategies.map((s) => s.name),
-          strat,
-        );
-        stratIndex = strategies.findIndex((s) => s.name === strat);
         cols = await promptInt("Columns", cols);
         rows = await promptInt("Rows", rows);
         minNodes = await promptInt("Min nodes per row", minNodes);

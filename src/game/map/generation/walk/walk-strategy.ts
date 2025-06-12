@@ -2,12 +2,21 @@ import {
   type Location,
   LocationType,
   type Map,
-  type MapGenerator,
   type Path,
   type Position,
 } from "~/game/map/index.ts";
+import { locationType } from "../location-types.ts";
 import { logAsciiMap } from "../log-ascii-map.ts";
-import { locationType } from "./location-types.ts";
+type MapGenerator = (opts: {
+  cols?: number;
+  rows?: number;
+  minNodes?: number;
+  maxNodes?: number;
+  numPaths?: number;
+  random: () => number;
+  onStep?: (map: Map) => void;
+  guildId: bigint;
+}) => Map;
 
 export const walkStrategy: MapGenerator = ({
   cols = 7,

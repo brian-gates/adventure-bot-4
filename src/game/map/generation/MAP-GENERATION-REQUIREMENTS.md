@@ -31,32 +31,8 @@
 - Every node (except the end) must have at least one outgoing edge.
 - No orphans: every node is part of at least one path from start to finish.
 
-## Trailblazing/Branching Logic
-
-- Multiple "main" paths can be walked from start to finish, but:
-  - When paths merge, they can split again in later rows (merges do not force
-    permanent convergence).
-  - The number of available options (nodes) per row should remain within the
-    specified min/max.
-- When generating each row:
-  - Place the desired number of nodes at random columns.
-  - For each node in the previous row, connect to 1–2 adjacent nodes in the
-    current row.
-  - For each node in the current row, ensure it has at least one incoming
-    connection from an adjacent node in the previous row.
-- All fallback logic (for ensuring connectivity) must only consider adjacent
-  columns.
-
 ## Additional Constraints
 
 - The algorithm must be deterministic if seeded (for reproducibility).
-- The code should avoid mutation where possible, use types (not interfaces), and
-  prefer functional style.
 - All logic should be easily testable and debuggable, with optional ASCII output
   for terminal inspection.
-
-## Optional/Advanced
-
-- Support for "special" nodes (e.g., shops, elites, events) can be added after
-  core structure is stable.
-- The map should be easy to reset and reseed for rapid iteration.
