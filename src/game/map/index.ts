@@ -5,17 +5,6 @@ export type Position = {
   col: number;
 };
 
-export type MapGenerator = (opts: {
-  cols?: number;
-  rows?: number;
-  minNodes?: number;
-  maxNodes?: number;
-  numPaths?: number;
-  random: () => number;
-  onStep?: (map: Map) => void;
-  guildId: bigint;
-}) => Map;
-
 export { LocationType } from "~/generated/prisma/client.ts";
 export type { Location, Path } from "~/generated/prisma/client.ts";
 
