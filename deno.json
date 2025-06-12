@@ -11,6 +11,7 @@
     "bot": "deno run -A src/bot/index.ts",
     "generate": "pnpm prisma generate",
     "migrate": "pnpm prisma migrate dev",
+    "reset": "pnpm prisma migrate reset && pnpm prisma generate && pnpm prisma migrate dev",
     "clear-maps": "deno run -A src/game/map/clear-maps.ts",
     "maps": "deno run -A src/game/map/generation/dev-generate-map.ts",
     "generate-map-icons": "deno run --allow-read --allow-write src/game/map/locations/generate-map-icon-data-uris.ts",
