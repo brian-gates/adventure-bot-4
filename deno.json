@@ -20,6 +20,7 @@
     "psql": "PGPASSWORD=postgres psql -h localhost -p 5444 -U postgres -d adventure",
     "check": "deno check --allow-import",
     "setup": "sh ./setup.sh",
-    "start": "deno task setup && pnpm pm2 start ecosystem.config.js"
+    "start": "deno task setup && pnpm pm2 start ecosystem.config.js",
+    "seed:enemies": "deno run -A prisma/seed-enemies.ts"
   }
 }
