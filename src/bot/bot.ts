@@ -5,7 +5,7 @@ import {
 } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 import { registerCommandsAndPermissions } from "~/bot/register-commands-and-permissions.ts";
 import { actions } from "~/game/actions/index.ts";
-import { seedMapForGuild } from "~/game/map/seed-map.ts";
+import { seedMapForGuild } from "../game/map/seed-map-for-guild.ts";
 
 export { startBot } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 
@@ -81,6 +81,7 @@ export function makeBot({ token, botId }: { token: string; botId: bigint }) {
           await actions[interaction.data.name as keyof typeof actions]({
             bot,
             interaction,
+            random: () => Math.random(),
           });
         }
       },

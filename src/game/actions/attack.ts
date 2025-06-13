@@ -4,8 +4,6 @@ import { prisma } from "~/db/index.ts";
 import { findOrCreatePlayer, setPlayerHealth } from "~/db/player.ts";
 import { getTargetPlayer } from "~/discord/get-target.ts";
 import { rollAndAnnounceDie } from "~/game/dice.ts";
-import { seededRandom } from "~/game/seeded-random.ts";
-import { stringToSeed } from "~/game/string-to-seed.ts";
 import { narrate } from "~/llm/index.ts";
 import { narrateAttack } from "~/prompts.ts";
 import { healthBar } from "~/ui/health-bar.ts";
@@ -13,9 +11,11 @@ import { healthBar } from "~/ui/health-bar.ts";
 export async function attack({
   bot,
   interaction,
+  random,
 }: {
   bot: Bot;
   interaction: Interaction;
+  random: () => number;
 }) {
   const authorId = interaction.user.id;
   const channelId = interaction.channelId!;
@@ -32,14 +32,14 @@ export async function attack({
     interaction,
     sides: 20,
     label: "d20",
-    random: seededRandom(stringToSeed(seed)),
+    random,
   });
   const { roll: damage } = await rollAndAnnounceDie({
     bot,
     interaction,
     sides: 4,
     label: "1d4 (unarmed)",
-    random: seededRandom(stringToSeed(seed)),
+    random,
   });
   const player = await findOrCreatePlayer({
     id: targetPlayer.id,

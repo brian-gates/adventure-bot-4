@@ -1,4 +1,5 @@
 import { prisma } from "~/db/index.ts";
+import { seededRandom } from "../seeded-random.ts";
 import { GameMap } from "./game-map.ts";
 import { walkStrategy } from "./generation/walk/walk-strategy.ts";
 
@@ -86,6 +87,71 @@ Deno.test({
       throw new Error(
         "Foreign key or save error occurred during integration test",
       );
+    }
+  },
+});
+
+Deno.test({
+  name:
+    "GameMap.save sets guild currentLocation to start location (row 0, col startCol)",
+  sanitizeResources: false,
+  sanitizeOps: false,
+  async fn() {
+    if (!Deno.env.get("DATABASE_URL")) {
+      console.log("Skipping integration test: DATABASE_URL not set");
+      return;
+    }
+    const mapId = crypto.randomUUID();
+    const guildId = BigInt(0);
+    const mapData = walkStrategy({
+      cols: 7,
+      rows: 15,
+      random: seededRandom(0),
+      guildId,
+    });
+    mapData.id = mapId;
+    const gameMap = new GameMap(mapData);
+
+    let errorCaught = false;
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.map.deleteMany({ where: { id: mapId } });
+        await tx.guild.deleteMany({ where: { id: guildId } });
+        await gameMap.save({ guildId, prisma: prisma });
+        const startCol = Math.floor(mapData.cols / 2);
+        const startLoc = gameMap.locations.find((l) =>
+          l.row === 0 && l.col === startCol
+        );
+        if (!startLoc) throw new Error("No start location found");
+        const guild = await tx.guild.findUnique({
+          where: { id: guildId },
+          include: { currentLocation: true },
+        });
+        if (!guild?.currentLocation) {
+          throw new Error("No currentLocation set on guild");
+        }
+        if (
+          guild.currentLocation.row !== 0 ||
+          guild.currentLocation.col !== startCol
+        ) {
+          throw new Error(
+            `Guild currentLocation is not at (0, ${startCol}), got (${guild.currentLocation.row}, ${guild.currentLocation.col})`,
+          );
+        }
+        throw new Error("ROLLBACK");
+      });
+    } catch (e) {
+      if (e instanceof Error && e.message === "ROLLBACK") {
+        errorCaught = false;
+      } else {
+        errorCaught = true;
+        if (e instanceof Error) {
+          console.error("Integration test error:", e.message);
+        }
+      }
+    }
+    if (errorCaught) {
+      throw new Error("Guild currentLocation was not set to start location");
     }
   },
 });

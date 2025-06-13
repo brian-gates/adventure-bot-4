@@ -1,55 +1,64 @@
 import { Bot, Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
-import { GameMap } from "~/game/map/game-map.ts";
-import { narrate } from "~/llm/index.ts";
+import { prisma } from "~/db/index.ts";
+import { handleBoss } from "~/game/map/locations/boss.ts";
+import { handleCampfire } from "~/game/map/locations/campfire.ts";
+import { handleCombat } from "~/game/map/locations/combat.ts";
+import { handleElite } from "~/game/map/locations/elite.ts";
+import { handleEvent } from "~/game/map/locations/event.ts";
+import { handleShop } from "~/game/map/locations/shop.ts";
+import { handleTavern } from "~/game/map/locations/tavern.ts";
+import { handleTreasure } from "~/game/map/locations/treasure.ts";
+import { LocationType } from "~/generated/prisma/client.ts";
+
+const locationHandlers = {
+  [LocationType.combat]: handleCombat,
+  [LocationType.event]: handleEvent,
+  [LocationType.elite]: handleElite,
+  [LocationType.treasure]: handleTreasure,
+  [LocationType.boss]: handleBoss,
+  [LocationType.campfire]: handleCampfire,
+  [LocationType.shop]: handleShop,
+  [LocationType.tavern]: handleTavern,
+};
 
 export async function adventure({
   bot,
   interaction,
+  random,
 }: {
   bot: Bot;
   interaction: Interaction;
+  random: () => number;
 }) {
-  console.log("Adventure command initiated");
-  if (!interaction.channelId || !interaction.guildId) {
-    console.warn("Missing channelId or guildId for interaction");
-    return;
-  }
-  const guildId = interaction.guildId;
-  const gameMap = await GameMap.getByGuildId(guildId);
-  if (!gameMap) {
-    console.log("No current location or map set for guild");
-    await bot.helpers.sendMessage(interaction.channelId, {
-      content: "No current location or map set for this guild.",
-    });
-    return;
-  }
-  const location = gameMap.currentLocation;
-  if (!location) {
-    console.log("No current location set for guild");
-    await bot.helpers.sendMessage(interaction.channelId, {
-      content: "No current location set for this guild.",
-    });
-    return;
-  }
-  console.log("Current location:", location.name);
-  const nextLocations = gameMap.getNextLocations({ id: location.id });
-  if (nextLocations.length === 0) {
-    console.log("No paths found for current location");
-    await bot.helpers.sendMessage(interaction.channelId, {
-      content: "You have reached the end of the adventure!",
-    });
-    return;
-  }
-  const options = nextLocations
-    .map((loc) => `- ${loc.name} (${loc.type})`)
-    .join("\n");
-  const narration = await narrate({
-    prompt: `Narrate a short, vivid fantasy adventure for <@${
-      interaction.user?.id ?? interaction.member?.user?.id
-    }> in a Discord RPG. Respond with a single immersive sentence.`,
+  if (!interaction.channelId) return;
+
+  const guildId = interaction.guildId!;
+  const guild = await prisma.guild.findUnique({
+    where: {
+      id: guildId,
+    },
+    include: {
+      currentLocation: true,
+    },
   });
+
+  const currentLocation = guild?.currentLocation;
+
+  if (!currentLocation) {
+    await bot.helpers.sendMessage(interaction.channelId, {
+      content: "You are not in a location.",
+    });
+    return;
+  }
+
+  const handler = locationHandlers[currentLocation.type];
+  if (handler) {
+    await handler({ bot, interaction, location: currentLocation, random });
+    return;
+  }
+
+  // Default/fallback if no handler
   await bot.helpers.sendMessage(interaction.channelId, {
-    content: `${narration}\n\n**Paths ahead:**\n${options}`,
+    content: `You arrive at ${currentLocation.name}, but nothing happens...`,
   });
-  console.log("Adventure message sent to channel");
 }

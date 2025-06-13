@@ -21,12 +21,14 @@ enum LocationType {
 }
 
 model Player {
-    id        String   @id
-    name      String
-    health    Int
-    maxHealth Int      @default(10)
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    id              String           @id
+    name            String
+    health          Int
+    maxHealth       Int              @default(10)
+    createdAt       DateTime         @default(now())
+    updatedAt       DateTime         @updatedAt
+    encounterPlayer EncounterPlayer?
+    Encounter       Encounter[]
 }
 
 model Location {
@@ -81,4 +83,55 @@ model Map {
     cols      Int
     guildId   BigInt?    @unique
     guild     Guild?     @relation(fields: [guildId], references: [id])
+}
+
+model Enemy {
+    id         String           @id @default(uuid())
+    name       String
+    maxHealth  Int
+    encounters EncounterEnemy[]
+}
+
+model Encounter {
+    id        String            @id @default(uuid())
+    players   EncounterPlayer[]
+    enemies   EncounterEnemy[]
+    turn      EncounterTurn
+    status    EncounterStatus
+    createdAt DateTime          @default(now())
+    updatedAt DateTime          @updatedAt
+    Player    Player?           @relation(fields: [playerId], references: [id])
+    playerId  String?
+}
+
+model EncounterPlayer {
+    id          String    @id @default(uuid())
+    encounter   Encounter @relation(fields: [encounterId], references: [id])
+    encounterId String
+    player      Player    @relation(fields: [playerId], references: [id])
+    playerId    String    @unique
+    health      Int
+    maxHealth   Int
+    // Add more fields as needed (e.g., status effects)
+}
+
+model EncounterEnemy {
+    id          String    @id @default(uuid())
+    encounter   Encounter @relation(fields: [encounterId], references: [id])
+    encounterId String
+    enemy       Enemy     @relation(fields: [enemyId], references: [id])
+    enemyId     String
+    health      Int
+    // Add more fields as needed (e.g., status effects)
+}
+
+enum EncounterTurn {
+    player
+    enemy
+}
+
+enum EncounterStatus {
+    active
+    victory
+    defeat
 }

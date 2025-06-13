@@ -64,7 +64,15 @@ export class GameMap {
   }
 
   get currentLocation() {
-    return this.map.guild?.currentLocation ?? null;
+    const loc = this.map.guild?.currentLocation ?? null;
+    if (loc) {
+      console.log(
+        `[GameMap] Accessed currentLocation: id=${loc.id}, row=${loc.row}, col=${loc.col}`,
+      );
+    } else {
+      console.log(`[GameMap] Accessed currentLocation: null`);
+    }
+    return loc;
   }
 
   get id() {
@@ -199,6 +207,9 @@ export class GameMap {
         })),
         skipDuplicates: true,
       });
+      console.log(
+        `[GameMap] Setting guild ${guildId} currentLocation to startLocation: id=${startLocation.id}, row=${startLocation.row}, col=${startLocation.col}`,
+      );
       await tx.guild.upsert({
         where: { id: guildId },
         update: {

@@ -3,7 +3,7 @@ import type {
   Interaction,
 } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 import { prisma } from "~/db/index.ts";
-import { seedMapForGuild } from "../map/seed-map.ts";
+import { seedMapForGuild } from "../map/seed-map-for-guild.ts";
 
 export const setseed = async ({
   bot,
