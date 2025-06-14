@@ -52,13 +52,16 @@ function renderFrame() {
       isPlaying ? " | Playing... (P to stop)" : ""
     }`,
   );
-  const errors = testMap(map, { minNodes, maxNodes });
+  const { errors, warnings } = testMap(map, { minNodes, maxNodes });
   console.log("\n[Checks]");
-  if (errors.length === 0) {
+  if (errors.length === 0 && warnings.length === 0) {
     console.log("All conditions passed ✅");
   } else {
     for (const err of errors) {
       console.log(`❌ ${err}`);
+    }
+    for (const warn of warnings) {
+      console.log(`⚠️  ${warn}`);
     }
   }
   console.log(
