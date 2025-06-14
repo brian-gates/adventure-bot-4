@@ -57,16 +57,3 @@ export async function findOrCreatePlayer({
     throw err;
   }
 }
-
-export async function setPlayerLastTarget({
-  id,
-  lastTarget,
-}: {
-  id: string;
-  lastTarget: string;
-}) {
-  return await prisma.player.update({
-    where: { id },
-    data: { lastTarget },
-  });
-}
