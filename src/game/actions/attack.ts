@@ -1,11 +1,7 @@
 import { Bot, Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { prisma } from "~/db/index.ts";
-import {
-  findOrCreatePlayer,
-  setPlayerHealth,
-  setPlayerLastTarget,
-} from "~/db/player.ts";
+import { findOrCreatePlayer, setPlayerHealth } from "~/db/player.ts";
 import { getTargetPlayer } from "~/discord/get-target.ts";
 import { rollAndAnnounceDie } from "~/game/dice.ts";
 import { seededRandom } from "~/game/seeded-random.ts";
@@ -58,10 +54,6 @@ export async function attack({
     await findOrCreatePlayer({
       id: authorId.toString(),
       name: "Unknown",
-    });
-    await setPlayerLastTarget({
-      id: authorId.toString(),
-      lastTarget: targetPlayer.id,
     });
   }
   const prompt = narrateAttack({
