@@ -1,4 +1,4 @@
-import { strategies } from "~/game/map/generation/index.ts";
+import { walkStrategy } from "~/game/map/generation/walk/walk-strategy.ts";
 import type { Location, Map } from "~/game/map/index.ts";
 import { seededRandom } from "~/game/seeded-random.ts";
 
@@ -7,30 +7,33 @@ function testMap(
   { minNodes, maxNodes }: { minNodes: number; maxNodes: number },
 ) {
   const errors: string[] = [];
+  const warnings: string[] = [];
   const byRow: Record<number, Location[]> = {};
   for (const node of locations) {
     byRow[node.row] = byRow[node.row] || [];
     byRow[node.row].push(node);
   }
-  if ((byRow[0]?.length ?? 0) !== 1) errors.push("First row must have 1 node");
+  if ((byRow[0]?.length ?? 0) !== 1) {
+    warnings.push("First row must have 1 node");
+  }
   if ((byRow[rows - 1]?.length ?? 0) !== 1) {
-    errors.push("Last row must have 1 node");
+    warnings.push("Last row must have 1 node");
   }
   if (byRow[0] && byRow[0][0].col !== Math.floor(cols / 2)) {
-    errors.push("Start node not centered");
+    warnings.push("Start node not centered");
   }
   if (byRow[rows - 1] && byRow[rows - 1][0].col !== Math.floor(cols / 2)) {
-    errors.push("End node not centered");
+    warnings.push("End node not centered");
   }
   for (let r = 1; r < rows - 1; r++) {
     const n = byRow[r]?.length ?? 0;
     if (n < minNodes || n > maxNodes) {
-      errors.push(
+      warnings.push(
         `Row ${r} has ${n} nodes (should be ${minNodes}-${maxNodes})`,
       );
     }
     const colsSet = new Set(byRow[r]?.map((n) => n.col));
-    if (colsSet.size !== n) errors.push(`Row ${r} has duplicate columns`);
+    if (colsSet.size !== n) warnings.push(`Row ${r} has duplicate columns`);
   }
   const nodeById: Record<string, Location> = {};
   for (const n of locations) nodeById[n.id ?? `${n.row},${n.col}`] = n;
@@ -111,43 +114,95 @@ function testMap(
       }
     }
   }
-  return errors;
-}
-
-const configs = [{ cols: 7, rows: 15, minNodes: 2, maxNodes: 5, numPaths: 3 }];
-if (import.meta.main) {
-  for (const config of configs) {
-    for (const { name, fn } of strategies) {
-      let passCount = 0;
-      let failCount = 0;
-
-      for (let run = 1; run <= 1000; run++) {
-        const map = fn({
-          cols: config.cols,
-          rows: config.rows,
-          numPaths: config.numPaths,
-          minNodes: config.minNodes,
-          maxNodes: config.maxNodes,
-          random: seededRandom(run),
-          guildId: BigInt(1),
-          onStep: () => {},
-        });
-        const errors = testMap(map, config);
-        if (errors.length === 0) {
-          passCount++;
-        } else {
-          failCount++;
-        }
-      }
-
-      const percent = ((passCount / (passCount + failCount)) * 100).toFixed(2);
-      console.log(
-        `${name}: ${passCount}/${
-          passCount + failCount
-        } (${percent}%) success rate`,
-      );
+  // Warning: map degenerates to a single lane (all rows have 1 node)
+  let singleLane = true;
+  for (let r = 0; r < rows; r++) {
+    if ((byRow[r]?.length ?? 0) !== 1) {
+      singleLane = false;
+      break;
     }
   }
+  if (singleLane) warnings.push("Map degenerates to a single lane");
+  return { errors, warnings };
+}
+
+if (import.meta.main) {
+  let passCount = 0;
+  let failCount = 0;
+  let warningCount = 0;
+  const allErrors: string[] = [];
+  const allWarnings: string[] = [];
+
+  const { cols, rows, numPaths, minNodes, maxNodes } = {
+    cols: 7,
+    rows: 15,
+    numPaths: 3,
+    minNodes: 2,
+    maxNodes: 5,
+  };
+
+  for (let run = 1; run <= 1000; run++) {
+    const map = walkStrategy({
+      cols,
+      rows,
+      numPaths,
+      minNodes,
+      maxNodes,
+      random: seededRandom(run),
+      guildId: BigInt(1),
+      onStep: () => {},
+    });
+    const { errors, warnings } = testMap(map, { minNodes, maxNodes });
+    allErrors.push(...errors);
+    allWarnings.push(...warnings);
+    if (warnings.length) {
+      warningCount++;
+    }
+    if (errors.length === 0) {
+      passCount++;
+    } else {
+      failCount++;
+    }
+  }
+
+  const percent = ((passCount / (passCount + failCount)) * 100).toFixed(2);
+  console.log(
+    `${name}: ${passCount}/${passCount + failCount} (${percent}%) success rate`,
+  );
+
+  // Analytics for error and warning frequencies
+  function countBy(arr: string[]) {
+    return arr.reduce((acc, msg) => {
+      acc[msg] = (acc[msg] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+  }
+
+  const errorCounts = countBy(allErrors);
+  const warningCounts = countBy(allWarnings);
+
+  const sortedErrors = Object.entries(errorCounts).sort((a, b) => b[1] - a[1]);
+  const sortedWarnings = Object.entries(warningCounts).sort((a, b) =>
+    b[1] - a[1]
+  );
+
+  if (sortedErrors.length) {
+    console.log("\nError frequencies:");
+    for (const [msg, count] of sortedErrors) {
+      console.log(`${count}\t${msg}`);
+    }
+  }
+  if (sortedWarnings.length) {
+    console.log("\nWarning frequencies:");
+    for (const [msg, count] of sortedWarnings) {
+      console.log(`${count}\t${msg}`);
+    }
+  }
+  console.log(`\nTotal passes: ${passCount}`);
+  console.log(`Total fails: ${failCount}`);
+  console.log(`Total with warnings: ${warningCount}`);
+  console.log(`Unique error types: ${sortedErrors.length}`);
+  console.log(`Unique warning types: ${sortedWarnings.length}`);
 }
 
 export { testMap };
