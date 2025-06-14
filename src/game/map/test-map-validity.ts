@@ -170,14 +170,6 @@ if (import.meta.main) {
     `${name}: ${passCount}/${passCount + failCount} (${percent}%) success rate`,
   );
 
-  // Analytics for error and warning frequencies
-  function countBy(arr: string[]) {
-    return arr.reduce((acc, msg) => {
-      acc[msg] = (acc[msg] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-  }
-
   const errorCounts = countBy(allErrors);
   const warningCounts = countBy(allWarnings);
 
@@ -206,3 +198,10 @@ if (import.meta.main) {
 }
 
 export { testMap };
+
+function countBy(arr: string[]) {
+  return arr.reduce((acc, msg) => {
+    acc[msg] = (acc[msg] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+}
