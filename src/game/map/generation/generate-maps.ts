@@ -26,21 +26,26 @@ let frames: Map[] = [];
 let frameIndex = 0;
 let isPlaying = false;
 
-async function exportAnimationFrames() {
-  const fileName = `map-animation-seed-${seed}.txt`;
-  const delimiter = "\n\n====================\n\n";
-  const content = frames
-    .map(
-      (frame, i) =>
-        `Frame ${i + 1}/${frames.length}\n${
-          asciiMapString({
-            map: frame,
-          })
-        }`,
-    )
-    .join(delimiter);
-  await Deno.writeTextFile(fileName, content);
-  console.log(`\nExported animation to ${fileName}`);
+async function exportAnimation() {
+  console.log(`Exporting animation...`);
+  const p = new Deno.Command("node", {
+    args: ["ascii-to-gif.js"],
+    stdin: "piped",
+    stdout: "piped",
+    stderr: "inherit",
+  }).spawn();
+
+  const writer = p.stdin.getWriter();
+  await writer.write(new TextEncoder().encode(
+    frames
+      .map((frame, i) =>
+        `Frame ${i + 1}/${frames.length}\n${asciiMapString({ map: frame })}`
+      )
+      .join("\n\n====================\n\n"),
+  ));
+  await writer.close();
+  await Deno.writeFile(`map-animations/${seed}.gif`, p.stdout);
+  console.log(`Animation saved to map-animations/${seed}.gif`);
 }
 
 function renderFrame() {
@@ -101,6 +106,8 @@ async function playAnimation() {
 }
 
 if (import.meta.main) {
+  if (Deno.args.includes("--gif")) {
+  }
   renderCurrent();
   (async () => {
     for await (const key of new Keypress()) {
@@ -127,7 +134,7 @@ if (import.meta.main) {
           await playAnimation();
         }
       } else if (key.key === "x") {
-        await exportAnimationFrames();
+        await exportAnimation();
       } else if (key.key === "e") {
         cols = await promptInt("Columns", cols);
         rows = await promptInt("Rows", rows);
