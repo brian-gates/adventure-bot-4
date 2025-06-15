@@ -107,7 +107,6 @@ Deno.test({
       cols: 7,
       rows: 15,
       random: seededRandom(0),
-      guildId,
     });
     mapData.id = mapId;
     const gameMap = new GameMap(mapData);

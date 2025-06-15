@@ -1,4 +1,4 @@
-import { prisma } from "../src/db/index.ts";
+import { prisma } from "~/db/index.ts";
 
 const enemies = [
   { name: "goblin", maxHealth: 10 },
