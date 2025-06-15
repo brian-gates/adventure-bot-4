@@ -1,0 +1,57 @@
+export const snapshot = {};
+
+snapshot[`canReachTargetFromPosition to boss 1`] = `
+"OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOO.
+"
+`;
+
+snapshot[`canReachTargetFromPosition to start 1`] = `
+"...O......
+..OOO.....
+.OOOOO....
+OOOOOOO...
+OOOOOOOO..
+OOOOOOOOO.
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+"
+`;
+
+snapshot[`canReachTargetFromPosition: 10x10 1`] = `
+"OOOOOOOOOO
+.OOOOOOOOO
+..OOOOOOO.
+...OOOOO..
+....OOO...
+.....O....
+....OOO...
+...OOOOO..
+..OOOOOOO.
+.OOOOOOOOO
+"
+`;
+
+snapshot[`canReachTargetFromPosition: 10x10 reverse 1`] = `
+"...O......
+..OOO.....
+.OOOOO....
+OOOOOOO...
+OOOOOOOO..
+OOOOOOOOO.
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+"
+`;

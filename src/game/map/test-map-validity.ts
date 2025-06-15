@@ -13,6 +13,12 @@ function testMap(
     byRow[node.row] = byRow[node.row] || [];
     byRow[node.row].push(node);
   }
+  // Check for out-of-bounds nodes
+  for (const node of locations) {
+    if (node.row < 0 || node.row >= rows || node.col < 0 || node.col >= cols) {
+      errors.push(`Node at (${node.row},${node.col}) is out of bounds`);
+    }
+  }
   if ((byRow[0]?.length ?? 0) !== 1) {
     warnings.push("First row must have 1 node");
   }
@@ -146,10 +152,7 @@ if (import.meta.main) {
       cols,
       rows,
       numPaths,
-      minNodes,
-      maxNodes,
       random: seededRandom(run),
-      guildId: BigInt(1),
       onStep: () => {},
     });
     const { errors, warnings } = testMap(map, { minNodes, maxNodes });

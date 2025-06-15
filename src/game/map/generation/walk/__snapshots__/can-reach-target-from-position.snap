@@ -1,0 +1,57 @@
+export const snapshot = {};
+
+snapshot[`isValidPosition to boss 1`] = `
+"OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOO.
+"
+`;
+
+snapshot[`isValidPosition to start 1`] = `
+"...O......
+..OOO.....
+.OOOOO....
+OOOOOOO...
+OOOOOOOO..
+OOOOOOOOO.
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+"
+`;
+
+snapshot[`isValidPosition: 10x10 1`] = `
+"OOOOOOOOOO
+.OOOOOOOOO
+..OOOOOOO.
+...OOOOO..
+....OOO...
+.....O....
+....OOO...
+...OOOOO..
+..OOOOOOO.
+.OOOOOOOOO
+"
+`;
+
+snapshot[`isValidPosition: 10x10 reverse 1`] = `
+"...O......
+..OOO.....
+.OOOOO....
+OOOOOOO...
+OOOOOOOO..
+OOOOOOOOO.
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+OOOOOOOOOO
+"
+`;

@@ -14,7 +14,6 @@ import {
   wouldCrossExistingPath,
 } from "./walk-strategy.ts";
 
-const TEST_GUILD_ID = BigInt(1);
 const TEST_MAP_ID = "test-map";
 
 Deno.test(
@@ -75,7 +74,6 @@ Deno.test("walkStrategy creates a complex map with a main path", () => {
     cols,
     rows,
     random: seededRandom(0),
-    guildId: TEST_GUILD_ID,
   });
 
   const startLocation = map.locations.find(
@@ -119,7 +117,6 @@ Deno.test("walkStrategy with 1 row map", () => {
     cols,
     rows,
     random: () => 0.5,
-    guildId: TEST_GUILD_ID,
   });
   // With 1 row, start and boss are the same node, no campfires
   assertEquals(map.locations.length, 1);
@@ -135,7 +132,6 @@ Deno.test(
       cols,
       rows,
       random: seededRandom(0),
-      guildId: TEST_GUILD_ID,
     });
 
     // Find the true start location, not just the first one in the row
@@ -172,7 +168,6 @@ Deno.test("ascii view", () => {
       cols: 7,
       rows: 14,
       random: seededRandom(0),
-      guildId: TEST_GUILD_ID,
     }),
   });
 });
@@ -184,7 +179,6 @@ Deno.test("all nodes are connected (no orphans, proper in/out degree)", () => {
     cols,
     rows,
     random: seededRandom(0),
-    guildId: TEST_GUILD_ID,
   });
 
   const bossLocation = map.locations.find((loc) => loc.type === "boss");
@@ -425,7 +419,6 @@ Deno.test({
       cols: 5,
       rows: 5,
       random: Math.random,
-      guildId,
     });
     mapData.id = mapId;
     const gameMap = new GameMap(mapData);
@@ -465,7 +458,6 @@ Deno.test("walkStrategy: all path endpoints exist in locations", () => {
     cols: 7,
     rows: 10,
     random: Math.random,
-    guildId: BigInt(1),
   });
   const locationIds = new Set(map.locations.map((l) => l.id));
   const missing = map.paths.flatMap((p) =>
