@@ -20,10 +20,7 @@ export async function seedMapForGuild({ id }: { id: bigint }) {
   const map = walkStrategy({
     cols: 7,
     rows: 15,
-    minNodes: 2,
-    maxNodes: 5,
     random: seededRandom(stringToSeed(seed)),
-    guildId: id,
   });
   console.log(
     `[seed-map] Built map: ${map.locations.length} locations, ${map.paths.length} paths`,

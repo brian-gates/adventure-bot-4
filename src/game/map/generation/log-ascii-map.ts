@@ -4,7 +4,7 @@ import type {
   LocationType,
   Path,
 } from "~/generated/prisma/client.ts";
-import { isReachablePosition } from "./walk/walk-strategy.ts";
+import { canReachTargetFromPosition } from "./walk/can-reach-target-from-position.ts";
 
 export function asciiMapString({
   map,
@@ -29,21 +29,22 @@ export function asciiMapString({
     const dc = to.col - from.col;
     if (dr === 1 && Math.abs(dc) <= 1) {
       const angle = getPathAngle({ path, locations });
-      if (angle === "|") {
-        edgeLines[from.row][from.col] =
-          edgeLines[from.row][from.col].slice(0, 1) +
-          "|" +
-          edgeLines[from.row][from.col].slice(2);
+      if (angle === "|" && edgeLines[from.row]?.[from.col]) {
+        const s = edgeLines[from.row][from.col];
+        edgeLines[from.row][from.col] = s.slice(0, 1) + "|" + s.slice(2);
       }
-      if (angle === "/" && from.col < cols - 1) {
-        edgeLines[from.row][from.col + 1] =
-          edgeLines[from.row][from.col + 1].slice(0, 0) +
-          "/" +
-          edgeLines[from.row][from.col + 1].slice(1);
+      if (
+        angle === "/" && from.col < cols - 1 &&
+        edgeLines[from.row]?.[from.col + 1]
+      ) {
+        const s = edgeLines[from.row][from.col + 1];
+        edgeLines[from.row][from.col + 1] = "/" + s.slice(1);
       }
-      if (angle === "\\" && from.col > 0) {
-        edgeLines[from.row][from.col - 1] =
-          edgeLines[from.row][from.col - 1].slice(0, 2) + "\\";
+      if (
+        angle === "\\" && from.col > 0 && edgeLines[from.row]?.[from.col - 1]
+      ) {
+        const s = edgeLines[from.row][from.col - 1];
+        edgeLines[from.row][from.col - 1] = s.slice(0, 2) + "\\";
       }
     } else {
       console.log("Skipping non-adjacent path:", { from, to });
@@ -64,14 +65,9 @@ export function asciiMapString({
       const location = locationMap.get(`${row},${col}`);
       const key = `${row},${col}`;
       const reachable = boss &&
-        isReachablePosition({
-          row,
-          col,
-          targetRow: boss.row,
-          targetCols: [boss.col],
-          spread: 1,
-          rows,
-          cols,
+        canReachTargetFromPosition({
+          target: boss,
+          position: { row, col },
         });
       if (location) {
         const char = locationTypeChar[location.type] ?? "O";
