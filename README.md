@@ -4,27 +4,44 @@
 
 - [Deno](https://deno.com/manual/getting_started/installation) (v2.0.0+
   recommended)
+- [pnpm](https://pnpm.io/) (for dependency management)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop) (for
+  database)
 - [Ollama](https://github.com/ollama/ollama) (for LLM intent inference)
 - A Discord bot application
   ([create one here](https://discord.com/developers/applications))
 - Permissions for your bot: `MESSAGE CONTENT INTENT`, `GUILD MEMBERS INTENT`,
   and appropriate channel/message permissions
 
-## Setup
+## Quick Start
 
-### 1. Clone the repository
+1. Clone the repository:
 
 ```sh
-git clone <your-repo-url>
+git clone git@github.com:brian-gates/adventure-bot-4.git
 cd adventure-bot-4
 ```
 
-### 2. Install Deno
+2. Install dependencies (if you haven't already):
 
-Follow the
-[official Deno installation guide](https://deno.com/manual/getting_started/installation).
+```sh
+pnpm install
+```
 
-### 3. Create a Discord bot and invite it to your server
+3. Set up and start all services (bot, database, Prisma Studio):
+
+```sh
+deno task start
+```
+
+- This will automatically run setup (idempotent), check/install dependencies,
+  and start all services using pm2.
+- If you haven't already, create a Discord bot and invite it to your server (see
+  below).
+- After running the setup, edit your `.env` file with your Discord bot token,
+  user ID, and database URL if needed.
+
+## Create a Discord bot and invite it to your server
 
 - Go to the
   [Discord Developer Portal](https://discord.com/developers/applications)
@@ -36,58 +53,10 @@ Follow the
   - MESSAGE CONTENT INTENT
 - Invite the bot to your server with the appropriate permissions
 
-### 4. Configure environment variables
-
-Copy the example file and fill in your secrets:
-
-```sh
-cp example.env .env
-```
-
-Then edit `.env` and set your Discord bot token and user ID.
-
-```env
-DISCORD_TOKEN=your-bot-token-here
-DISCORD_BOT_ID=your-bot-user-id-here
-DATABASE_URL=postgres://postgres:postgres@localhost:5444/adventure
-```
-
-- `DISCORD_TOKEN`: Your bot's token from the Discord Developer Portal
-- `DISCORD_BOT_ID`: Your bot's user ID (right-click your bot in Discord > Copy
-  User ID)
-- `DATABASE_URL`: (Optional) Your database connection string, if needed
-
-### 5. Run the bot
-
-```sh
-deno run -A src/bot/index.ts
-```
-
-- The `-A` flag grants all permissions (required for network and env access)
-
 ## Project Structure
 
 - `src/bot/index.ts` — Main entry point
 - `src/discord/` — Discord bot logic, actions, and helpers
 - `src/llm/` — LLM intent inference logic
 - `.env` — Environment variables (not committed)
-
-### Ollama Setup
-
-Ollama is required to run the local LLM for intent inference. See the
-[Ollama GitHub repo](https://github.com/ollama/ollama) for full installation
-instructions.
-
-**Quick install (macOS/Linux):**
-
-```sh
-curl -fsSL https://ollama.com/install.sh | sh
-```
-
-**Start Ollama:**
-
-```sh
-ollama serve
-```
-
-Make sure Ollama is running before you start the bot.
+- `ecosystem.config.js` — pm2 process configuration

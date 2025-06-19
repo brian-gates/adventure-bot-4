@@ -5,6 +5,7 @@
     "npm:@types/node@*": "22.15.15",
     "npm:assert@*": "2.1.0",
     "npm:pm2@^6.0.8": "6.0.8",
+    "npm:prisma@*": "6.9.0",
     "npm:prisma@6.9.0": "6.9.0",
     "npm:prisma@^6.8.2": "6.9.0"
   },
@@ -942,7 +943,16 @@
     },
     "systeminformation@5.27.1": {
       "integrity": "sha512-FgkVpT6GgATtNvADgtEzDxI/SVaBisfnQ4fmgQZhCJ4335noTgt9q6O81ioHwzs9HgnJaaFSdHSEMIkneZ55iA==",
-      "os": ["darwin", "linux", "win32", "freebsd", "openbsd", "netbsd", "sunos", "android"],
+      "os": [
+        "darwin",
+        "linux",
+        "win32",
+        "freebsd",
+        "openbsd",
+        "netbsd",
+        "sunos",
+        "android"
+      ],
       "bin": true
     },
     "to-regex-range@5.0.1": {
