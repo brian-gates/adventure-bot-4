@@ -64,15 +64,7 @@ export class GameMap {
   }
 
   get currentLocation() {
-    const loc = this.map.guild?.currentLocation ?? null;
-    if (loc) {
-      console.log(
-        `[GameMap] Accessed currentLocation: id=${loc.id}, row=${loc.row}, col=${loc.col}`,
-      );
-    } else {
-      console.log(`[GameMap] Accessed currentLocation: null`);
-    }
-    return loc;
+    return this.map.guild?.currentLocation ?? null;
   }
 
   get id() {

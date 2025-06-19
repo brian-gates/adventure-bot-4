@@ -111,46 +111,33 @@ Deno.test({
     mapData.id = mapId;
     const gameMap = new GameMap(mapData);
 
-    let errorCaught = false;
-    try {
-      await prisma.$transaction(async (tx) => {
-        await tx.map.deleteMany({ where: { id: mapId } });
-        await tx.guild.deleteMany({ where: { id: guildId } });
-        await gameMap.save({ guildId, prisma: prisma });
-        const startCol = Math.floor(mapData.cols / 2);
-        const startLoc = gameMap.locations.find((l) =>
-          l.row === 0 && l.col === startCol
-        );
-        if (!startLoc) throw new Error("No start location found");
-        const guild = await tx.guild.findUnique({
-          where: { id: guildId },
-          include: { currentLocation: true },
-        });
-        if (!guild?.currentLocation) {
-          throw new Error("No currentLocation set on guild");
-        }
-        if (
-          guild.currentLocation.row !== 0 ||
-          guild.currentLocation.col !== startCol
-        ) {
-          throw new Error(
-            `Guild currentLocation is not at (0, ${startCol}), got (${guild.currentLocation.row}, ${guild.currentLocation.col})`,
-          );
-        }
-        throw new Error("ROLLBACK");
-      });
-    } catch (e) {
-      if (e instanceof Error && e.message === "ROLLBACK") {
-        errorCaught = false;
-      } else {
-        errorCaught = true;
-        if (e instanceof Error) {
-          console.error("Integration test error:", e.message);
-        }
-      }
+    // Setup and save in a transaction
+    await prisma.$transaction(async (tx) => {
+      await tx.map.deleteMany({ where: { id: mapId } });
+      await tx.guild.deleteMany({ where: { id: guildId } });
+      await gameMap.save({ guildId, prisma: tx });
+    });
+
+    // Assert outside the transaction
+    const startCol = Math.floor(mapData.cols / 2);
+    const startLoc = gameMap.locations.find((l) =>
+      l.row === 0 && l.col === startCol
+    );
+    if (!startLoc) throw new Error("No start location found");
+    const guild = await prisma.guild.findUnique({
+      where: { id: guildId },
+      include: { currentLocation: true },
+    });
+    if (!guild?.currentLocation) {
+      throw new Error("No currentLocation set on guild");
     }
-    if (errorCaught) {
-      throw new Error("Guild currentLocation was not set to start location");
+    if (
+      guild.currentLocation.row !== 0 ||
+      guild.currentLocation.col !== startCol
+    ) {
+      throw new Error(
+        `Guild currentLocation is not at (0, ${startCol}), got (${guild.currentLocation.row}, ${guild.currentLocation.col})`,
+      );
     }
   },
 });

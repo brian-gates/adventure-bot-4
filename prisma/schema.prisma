@@ -89,6 +89,7 @@ model Enemy {
     id         String           @id @default(uuid())
     name       String
     maxHealth  Int
+    health     Int
     encounters EncounterEnemy[]
 }
 
@@ -109,8 +110,7 @@ model EncounterPlayer {
     encounterId String
     player      Player    @relation(fields: [playerId], references: [id])
     playerId    String    @unique
-    health      Int
-    maxHealth   Int
+    initiative  Int
 }
 
 model EncounterEnemy {
@@ -119,12 +119,7 @@ model EncounterEnemy {
     encounterId String
     enemy       Enemy     @relation(fields: [enemyId], references: [id])
     enemyId     String
-    health      Int
-}
-
-enum EncounterTurn {
-    player
-    enemy
+    initiative  Int
 }
 
 enum EncounterStatus {

@@ -18,7 +18,11 @@ async function main() {
       });
     } else {
       await prisma.enemy.create({
-        data: { name: enemy.name, maxHealth: enemy.maxHealth },
+        data: {
+          name: enemy.name,
+          maxHealth: enemy.maxHealth,
+          health: enemy.maxHealth,
+        },
       });
     }
   }
