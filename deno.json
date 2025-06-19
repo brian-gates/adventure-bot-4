@@ -18,6 +18,8 @@
     "browse-maps": "deno run -A src/game/map/generation/browse-maps.ts",
     "test-map-validity": "deno run -A src/game/map/test-map-validity.ts",
     "psql": "PGPASSWORD=postgres psql -h localhost -p 5444 -U postgres -d adventure",
-    "check": "deno check --allow-import"
+    "check": "deno check --allow-import",
+    "setup": "sh ./setup.sh",
+    "start": "deno task setup && pnpm pm2 start ecosystem.config.js"
   }
 }
