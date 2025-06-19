@@ -1,6 +1,5 @@
 import { Bot, Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
-import { prisma } from "~/db/index.ts";
 import { findOrCreatePlayer, setPlayerHealth } from "~/db/player.ts";
 import { getTargetPlayer } from "~/discord/get-target.ts";
 import { rollAndAnnounceDie } from "~/game/dice.ts";
@@ -21,22 +20,14 @@ export async function attack({
   const channelId = interaction.channelId!;
   const targetPlayer = await getTargetPlayer({ interaction });
   if (!targetPlayer) throw new Error("Target player not found");
-  const { seed } = (await prisma.guild.findUnique({
-    where: { id: BigInt(interaction.guildId ?? "0") },
-  })) ??
-    (() => {
-      throw new Error("Guild not found");
-    })();
   const { roll: d20 } = await rollAndAnnounceDie({
-    bot,
-    interaction,
+    channelId,
     sides: 20,
     label: "d20",
     random,
   });
   const { roll: damage } = await rollAndAnnounceDie({
-    bot,
-    interaction,
+    channelId,
     sides: 4,
     label: "1d4 (unarmed)",
     random,

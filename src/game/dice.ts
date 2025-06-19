@@ -1,4 +1,4 @@
-import { Bot, Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
+import { bot } from "~/bot/index.ts";
 
 export function rollDie({
   sides,
@@ -11,10 +11,11 @@ export function rollDie({
 }
 
 async function getRollEmoji(
-  bot: Bot,
-  guildId: bigint | undefined,
-  sides: number,
-  roll: number,
+  { guildId, sides, roll }: {
+    guildId: bigint | undefined;
+    sides: number;
+    roll: number;
+  },
 ): Promise<string> {
   if (!guildId || (sides !== 20 && sides !== 4)) return "";
   const num = roll.toString().padStart(2, "0");
@@ -25,21 +26,22 @@ async function getRollEmoji(
 }
 
 export async function rollAndAnnounceDie({
-  bot,
-  interaction,
+  channelId,
   sides,
   label,
   random,
 }: {
-  bot: Bot;
-  interaction: Interaction;
+  channelId: bigint;
   sides: number;
   label: string;
   random: () => number;
 }) {
-  const channelId = interaction.channelId!;
   const roll = rollDie({ sides, random });
-  const emoji = await getRollEmoji(bot, interaction.guildId, sides, roll);
+  const emoji = await getRollEmoji({
+    guildId: channelId,
+    sides,
+    roll,
+  });
   await bot.helpers.sendMessage(channelId, {
     content: emoji,
   });
@@ -47,11 +49,9 @@ export async function rollAndAnnounceDie({
 }
 
 export async function getDiceEmojiString({
-  bot,
   guildId,
   roll,
 }: {
-  bot: Bot;
   guildId: bigint;
   roll: number;
 }): Promise<string> {
