@@ -16,7 +16,7 @@
 
 ```sh
 git clone <your-repo-url>
-cd ai-chat
+cd adventure-bot-4
 ```
 
 ### 2. Install Deno
