@@ -21,7 +21,7 @@ enum LocationType {
 }
 
 model Player {
-    id              String           @id
+    id              BigInt           @id
     name            String
     health          Int
     maxHealth       Int              @default(10)
@@ -100,8 +100,8 @@ model Encounter {
     status    EncounterStatus
     createdAt DateTime          @default(now())
     updatedAt DateTime          @updatedAt
-    Player    Player?           @relation(fields: [playerId], references: [id])
-    playerId  String?
+    player    Player?           @relation(fields: [playerId], references: [id])
+    playerId  BigInt?
 }
 
 model EncounterPlayer {
@@ -109,7 +109,7 @@ model EncounterPlayer {
     encounter   Encounter @relation(fields: [encounterId], references: [id])
     encounterId String
     player      Player    @relation(fields: [playerId], references: [id])
-    playerId    String    @unique
+    playerId    BigInt    @unique
     initiative  Int
 }
 

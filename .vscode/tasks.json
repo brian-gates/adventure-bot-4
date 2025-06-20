@@ -1,0 +1,17 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "deno",
+      "command": "task",
+      "args": [
+        "reset"
+      ],
+      "problemMatcher": [
+        "$deno"
+      ],
+      "label": "deno: reset",
+      "detail": "$ pnpm prisma migrate reset && pnpm prisma generate && pnpm prisma migrate dev"
+    }
+  ]
+}

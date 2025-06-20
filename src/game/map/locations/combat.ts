@@ -1,7 +1,4 @@
-import type {
-  Bot,
-  Interaction,
-} from "https://deno.land/x/discordeno@18.0.1/mod.ts";
+import type { Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 import { prisma } from "~/db/index.ts";
 import { basicPlayerTemplate } from "~/game/players/player-templates.ts";
 import { weightedRandom } from "~/game/weighted-random.ts";
@@ -10,6 +7,7 @@ import {
   enemyTemplatesByName,
   isEnemyTemplateKey,
 } from "../../enemies/templates/index.ts";
+import { bot } from "~/bot/index.ts";
 
 const enemyWeights = {
   goblin: 5,
@@ -23,12 +21,9 @@ const enemyStats = {
 };
 
 export async function handleCombat({
-  bot,
   interaction,
   random,
-  location,
 }: {
-  bot: Bot;
   interaction: Interaction;
   location: Location;
   random: () => number;
@@ -38,8 +33,8 @@ export async function handleCombat({
   }
   const channelId = interaction.channelId;
   const guildId = interaction.guildId;
-  const joiners = await rally({ bot, interaction });
-  if (joiners.length === 0) {
+  const joiners = await rally({ channelId });
+  if (joiners.size === 0) {
     await bot.helpers.sendMessage(channelId, {
       content: "No one joined the fight.",
     });
@@ -58,7 +53,7 @@ export async function handleCombat({
   const stats = enemyStats[enemyType];
   const enemy = await getOrCreateEnemy(enemyType, stats.maxHealth);
   const encounter = await createEncounterWithPlayers({
-    playerIds: joiners,
+    playerIds: Array.from(joiners.keys()).map((id) => id.toString()),
     enemy,
     random,
   });
@@ -125,13 +120,10 @@ export async function handleCombat({
 }
 
 async function rally({
-  bot,
-  interaction,
+  channelId,
 }: {
-  bot: Bot;
-  interaction: Interaction;
-}): Promise<string[]> {
-  const channelId = interaction.channelId!.toString();
+  channelId: bigint;
+}) {
   const joinMessage = await bot.helpers.sendMessage(channelId, {
     content: `A wild enemy appears! React with ⚔️ to join the fight!`,
   });
@@ -140,31 +132,12 @@ async function rally({
     joinMessage.id.toString(),
     "⚔️",
   );
-  const rallied = new Set<string>();
-  rallied.add(interaction.user!.id.toString());
-  const handler = (
-    _bot: Bot,
-    payload: {
-      userId: bigint;
-      channelId: bigint;
-      messageId: bigint;
-      guildId?: bigint;
-      member?: unknown;
-      user?: unknown;
-      emoji: { name?: string };
-    },
-  ) => {
-    if (
-      payload.messageId.toString() === joinMessage.id.toString() &&
-      payload.emoji.name && payload.emoji.name === "⚔️"
-    ) {
-      rallied.add(payload.userId.toString());
-    }
-  };
-  bot.events.reactionAdd = handler;
   await new Promise((resolve) => setTimeout(resolve, 30000));
-  bot.events.reactionAdd = () => {};
-  return Array.from(rallied);
+  return bot.helpers.getReactions(
+    joinMessage.channelId.toString(),
+    joinMessage.id.toString(),
+    "⚔️",
+  );
 }
 
 async function getOrCreateEnemy(

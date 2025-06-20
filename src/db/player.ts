@@ -1,9 +1,5 @@
 import { prisma } from "~/db/index.ts";
 
-export async function getPlayer({ id }: { id: string }) {
-  return await prisma.player.findUnique({ where: { id } });
-}
-
 export async function setPlayerHealth({
   id,
   health,
@@ -33,7 +29,7 @@ export async function createPlayer({
   return await prisma.player.create({ data: { id, name, health, maxHealth } });
 }
 
-export async function findOrCreatePlayer({
+export async function getPlayer({
   id,
   name,
   health = 10,
@@ -44,16 +40,7 @@ export async function findOrCreatePlayer({
   health?: number;
   maxHealth?: number;
 }) {
-  try {
-    let player = await prisma.player.findUnique({ where: { id } });
-    if (!player) {
-      player = await prisma.player.create({
-        data: { id, name, health, maxHealth },
-      });
-    }
-    return player;
-  } catch (err) {
-    console.error("Prisma error in findOrCreatePlayer:", err);
-    throw err;
-  }
+  const player = await prisma.player.findUnique({ where: { id } });
+  if (player) return player;
+  return await createPlayer({ id, name, health, maxHealth });
 }

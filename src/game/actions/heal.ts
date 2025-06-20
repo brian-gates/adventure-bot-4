@@ -1,6 +1,6 @@
 import { Bot, Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
-import { findOrCreatePlayer, setPlayerHealth } from "~/db/player.ts";
+import { getPlayer, setPlayerHealth } from "~/db/player.ts";
 import { getTargetPlayer } from "~/discord/get-target.ts";
 import { rollDie } from "~/game/dice.ts";
 import { seededRandom } from "~/game/seeded-random.ts";
@@ -24,7 +24,7 @@ export async function heal({
     });
     return;
   }
-  const player = await findOrCreatePlayer({
+  const player = await getPlayer({
     id: targetPlayer.id,
     name: targetPlayer.name,
   });
