@@ -26,12 +26,12 @@ const enemies = [
 ];
 
 const combatants = [
-  ...players.map((p, i) => ({
+  ...players.map((p, _i) => ({
     ...p,
     type: "player",
     initiative: Math.floor(random() * 20),
   })),
-  ...enemies.map((e, i) => ({
+  ...enemies.map((e, _i) => ({
     ...e,
     type: "enemy",
     initiative: Math.floor(random() * 20),

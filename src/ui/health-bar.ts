@@ -80,10 +80,6 @@ export async function healthBar({
     );
 
     // Create a simple SVG that can be converted to PNG
-    const healthPercentage = Math.round((current / max) * 100);
-    const healPercentage = Math.round((heal / max) * 100);
-    const damagePercentage = Math.round((damage / max) * 100);
-
     const svg = `
       <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
         <rect width="${width}" height="${height}" fill="#2c2c2c" stroke="white" stroke-width="2"/>
@@ -122,7 +118,7 @@ export async function healthBar({
       const writer = child.stdin.getWriter();
       await writer.write(new TextEncoder().encode(svg));
       await writer.close();
-      const { code, stdout, stderr } = await child.output();
+      const { code, stdout } = await child.output();
       if (code === 0) {
         return new Uint8Array(stdout);
       }
@@ -145,7 +141,6 @@ export async function displayHealthBar({
   maxHealth,
   healAmount = 0,
   damageAmount = 0,
-  playerName,
 }: {
   channelId: bigint;
   playerId: bigint;
@@ -153,7 +148,6 @@ export async function displayHealthBar({
   maxHealth: number;
   healAmount?: number;
   damageAmount?: number;
-  playerName: string;
 }) {
   const { bot } = await import("~/bot/index.ts");
 

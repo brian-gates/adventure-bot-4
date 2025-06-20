@@ -106,8 +106,6 @@ async function playAnimation() {
 }
 
 if (import.meta.main) {
-  if (Deno.args.includes("--gif")) {
-  }
   renderCurrent();
   (async () => {
     for await (const key of new Keypress()) {

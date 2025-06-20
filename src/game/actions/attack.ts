@@ -5,7 +5,6 @@ import { getTargetPlayer } from "~/discord/get-target.ts";
 import { rollAndAnnounceDie } from "~/game/dice.ts";
 import { narrate } from "~/llm/index.ts";
 import { narrateAttack } from "~/prompts.ts";
-import { healthBar } from "~/ui/health-bar.ts";
 import { bot } from "~/bot/index.ts";
 
 export async function attack({

@@ -7,7 +7,6 @@ import { getTargetPlayer } from "~/discord/get-target.ts";
 import { rollAndAnnounceDie } from "~/game/dice.ts";
 import { narrate } from "~/llm/index.ts";
 import { narrateHeal } from "~/prompts.ts";
-import { healthBar } from "~/ui/health-bar.ts";
 
 export async function heal({
   bot,
