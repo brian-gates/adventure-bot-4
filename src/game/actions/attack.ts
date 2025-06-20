@@ -1,4 +1,4 @@
-import { Bot, Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
+import { Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { getPlayer, setPlayerHealth } from "~/db/player.ts";
 import { getTargetPlayer } from "~/discord/get-target.ts";
@@ -6,28 +6,30 @@ import { rollAndAnnounceDie } from "~/game/dice.ts";
 import { narrate } from "~/llm/index.ts";
 import { narrateAttack } from "~/prompts.ts";
 import { healthBar } from "~/ui/health-bar.ts";
+import { bot } from "~/bot/index.ts";
 
 export async function attack({
-  bot,
   interaction,
   random,
 }: {
-  bot: Bot;
   interaction: Interaction;
   random: () => number;
 }) {
   const authorId = interaction.user.id;
   const channelId = interaction.channelId!;
+  const guildId = interaction.guildId!;
   const targetPlayer = await getTargetPlayer({ interaction });
   if (!targetPlayer) throw new Error("Target player not found");
   const { roll: d20 } = await rollAndAnnounceDie({
     channelId,
     sides: 20,
     label: "d20",
+    guildId,
     random,
   });
   const { roll: damage } = await rollAndAnnounceDie({
     channelId,
+    guildId,
     sides: 4,
     label: "1d4 (unarmed)",
     random,
@@ -41,14 +43,19 @@ export async function attack({
     ? Math.max(0, player.health - actualDamage)
     : undefined;
   if (player && newHealth !== undefined) {
-    await setPlayerHealth({ id: targetPlayer.id, health: newHealth });
+    await setPlayerHealth({
+      id: targetPlayer.id,
+      health: newHealth,
+      channelId: channelId,
+      damageAmount: actualDamage,
+    });
     await getPlayer({
       id: authorId,
       name: "Unknown",
     });
   }
   const prompt = narrateAttack({
-    authorId,
+    attackerId: authorId,
     target: targetPlayer.name,
     d20,
     damage,
@@ -76,21 +83,5 @@ export async function attack({
   })();
   await bot.helpers.sendMessage(channelId, { content: narration });
 
-  if (player && newHealth !== undefined) {
-    await bot.helpers.sendMessage(channelId, {
-      content: `<@${targetPlayer.id}>'s health:`,
-      file: {
-        blob: new Blob([
-          await healthBar({
-            current: newHealth,
-            max: player.maxHealth,
-            damage: actualDamage,
-            width: 200,
-            height: 24,
-          }),
-        ]),
-        name: "healthbar.png",
-      },
-    });
-  }
+  // Health bar is now automatically displayed by setPlayerHealth
 }

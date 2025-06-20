@@ -1,9 +1,10 @@
-import { Bot, Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
-import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import {
+  type Bot,
+  type Interaction,
+} from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 import { getPlayer, setPlayerHealth } from "~/db/player.ts";
 import { getTargetPlayer } from "~/discord/get-target.ts";
-import { rollDie } from "~/game/dice.ts";
-import { seededRandom } from "~/game/seeded-random.ts";
+import { rollAndAnnounceDie } from "~/game/dice.ts";
 import { narrate } from "~/llm/index.ts";
 import { narrateHeal } from "~/prompts.ts";
 import { healthBar } from "~/ui/health-bar.ts";
@@ -11,69 +12,93 @@ import { healthBar } from "~/ui/health-bar.ts";
 export async function heal({
   bot,
   interaction,
+  random,
 }: {
   bot: Bot;
   interaction: Interaction;
+  random: () => number;
 }) {
   const targetPlayer = await getTargetPlayer({ interaction });
   if (!targetPlayer) {
-    await bot.helpers.sendMessage(interaction.channelId!, {
-      content: `<@${
-        interaction.user?.id ?? interaction.member?.user?.id
-      }>, whom would you like to heal?`,
+    // If no target specified, heal the user who ran the command
+    const healerId = interaction.user.id;
+    const healerName = interaction.user.username ?? healerId.toString();
+
+    const player = await getPlayer({
+      id: healerId,
+      name: healerName,
     });
+
+    if (!interaction.channelId || !interaction.guildId) {
+      throw new Error("Missing channel or guild ID.");
+    }
+
+    const { roll: healAmount } = await rollAndAnnounceDie({
+      channelId: interaction.channelId,
+      guildId: interaction.guildId,
+      sides: 4,
+      label: "heal",
+      random,
+    });
+
+    const newHealth = Math.min(player.maxHealth, player.health + healAmount);
+    await setPlayerHealth({
+      id: healerId,
+      health: newHealth,
+      channelId: interaction.channelId,
+      healAmount,
+    });
+
+    const prompt = narrateHeal({
+      healerId,
+      targetId: healerId,
+      healAmount,
+      newHealth,
+      maxHealth: player.maxHealth,
+    });
+    const narration = await narrate({ prompt });
+    await bot.helpers.sendMessage(interaction.channelId, {
+      content: narration,
+    });
+
+    // Health bar is now automatically displayed by setPlayerHealth
     return;
   }
+
   const player = await getPlayer({
     id: targetPlayer.id,
     name: targetPlayer.name,
   });
-  const healAmount = rollDie({ sides: 4, random: seededRandom(0) });
+
+  if (!interaction.channelId || !interaction.guildId) {
+    throw new Error("Missing channel or guild ID.");
+  }
+
+  const { roll: healAmount } = await rollAndAnnounceDie({
+    channelId: interaction.channelId,
+    guildId: interaction.guildId,
+    sides: 4,
+    label: "heal",
+    random,
+  });
+
   const newHealth = Math.min(player.maxHealth, player.health + healAmount);
-  await setPlayerHealth({ id: targetPlayer.id, health: newHealth });
+  await setPlayerHealth({
+    id: targetPlayer.id,
+    health: newHealth,
+    channelId: interaction.channelId,
+    healAmount,
+  });
 
   const prompt = narrateHeal({
-    authorId: interaction.user?.id ?? interaction.member?.user?.id ?? 0n,
+    healerId: interaction.user.id,
     targetId: targetPlayer.id,
     healAmount,
     newHealth,
+    maxHealth: player.maxHealth,
   });
-  const narrationResult = await narrate({ prompt });
-  const LLMResponse = z.object({ response: z.string() });
-  const narration = (() => {
-    if (typeof narrationResult === "string") {
-      try {
-        return LLMResponse.parse(JSON.parse(narrationResult)).response;
-      } catch {
-        return narrationResult;
-      }
-    }
-    if (
-      narrationResult &&
-      typeof narrationResult === "object" &&
-      "response" in narrationResult
-    ) {
-      return (narrationResult as { response: string }).response;
-    }
-    return JSON.stringify(narrationResult);
-  })();
-  await bot.helpers.sendMessage(interaction.channelId!, {
-    content: narration,
-  });
+  const narration = await narrate({ prompt });
+  await bot.helpers.sendMessage(interaction.channelId, { content: narration });
 
-  await bot.helpers.sendMessage(interaction.channelId!, {
-    content: `<@${targetPlayer.id}>'s health bar:`,
-    file: {
-      blob: new Blob([
-        await healthBar({
-          current: newHealth,
-          max: player.maxHealth,
-          heal: healAmount,
-          width: 200,
-          height: 24,
-        }),
-      ]),
-      name: "healthbar.png",
-    },
-  });
+  // Health bar is now automatically displayed by setPlayerHealth
 }

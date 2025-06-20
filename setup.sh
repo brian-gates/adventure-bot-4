@@ -49,7 +49,26 @@ else
   echo "librsvg (rsvg-convert) already installed."
 fi
 
-# 4. Docker
+# 4. FFmpeg
+if ! command -v ffmpeg >/dev/null 2>&1; then
+  echo "FFmpeg not found. Installing..."
+  if [ "$OS" = "Darwin" ]; then
+    brew install ffmpeg
+  elif [ "$OS" = "Linux" ]; then
+    if command -v apt-get >/dev/null 2>&1; then
+      sudo apt-get update && sudo apt-get install -y ffmpeg
+    elif command -v dnf >/dev/null 2>&1; then
+      sudo dnf install -y ffmpeg
+    else
+      echo "Please install FFmpeg manually for your Linux distribution."
+    fi
+  fi
+  echo "FFmpeg installed."
+else
+  echo "FFmpeg already installed."
+fi
+
+# 5. Docker
 if ! command -v docker >/dev/null 2>&1; then
   echo "Docker not found. Please install Docker Desktop: https://www.docker.com/products/docker-desktop"
 else
@@ -62,7 +81,7 @@ else
   fi
 fi
 
-# 5. .env file
+# 6. .env file
 if [ ! -f .env ]; then
   if [ -f example.env ]; then
     cp example.env .env
@@ -105,7 +124,7 @@ if [ -f .env ]; then
 
 fi
 
-# 6. Ollama
+# 7. Ollama
 if ! command -v ollama >/dev/null 2>&1; then
   echo "Ollama not found. Please install it from https://ollama.com/download and run 'ollama serve' before starting the bot."
 else
