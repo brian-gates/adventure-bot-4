@@ -1,8 +1,9 @@
-import type { Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
+import { type Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 import { prisma } from "~/db/index.ts";
+import { getPlayer } from "~/db/player.ts";
 import { basicPlayerTemplate } from "~/game/players/player-templates.ts";
 import { weightedRandom } from "~/game/weighted-random.ts";
-import type { Encounter, Enemy, Location } from "~/generated/prisma/client.ts";
+import type { Enemy, Location, Player } from "~/generated/prisma/client.ts";
 import {
   enemyTemplatesByName,
   isEnemyTemplateKey,
@@ -31,15 +32,23 @@ export async function handleCombat({
   if (!interaction.channelId || !interaction.guildId || !interaction.user?.id) {
     return;
   }
+  console.log("[handleCombat] Starting combat handling.");
   const channelId = interaction.channelId;
   const guildId = interaction.guildId;
-  const joiners = await rally({ channelId });
-  if (joiners.size === 0) {
+  const playersWhoJoined = await rally({ channelId });
+
+  console.log(
+    `[handleCombat] ${playersWhoJoined.length} players returned from rally.`,
+    playersWhoJoined,
+  );
+
+  if (playersWhoJoined.length === 0) {
     await bot.helpers.sendMessage(channelId, {
       content: "No one joined the fight.",
     });
     return;
   }
+
   const guild = await prisma.guild.findUnique({
     where: { id: guildId },
   });
@@ -52,12 +61,18 @@ export async function handleCombat({
   const enemyType = weightedRandom(enemyWeights, random);
   const stats = enemyStats[enemyType];
   const enemy = await getOrCreateEnemy(enemyType, stats.maxHealth);
+
+  const playerIds = playersWhoJoined.map((p) => p.id);
+  console.log("[handleCombat] Creating encounter with player IDs:", playerIds);
   const encounter = await createEncounterWithPlayers({
-    playerIds: Array.from(joiners.keys()),
+    playerIds,
     enemy,
     random,
   });
   if (!encounter) {
+    console.log(
+      "[handleCombat] createEncounterWithPlayers returned null. Sending 'No valid players' message.",
+    );
     await bot.helpers.sendMessage(channelId, {
       content: `No valid players found for this encounter.`,
     });
@@ -79,6 +94,7 @@ export async function handleCombat({
   const playerCombatants = players.map(() =>
     basicPlayerTemplate.create({
       channelId,
+      guildId,
       random,
     })
   );
@@ -92,6 +108,7 @@ export async function handleCombat({
       return template.create({
         random,
         channelId,
+        guildId,
       });
     }
     throw new Error(`No template for enemy: ${e.enemy.name}`);
@@ -112,9 +129,18 @@ export async function handleCombat({
 
   combatants.sort((a, b) => b.initiative - a.initiative);
 
-  while (encounter.status === "active") {
+  let currentEncounter = encounter;
+  while (currentEncounter.status === "active") {
     for (const combatant of combatants) {
-      await combatant.act(encounter);
+      if (currentEncounter.status !== "active") break;
+      await combatant.act(currentEncounter);
+      currentEncounter = await prisma.encounter.findUniqueOrThrow({
+        where: { id: currentEncounter.id },
+        include: {
+          players: true,
+          enemies: true,
+        },
+      });
     }
   }
 }
@@ -123,7 +149,7 @@ async function rally({
   channelId,
 }: {
   channelId: bigint;
-}) {
+}): Promise<Player[]> {
   const joinMessage = await bot.helpers.sendMessage(channelId, {
     content: `A wild enemy appears! React with ⚔️ to join the fight!`,
   });
@@ -132,12 +158,36 @@ async function rally({
     joinMessage.id.toString(),
     "⚔️",
   );
-  await new Promise((resolve) => setTimeout(resolve, 30000));
-  return bot.helpers.getReactions(
+  console.log("[rally] Waiting for reactions for 10 seconds...");
+  await new Promise((resolve) => setTimeout(resolve, 10000));
+
+  const reactionUsers = await bot.helpers.getReactions(
     joinMessage.channelId.toString(),
     joinMessage.id.toString(),
     "⚔️",
   );
+  console.log(`[rally] Got ${reactionUsers.size} reaction users.`);
+
+  const humanUsers = Array.from(reactionUsers.values()).filter(
+    (user) => !user.toggles.has("bot"),
+  );
+  console.log(`[rally] Filtered down to ${humanUsers.length} human users.`);
+
+  if (humanUsers.length === 0) {
+    console.log("[rally] No human users joined. Returning empty array.");
+    return [];
+  }
+
+  console.log("[rally] Finding or creating players for human users...");
+  const players = await Promise.all(
+    humanUsers.map((user) => getPlayer({ id: user.id, name: user.username })),
+  );
+  console.log(
+    "[rally] Finished creating players. Returning players:",
+    players.map((p: Player) => p.id),
+  );
+
+  return players;
 }
 
 async function getOrCreateEnemy(
@@ -162,10 +212,20 @@ async function createEncounterWithPlayers({
   enemy: Enemy;
   random: () => number;
 }) {
+  console.log("[createEncounterWithPlayers] Received player IDs:", playerIds);
   const players = await prisma.player.findMany({
     where: { id: { in: playerIds } },
   });
-  if (players.length === 0) return null;
+  console.log(
+    `[createEncounterWithPlayers] Found ${players.length} players in DB from IDs.`,
+    players.map((p) => p.id),
+  );
+  if (players.length === 0) {
+    console.log(
+      "[createEncounterWithPlayers] No players found in DB, returning null.",
+    );
+    return null;
+  }
 
   const initiative = () => Math.floor(random() * 20);
 
@@ -182,7 +242,6 @@ async function createEncounterWithPlayers({
       },
       players: {
         create: players.map((player) => ({
-          playerId: player.id,
           player: { connect: { id: player.id } },
           initiative: initiative(),
         })),

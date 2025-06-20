@@ -5,21 +5,24 @@ import { seededRandom } from "./seeded-random.ts";
 
 const random = seededRandom(1, 0);
 const channelId = BigInt(0);
+const guildId = BigInt(0);
 
 const players = [
   basicPlayerTemplate.create({
     random,
     channelId,
+    guildId,
   }),
   basicPlayerTemplate.create({
     random,
     channelId,
+    guildId,
   }),
 ];
 
 const goblinTemplate = enemyTemplatesByName.get("goblin")!;
 const enemies = [
-  goblinTemplate.create({ random, channelId }),
+  goblinTemplate.create({ random, channelId, guildId }),
 ];
 
 const combatants = [
@@ -42,7 +45,6 @@ const encounter: Encounter = {
   createdAt: new Date(),
   updatedAt: new Date(),
   status: "active",
-  playerId: null,
 };
 
 let round = 1;

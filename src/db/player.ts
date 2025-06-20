@@ -4,15 +4,37 @@ export async function setPlayerHealth({
   id,
   health,
   maxHealth,
+  channelId,
+  healAmount = 0,
+  damageAmount = 0,
 }: {
   id: bigint;
   health: number;
   maxHealth?: number;
+  channelId?: bigint;
+  healAmount?: number;
+  damageAmount?: number;
 }) {
-  return await prisma.player.update({
+  const player = await prisma.player.update({
     where: { id },
     data: { health, ...(maxHealth !== undefined ? { maxHealth } : {}) },
   });
+
+  // Display health bar if channelId is provided
+  if (channelId) {
+    const { displayHealthBar } = await import("~/ui/health-bar.ts");
+    await displayHealthBar({
+      channelId,
+      playerId: id,
+      currentHealth: health,
+      maxHealth: player.maxHealth,
+      healAmount,
+      damageAmount,
+      playerName: player.name,
+    });
+  }
+
+  return player;
 }
 
 export async function createPlayer({

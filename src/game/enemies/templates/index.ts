@@ -1,4 +1,4 @@
-import type { Encounter } from "~/generated/prisma/client.ts";
+import type { Encounter } from "../../../generated/prisma/client.ts";
 import { goblin } from "./goblin.ts";
 import { orc } from "./orc.ts";
 import { slime } from "./slime.ts";
@@ -6,12 +6,14 @@ import { slime } from "./slime.ts";
 export type EnemyTemplate = {
   name: string;
   baseHealth: number;
-  abilities: string[];
-  create: (ctx: { random: () => number; channelId: bigint }) => {
+  abilities: readonly string[];
+  create: (
+    ctx: { random: () => number; channelId: bigint; guildId: bigint },
+  ) => {
     name: string;
     maxHealth: number;
     health: number;
-    abilities: string[];
+    abilities: readonly string[];
     act: (encounter: Encounter) => Promise<void>;
   };
 };
