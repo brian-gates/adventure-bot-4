@@ -95,3 +95,40 @@ export function narrateEncounter({
     immersiveRoleplay,
   ].join(" ");
 }
+
+export function narrateCombatAction({
+  attacker,
+  target,
+  hit,
+  damage,
+  newHealth,
+  maxHealth,
+}: {
+  attacker: string;
+  target: string;
+  hit: boolean;
+  damage?: number;
+  newHealth?: number;
+  maxHealth?: number;
+}) {
+  const healthPercentage = newHealth && maxHealth
+    ? Math.round((newHealth / maxHealth) * 100)
+    : undefined;
+
+  return [
+    `Narrate a combat action in a fantasy Discord RPG.`,
+    `The attacker is ${attacker}.`,
+    `The target is ${target}.`,
+    hit
+      ? `The attack hits and deals ${damage} damage.`
+      : `The attack misses completely.`,
+    healthPercentage !== undefined
+      ? `The target's vitality is now at ${healthPercentage}% of their full strength.`
+      : `The target's condition is unclear.`,
+    `Do not mention the words "percentage", "percent", or the "%" symbol. Instead, use descriptive language like "badly wounded", "lightly injured", "barely standing", etc.`,
+    `Do not mention raw numbers like damage or health values.`,
+    `Make it dramatic and cinematic.`,
+    ...defaultResponseTemplate,
+    immersiveRoleplay,
+  ].join(" ");
+}

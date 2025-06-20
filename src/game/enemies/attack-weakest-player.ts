@@ -7,6 +7,8 @@ import type {
 } from "../../generated/prisma/client.ts";
 import { checkEncounterStatus } from "../check-encounter-status.ts";
 import { rollAndAnnounceDie } from "../dice.ts";
+import { narrate } from "~/llm/index.ts";
+import { narrateCombatAction } from "~/prompts.ts";
 
 export async function attackWeakestPlayer({
   random,
@@ -48,10 +50,15 @@ export async function attackWeakestPlayer({
   const hit = attack > 10; // Simple AC 10 for now
 
   if (!hit) {
-    const { bot } = await import("~/bot/index.ts");
-    await bot.helpers.sendMessage(channelId, {
-      content: `${attacker.name} misses ${weakestPlayer.player.name}!`,
+    // Narrate the miss
+    const missPrompt = narrateCombatAction({
+      attacker: attacker.name,
+      target: weakestPlayer.player.name,
+      hit: false,
     });
+    const missNarration = await narrate({ prompt: missPrompt });
+    const { bot } = await import("~/bot/index.ts");
+    await bot.helpers.sendMessage(channelId, { content: missNarration });
     return;
   }
 
@@ -71,6 +78,19 @@ export async function attackWeakestPlayer({
     channelId,
     damageAmount: damage,
   });
+
+  // Narrate the hit
+  const hitPrompt = narrateCombatAction({
+    attacker: attacker.name,
+    target: weakestPlayer.player.name,
+    hit: true,
+    damage,
+    newHealth,
+    maxHealth: weakestPlayer.player.maxHealth,
+  });
+  const hitNarration = await narrate({ prompt: hitPrompt });
+  const { bot } = await import("~/bot/index.ts");
+  await bot.helpers.sendMessage(channelId, { content: hitNarration });
 
   await checkEncounterStatus(encounter, channelId);
 }

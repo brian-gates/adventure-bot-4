@@ -2,6 +2,8 @@ import { prisma } from "~/db/index.ts";
 import type { Encounter, Player } from "~/generated/prisma/client.ts";
 import { checkEncounterStatus } from "../check-encounter-status.ts";
 import { rollAndAnnounceDie } from "../dice.ts";
+import { narrate } from "~/llm/index.ts";
+import { narrateCombatAction } from "~/prompts.ts";
 
 export type PlayerTemplate = {
   create: (ctx: {
@@ -83,10 +85,15 @@ async function attackWeakestEnemy({
   const hit = attack > 10; // Simple AC 10 for now
 
   if (!hit) {
-    const { bot } = await import("~/bot/index.ts");
-    await bot.helpers.sendMessage(channelId, {
-      content: `${attacker.name} misses ${weakestEnemy.enemy.name}!`,
+    // Narrate the miss
+    const missPrompt = narrateCombatAction({
+      attacker: attacker.name,
+      target: weakestEnemy.enemy.name,
+      hit: false,
     });
+    const missNarration = await narrate({ prompt: missPrompt });
+    const { bot } = await import("~/bot/index.ts");
+    await bot.helpers.sendMessage(channelId, { content: missNarration });
     return;
   }
 
@@ -106,6 +113,19 @@ async function attackWeakestEnemy({
     data: { health: newHealth },
   });
 
+  // Narrate the hit
+  const hitPrompt = narrateCombatAction({
+    attacker: attacker.name,
+    target: weakestEnemy.enemy.name,
+    hit: true,
+    damage,
+    newHealth,
+    maxHealth: weakestEnemy.enemy.maxHealth,
+  });
+  const hitNarration = await narrate({ prompt: hitPrompt });
+  const { bot } = await import("~/bot/index.ts");
+  await bot.helpers.sendMessage(channelId, { content: hitNarration });
+
   // Display enemy health bar (using a simple text format since enemies don't have Discord IDs)
   const healthPercentage = Math.round(
     (newHealth / weakestEnemy.enemy.maxHealth) * 100,
@@ -114,7 +134,6 @@ async function attackWeakestEnemy({
     "░".repeat(10 - Math.floor(healthPercentage / 10))
   }] ${newHealth}/${weakestEnemy.enemy.maxHealth} (${healthPercentage}%)`;
 
-  const { bot } = await import("~/bot/index.ts");
   await bot.helpers.sendMessage(channelId, {
     content: `${weakestEnemy.enemy.name}'s health: ${healthBarText}`,
   });
