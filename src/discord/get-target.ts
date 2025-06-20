@@ -3,7 +3,10 @@ import { getPlayer } from "~/db/player.ts";
 
 export const getTargetId = ({ data }: Interaction) => {
   const value = data?.options?.find((opt) => opt.name === "target")?.value;
-  return value != null ? String(value) : undefined;
+  return value != null &&
+      (typeof value === "string" || typeof value === "number")
+    ? BigInt(value)
+    : undefined;
 };
 
 export const getTargetPlayer = async ({
@@ -16,6 +19,6 @@ export const getTargetPlayer = async ({
   const users = interaction.data?.resolved?.users as
     | Record<string, { username?: string }>
     | undefined;
-  const name = users?.[targetId]?.username ?? targetId;
+  const name = users?.[targetId.toString()]?.username ?? targetId.toString();
   return await getPlayer({ id: targetId, name });
 };

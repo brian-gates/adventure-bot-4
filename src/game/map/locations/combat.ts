@@ -53,7 +53,7 @@ export async function handleCombat({
   const stats = enemyStats[enemyType];
   const enemy = await getOrCreateEnemy(enemyType, stats.maxHealth);
   const encounter = await createEncounterWithPlayers({
-    playerIds: Array.from(joiners.keys()).map((id) => id.toString()),
+    playerIds: Array.from(joiners.keys()),
     enemy,
     random,
   });
@@ -76,7 +76,7 @@ export async function handleCombat({
     include: { enemy: true },
   });
 
-  const playerCombatants = players.map((p) =>
+  const playerCombatants = players.map(() =>
     basicPlayerTemplate.create({
       channelId,
       random,
@@ -158,10 +158,10 @@ async function createEncounterWithPlayers({
   enemy,
   random,
 }: {
-  playerIds: string[];
+  playerIds: bigint[];
   enemy: Enemy;
   random: () => number;
-}): Promise<(Encounter & { players: { playerId: string }[] }) | null> {
+}) {
   const players = await prisma.player.findMany({
     where: { id: { in: playerIds } },
   });

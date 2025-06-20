@@ -11,7 +11,7 @@ export function mentionInstruction({
   authorId,
 }: {
   role: string;
-  authorId: string | number;
+  authorId: bigint;
 }) {
   return `Always refer to the ${role} using the exact mention string <@${authorId}> so Discord renders it as a clickable mention.`;
 }
@@ -23,7 +23,7 @@ export function narrateAttack({
   damage,
   newHealth,
 }: {
-  authorId: string | number;
+  authorId: bigint;
   target: string;
   d20: number;
   damage: number;
@@ -50,8 +50,8 @@ export function narrateHeal({
   healAmount,
   newHealth,
 }: {
-  authorId: string | number;
-  targetId: string | number;
+  authorId: bigint;
+  targetId: bigint;
   healAmount: number;
   newHealth: number;
 }) {

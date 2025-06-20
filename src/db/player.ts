@@ -5,7 +5,7 @@ export async function setPlayerHealth({
   health,
   maxHealth,
 }: {
-  id: string;
+  id: bigint;
   health: number;
   maxHealth?: number;
 }) {
@@ -21,7 +21,7 @@ export async function createPlayer({
   health,
   maxHealth = 10,
 }: {
-  id: string;
+  id: bigint;
   name: string;
   health: number;
   maxHealth?: number;
@@ -35,7 +35,7 @@ export async function getPlayer({
   health = 10,
   maxHealth = 10,
 }: {
-  id: string;
+  id: bigint;
   name: string;
   health?: number;
   maxHealth?: number;

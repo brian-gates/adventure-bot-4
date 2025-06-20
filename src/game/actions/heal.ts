@@ -28,14 +28,12 @@ export async function heal({
     id: targetPlayer.id,
     name: targetPlayer.name,
   });
-  const healAmount = await rollDie({ sides: 4, random: seededRandom(0) });
+  const healAmount = rollDie({ sides: 4, random: seededRandom(0) });
   const newHealth = Math.min(player.maxHealth, player.health + healAmount);
   await setPlayerHealth({ id: targetPlayer.id, health: newHealth });
 
   const prompt = narrateHeal({
-    authorId: interaction.user?.id?.toString() ??
-      interaction.member?.user?.id?.toString() ??
-      "",
+    authorId: interaction.user?.id ?? interaction.member?.user?.id ?? 0n,
     targetId: targetPlayer.id,
     healAmount,
     newHealth,

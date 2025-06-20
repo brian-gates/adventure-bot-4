@@ -1,4 +1,5 @@
 import { prisma } from "~/db/index.ts";
+import type { Prisma, PrismaClient } from "~/generated/prisma/client.ts";
 import {
   getMapById,
   type Location,
@@ -146,31 +147,30 @@ export class GameMap {
   async save(
     { guildId, prisma: db }: {
       guildId: bigint;
-      prisma: typeof prisma;
+      prisma: PrismaClient | Prisma.TransactionClient;
     },
   ) {
     const { locations, paths, id, cols, rows } = this.map;
     const startLocation = this.startLocation;
     if (!startLocation) throw new Error("No start location found");
 
-    // First transaction: create the map and all locations
-    await db.$transaction(async (tx) => {
-      await tx.map.create({
-        data: {
-          id,
-          cols,
-          rows,
-        },
-      });
-      await tx.location.createMany({
-        data: locations.map((loc) => ({
-          ...loc,
-          mapId: id,
-          attributes: {},
-        })),
-        skipDuplicates: true,
-      });
+    // Create the map and all locations
+    await db.map.create({
+      data: {
+        id,
+        cols,
+        rows,
+      },
     });
+    await db.location.createMany({
+      data: locations.map((loc) => ({
+        ...loc,
+        mapId: id,
+        attributes: {},
+      })),
+      skipDuplicates: true,
+    });
+
     // Fetch all location IDs after insert
     const allLocationIds = new Set(
       (await db.location.findMany({
@@ -189,31 +189,30 @@ export class GameMap {
         `Missing location IDs for paths: ${[...new Set(missing)].join(", ")}`,
       );
     }
-    // Second transaction: create paths and upsert guild
-    await db.$transaction(async (tx) => {
-      await tx.path.createMany({
-        data: paths.map((path) => ({
-          ...path,
-          mapId: id,
-          attributes: {},
-        })),
-        skipDuplicates: true,
-      });
-      console.log(
-        `[GameMap] Setting guild ${guildId} currentLocation to startLocation: id=${startLocation.id}, row=${startLocation.row}, col=${startLocation.col}`,
-      );
-      await tx.guild.upsert({
-        where: { id: guildId },
-        update: {
-          currentLocation: { connect: { id: startLocation.id } },
-          map: { connect: { id } },
-        },
-        create: {
-          id: guildId,
-          currentLocation: { connect: { id: startLocation.id } },
-          map: { connect: { id } },
-        },
-      });
+
+    // Create paths and upsert guild
+    await db.path.createMany({
+      data: paths.map((path) => ({
+        ...path,
+        mapId: id,
+        attributes: {},
+      })),
+      skipDuplicates: true,
+    });
+    console.log(
+      `[GameMap] Setting guild ${guildId} currentLocation to startLocation: id=${startLocation.id}, row=${startLocation.row}, col=${startLocation.col}`,
+    );
+    await db.guild.upsert({
+      where: { id: guildId },
+      update: {
+        currentLocation: { connect: { id: startLocation.id } },
+        map: { connect: { id } },
+      },
+      create: {
+        id: guildId,
+        currentLocation: { connect: { id: startLocation.id } },
+        map: { connect: { id } },
+      },
     });
   }
 }
