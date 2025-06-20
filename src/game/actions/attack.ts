@@ -1,6 +1,6 @@
 import { Bot, Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
-import { findOrCreatePlayer, setPlayerHealth } from "~/db/player.ts";
+import { getPlayer, setPlayerHealth } from "~/db/player.ts";
 import { getTargetPlayer } from "~/discord/get-target.ts";
 import { rollAndAnnounceDie } from "~/game/dice.ts";
 import { narrate } from "~/llm/index.ts";
@@ -32,7 +32,7 @@ export async function attack({
     label: "1d4 (unarmed)",
     random,
   });
-  const player = await findOrCreatePlayer({
+  const player = await getPlayer({
     id: targetPlayer.id,
     name: targetPlayer.name,
   });
@@ -42,7 +42,7 @@ export async function attack({
     : undefined;
   if (player && newHealth !== undefined) {
     await setPlayerHealth({ id: targetPlayer.id, health: newHealth });
-    await findOrCreatePlayer({
+    await getPlayer({
       id: authorId.toString(),
       name: "Unknown",
     });

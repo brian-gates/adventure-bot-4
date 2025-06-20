@@ -1,5 +1,5 @@
 import { Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
-import { findOrCreatePlayer } from "~/db/player.ts";
+import { getPlayer } from "~/db/player.ts";
 
 export const getTargetId = ({ data }: Interaction) => {
   const value = data?.options?.find((opt) => opt.name === "target")?.value;
@@ -17,5 +17,5 @@ export const getTargetPlayer = async ({
     | Record<string, { username?: string }>
     | undefined;
   const name = users?.[targetId]?.username ?? targetId;
-  return await findOrCreatePlayer({ id: targetId, name });
+  return await getPlayer({ id: targetId, name });
 };
