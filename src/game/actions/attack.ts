@@ -43,12 +43,12 @@ export async function attack({
   if (player && newHealth !== undefined) {
     await setPlayerHealth({ id: targetPlayer.id, health: newHealth });
     await getPlayer({
-      id: authorId.toString(),
+      id: authorId,
       name: "Unknown",
     });
   }
   const prompt = narrateAttack({
-    authorId: authorId.toString(),
+    authorId,
     target: targetPlayer.name,
     d20,
     damage,
