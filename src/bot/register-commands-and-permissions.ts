@@ -59,6 +59,11 @@ export async function registerCommandsAndPermissions({
       ],
     },
     {
+      name: "rally",
+      description: "Call for adventurers to rally",
+      options: [],
+    },
+    {
       name: "adventure",
       description: "Go on an adventure",
       options: [],
