@@ -1,4 +1,9 @@
 import type { LocationType } from "~/generated/prisma/client.ts";
+import type {
+  Bot,
+  Interaction,
+} from "https://deno.land/x/discordeno@18.0.1/mod.ts";
+import type { Location } from "~/generated/prisma/client.ts";
 import { handleBoss } from "./boss.ts";
 import { handleCampfire } from "./campfire.ts";
 import { handleCombat } from "./combat.ts";
@@ -8,13 +13,14 @@ import { handleShop } from "./shop.ts";
 import { handleTavern } from "./tavern.ts";
 import { handleTreasure } from "./treasure.ts";
 
-const fallback = async ({ bot, interaction, location }: any) => {
-  await bot.helpers.sendMessage(interaction.channelId, {
-    content: `Nothing special at ${location.name} (stub).`,
-  });
-};
+type LocationHandler = (params: {
+  bot: Bot;
+  interaction: Interaction;
+  location: Location;
+  random: () => number;
+}) => Promise<void>;
 
-export const locationHandlers: Record<LocationType, Function> = {
+export const locationHandlers: Record<LocationType, LocationHandler> = {
   combat: handleCombat,
   event: handleEvent,
   shop: handleShop,

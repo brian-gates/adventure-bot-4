@@ -11,7 +11,7 @@ export async function setPlayerHealth({
   id: bigint;
   health: number;
   maxHealth?: number;
-  channelId?: bigint;
+  channelId: bigint;
   healAmount?: number;
   damageAmount?: number;
 }) {
@@ -30,7 +30,6 @@ export async function setPlayerHealth({
       maxHealth: player.maxHealth,
       healAmount,
       damageAmount,
-      playerName: player.name,
     });
   }
 
