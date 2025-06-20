@@ -70,3 +70,28 @@ export function narrateHeal({
     immersiveRoleplay,
   ].join(" ");
 }
+
+export function narrateEncounter({
+  enemyType,
+  playerCount,
+  playerIds,
+}: {
+  enemyType: string;
+  playerCount: number;
+  playerIds: bigint[];
+}) {
+  const playerMentions = playerIds.map((id) => `<@${id}>`).join(", ");
+
+  return [
+    `Narrate the beginning of a combat encounter in a fantasy Discord RPG.`,
+    `The enemy is a ${enemyType}.`,
+    `The players are: ${playerMentions}.`,
+    `There are ${playerCount} player${
+      playerCount === 1 ? "" : "s"
+    } facing the ${enemyType}.`,
+    `Describe the scene as the ${enemyType} appears and the players prepare for battle.`,
+    `Make it dramatic and atmospheric.`,
+    ...defaultResponseTemplate,
+    immersiveRoleplay,
+  ].join(" ");
+}
