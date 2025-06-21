@@ -2,7 +2,7 @@ import {
   type Bot,
   type Interaction,
 } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
-import { getPlayer, setPlayerHealth } from "~/db/player.ts";
+import { getOrCreatePlayer, setPlayerHealth } from "~/db/player.ts";
 import { getTargetPlayer } from "~/discord/get-target.ts";
 import { rollAndAnnounceDie } from "~/game/dice.ts";
 import { narrate } from "~/llm/index.ts";
@@ -24,7 +24,7 @@ export async function heal({
     const healerId = interaction.user.id;
     const healerName = interaction.user.username ?? healerId.toString();
 
-    const player = await getPlayer({
+    const player = await getOrCreatePlayer({
       id: healerId,
       name: healerName,
       guildId,
@@ -66,7 +66,7 @@ export async function heal({
     return;
   }
 
-  const player = await getPlayer({
+  const player = await getOrCreatePlayer({
     id: targetPlayer.id,
     name: targetPlayer.name,
     guildId,

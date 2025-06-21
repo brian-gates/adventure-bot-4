@@ -2,7 +2,7 @@ import {
   type Bot,
   type Interaction,
 } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
-import { getPlayer } from "~/db/player.ts";
+import { getOrCreatePlayer } from "~/db/player.ts";
 import { bot } from "~/bot/index.ts";
 import type { Player } from "~/generated/prisma/client.ts";
 
@@ -53,7 +53,7 @@ export async function getRalliedPlayers({
   console.log("[rally] Finding or creating players for human users...");
   const players = await Promise.all(
     humanUsers.map((user) =>
-      getPlayer({ id: user.id, name: user.username, guildId })
+      getOrCreatePlayer({ id: user.id, name: user.username, guildId })
     ),
   );
   console.log(

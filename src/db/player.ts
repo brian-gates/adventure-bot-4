@@ -60,7 +60,7 @@ export async function createPlayer({
   });
 }
 
-export async function getPlayer({
+export async function getOrCreatePlayer({
   id,
   name,
   health = 10,
