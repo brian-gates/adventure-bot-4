@@ -1,4 +1,4 @@
-import type { Encounter } from "../../../generated/prisma/client.ts";
+import type { Encounter, Enemy } from "../../../generated/prisma/client.ts";
 import { goblin } from "./goblin.ts";
 import { orc } from "./orc.ts";
 import { slime } from "./slime.ts";
@@ -14,7 +14,9 @@ export type EnemyTemplate = {
     maxHealth: number;
     health: number;
     abilities: readonly string[];
-    act: (encounter: Encounter) => Promise<void>;
+    act: (
+      { encounter, enemy }: { encounter: Encounter; enemy: Enemy },
+    ) => Promise<void>;
   };
 };
 

@@ -17,7 +17,8 @@ export async function heal({
   interaction: Interaction;
   random: () => number;
 }) {
-  const targetPlayer = await getTargetPlayer({ interaction });
+  const guildId = interaction.guildId!;
+  const targetPlayer = await getTargetPlayer({ interaction, guildId });
   if (!targetPlayer) {
     // If no target specified, heal the user who ran the command
     const healerId = interaction.user.id;
@@ -26,6 +27,7 @@ export async function heal({
     const player = await getPlayer({
       id: healerId,
       name: healerName,
+      guildId,
     });
 
     if (!interaction.channelId || !interaction.guildId) {
@@ -67,6 +69,7 @@ export async function heal({
   const player = await getPlayer({
     id: targetPlayer.id,
     name: targetPlayer.name,
+    guildId,
   });
 
   if (!interaction.channelId || !interaction.guildId) {

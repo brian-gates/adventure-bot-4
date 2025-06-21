@@ -17,7 +17,7 @@ export async function attack({
   const authorId = interaction.user.id;
   const channelId = interaction.channelId!;
   const guildId = interaction.guildId!;
-  const targetPlayer = await getTargetPlayer({ interaction });
+  const targetPlayer = await getTargetPlayer({ interaction, guildId });
   if (!targetPlayer) throw new Error("Target player not found");
   const { roll: d20 } = await rollAndAnnounceDie({
     channelId,
@@ -36,6 +36,7 @@ export async function attack({
   const player = await getPlayer({
     id: targetPlayer.id,
     name: targetPlayer.name,
+    guildId,
   });
   const actualDamage = player ? Math.min(damage, player.health) : 0;
   const newHealth = player
@@ -51,6 +52,7 @@ export async function attack({
     await getPlayer({
       id: authorId,
       name: "Unknown",
+      guildId,
     });
   }
   const prompt = narrateAttack({

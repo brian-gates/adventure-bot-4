@@ -6,12 +6,11 @@ export async function checkEncounterStatus(
   encounter: Encounter,
   channelId: bigint,
 ) {
-  const playersInEncounter = await prisma.encounterPlayer.findMany({
+  const playersInEncounter = await prisma.player.findMany({
     where: { encounterId: encounter.id },
-    include: { player: true },
   });
   const allPlayersDefeated = playersInEncounter.every(
-    (p) => p.player.health <= 0,
+    (p) => p.health <= 0,
   );
 
   if (allPlayersDefeated) {
@@ -25,12 +24,11 @@ export async function checkEncounterStatus(
     return;
   }
 
-  const enemiesInEncounter = await prisma.encounterEnemy.findMany({
+  const enemiesInEncounter = await prisma.enemy.findMany({
     where: { encounterId: encounter.id },
-    include: { enemy: true },
   });
   const allEnemiesDefeated = enemiesInEncounter.every(
-    (e) => e.enemy.health <= 0,
+    (e) => e.health <= 0,
   );
 
   if (allEnemiesDefeated) {
