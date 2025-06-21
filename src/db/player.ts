@@ -1,22 +1,39 @@
 import { prisma } from "~/db/index.ts";
 
-export async function getPlayer({ id }: { id: string }) {
-  return await prisma.player.findUnique({ where: { id } });
-}
-
 export async function setPlayerHealth({
   id,
   health,
   maxHealth,
+  channelId,
+  healAmount = 0,
+  damageAmount = 0,
 }: {
-  id: string;
+  id: bigint;
   health: number;
   maxHealth?: number;
+  channelId: bigint;
+  healAmount?: number;
+  damageAmount?: number;
 }) {
-  return await prisma.player.update({
+  const player = await prisma.player.update({
     where: { id },
     data: { health, ...(maxHealth !== undefined ? { maxHealth } : {}) },
   });
+
+  // Display health bar if channelId is provided
+  if (channelId) {
+    const { displayHealthBar } = await import("~/ui/health-bar.ts");
+    await displayHealthBar({
+      channelId,
+      playerId: id,
+      currentHealth: health,
+      maxHealth: player.maxHealth,
+      healAmount,
+      damageAmount,
+    });
+  }
+
+  return player;
 }
 
 export async function createPlayer({
@@ -24,36 +41,39 @@ export async function createPlayer({
   name,
   health,
   maxHealth = 10,
+  guildId,
 }: {
-  id: string;
+  id: bigint;
   name: string;
   health: number;
   maxHealth?: number;
+  guildId: bigint;
 }) {
-  return await prisma.player.create({ data: { id, name, health, maxHealth } });
+  return await prisma.player.create({
+    data: {
+      id,
+      name,
+      health,
+      maxHealth,
+      guildId,
+    },
+  });
 }
 
-export async function findOrCreatePlayer({
+export async function getPlayer({
   id,
   name,
   health = 10,
   maxHealth = 10,
+  guildId,
 }: {
-  id: string;
+  id: bigint;
   name: string;
   health?: number;
   maxHealth?: number;
+  guildId: bigint;
 }) {
-  try {
-    let player = await prisma.player.findUnique({ where: { id } });
-    if (!player) {
-      player = await prisma.player.create({
-        data: { id, name, health, maxHealth },
-      });
-    }
-    return player;
-  } catch (err) {
-    console.error("Prisma error in findOrCreatePlayer:", err);
-    throw err;
-  }
+  const player = await prisma.player.findUnique({ where: { id } });
+  if (player) return player;
+  return await createPlayer({ id, name, health, maxHealth, guildId });
 }

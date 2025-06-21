@@ -2,8 +2,8 @@ import { load } from "https://deno.land/std@0.224.0/dotenv/mod.ts";
 import { Keypress } from "https://deno.land/x/cliffy@v1.0.0-rc.4/keypress/mod.ts";
 import { prisma } from "~/db/index.ts";
 import { GameMap } from "~/game/map/game-map.ts";
-import { seedMapForGuild } from "~/game/map/seed-map.ts";
 import { svgToPng } from "../../../util/svg-to-png.ts";
+import { seedMapForGuild } from "../seed-map-for-guild.ts";
 import { asciiMapString } from "./log-ascii-map.ts";
 
 await load({ export: true });

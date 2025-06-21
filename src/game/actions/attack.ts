@@ -1,63 +1,62 @@
-import { Bot, Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
+import { Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
-import { prisma } from "~/db/index.ts";
-import { findOrCreatePlayer, setPlayerHealth } from "~/db/player.ts";
+import { getPlayer, setPlayerHealth } from "~/db/player.ts";
 import { getTargetPlayer } from "~/discord/get-target.ts";
 import { rollAndAnnounceDie } from "~/game/dice.ts";
-import { seededRandom } from "~/game/seeded-random.ts";
-import { stringToSeed } from "~/game/string-to-seed.ts";
 import { narrate } from "~/llm/index.ts";
 import { narrateAttack } from "~/prompts.ts";
-import { healthBar } from "~/ui/health-bar.ts";
+import { bot } from "~/bot/index.ts";
 
 export async function attack({
-  bot,
   interaction,
+  random,
 }: {
-  bot: Bot;
   interaction: Interaction;
+  random: () => number;
 }) {
   const authorId = interaction.user.id;
   const channelId = interaction.channelId!;
-  const targetPlayer = await getTargetPlayer({ interaction });
+  const guildId = interaction.guildId!;
+  const targetPlayer = await getTargetPlayer({ interaction, guildId });
   if (!targetPlayer) throw new Error("Target player not found");
-  const { seed } = (await prisma.guild.findUnique({
-    where: { id: BigInt(interaction.guildId ?? "0") },
-  })) ??
-    (() => {
-      throw new Error("Guild not found");
-    })();
   const { roll: d20 } = await rollAndAnnounceDie({
-    bot,
-    interaction,
+    channelId,
     sides: 20,
     label: "d20",
-    random: seededRandom(stringToSeed(seed)),
+    guildId,
+    random,
   });
   const { roll: damage } = await rollAndAnnounceDie({
-    bot,
-    interaction,
+    channelId,
+    guildId,
     sides: 4,
     label: "1d4 (unarmed)",
-    random: seededRandom(stringToSeed(seed)),
+    random,
   });
-  const player = await findOrCreatePlayer({
+  const player = await getPlayer({
     id: targetPlayer.id,
     name: targetPlayer.name,
+    guildId,
   });
   const actualDamage = player ? Math.min(damage, player.health) : 0;
   const newHealth = player
     ? Math.max(0, player.health - actualDamage)
     : undefined;
   if (player && newHealth !== undefined) {
-    await setPlayerHealth({ id: targetPlayer.id, health: newHealth });
-    await findOrCreatePlayer({
-      id: authorId.toString(),
+    await setPlayerHealth({
+      id: targetPlayer.id,
+      health: newHealth,
+      channelId: channelId,
+      damageAmount: actualDamage,
+    });
+    await getPlayer({
+      id: authorId,
       name: "Unknown",
+      guildId,
     });
   }
   const prompt = narrateAttack({
-    authorId: authorId.toString(),
+    attackerId: authorId,
     target: targetPlayer.name,
     d20,
     damage,
@@ -85,21 +84,5 @@ export async function attack({
   })();
   await bot.helpers.sendMessage(channelId, { content: narration });
 
-  if (player && newHealth !== undefined) {
-    await bot.helpers.sendMessage(channelId, {
-      content: `<@${targetPlayer.id}>'s health:`,
-      file: {
-        blob: new Blob([
-          await healthBar({
-            current: newHealth,
-            max: player.maxHealth,
-            damage: actualDamage,
-            width: 200,
-            height: 24,
-          }),
-        ]),
-        name: "healthbar.png",
-      },
-    });
-  }
+  // Health bar is now automatically displayed by setPlayerHealth
 }

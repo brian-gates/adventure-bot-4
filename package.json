@@ -1,9 +1,14 @@
 {
   "devDependencies": {
-    "prisma": "^6.8.2"
+    "prisma": "^6.8.2",
+    "typescript": "^5.8.3"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",
+    "@types/gifencoder": "^2.0.3",
+    "@types/node": "^24.0.1",
+    "canvas": "^3.1.0",
+    "gifencoder": "^2.0.1",
     "pm2": "^6.0.8"
   }
 }

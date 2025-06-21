@@ -3,3 +3,4 @@
 /src/generated/prisma
 .DS_Store
 .support
+map-animations/*

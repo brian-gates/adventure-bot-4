@@ -68,6 +68,9 @@ export function asciiMapString({
         canReachTargetFromPosition({
           target: boss,
           position: { row, col },
+        }) && canReachTargetFromPosition({
+          target: { row: 0, col: Math.floor(map.cols / 2) },
+          position: { row, col },
         });
       if (location) {
         const char = locationTypeChar[location.type] ?? "O";

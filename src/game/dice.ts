@@ -1,4 +1,4 @@
-import { Bot, Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
+import { bot } from "~/bot/index.ts";
 
 export function rollDie({
   sides,
@@ -10,57 +10,48 @@ export function rollDie({
   return Math.floor(random() * sides) + 1;
 }
 
-async function getRollEmoji(
-  bot: Bot,
-  guildId: bigint | undefined,
-  sides: number,
-  roll: number,
-): Promise<string> {
-  if (!guildId || (sides !== 20 && sides !== 4)) return "";
-  const num = roll.toString().padStart(2, "0");
-  const name = sides === 20 ? `d20_${num}` : `d4_${roll}`;
-  const emojis = await bot.helpers.getEmojis(guildId);
-  const found = emojis.find((e) => e.name === name);
-  return found ? `<:${found.name}:${found.id}>` : `:${name}:`;
+async function getRollEmoji({
+  guildId,
+  sides,
+  roll,
+}: {
+  guildId: bigint;
+  sides: number;
+  roll: number;
+}): Promise<string> {
+  const name = `d${sides}_${roll}`;
+  try {
+    const emojis = await bot.helpers.getEmojis(guildId);
+    const emoji = emojis.find((e) => e.name === name);
+    if (emoji) return `<:${emoji.name}:${emoji.id}>`;
+    console.log(`No emoji found for ${name}`);
+  } catch (error) {
+    console.error(`Error fetching emoji ${name} from guild ${guildId}:`, error);
+  }
+  return "🎲";
 }
 
 export async function rollAndAnnounceDie({
-  bot,
-  interaction,
+  channelId,
+  guildId,
   sides,
   label,
   random,
 }: {
-  bot: Bot;
-  interaction: Interaction;
+  channelId: bigint;
+  guildId: bigint;
   sides: number;
   label: string;
   random: () => number;
 }) {
-  const channelId = interaction.channelId!;
   const roll = rollDie({ sides, random });
-  const emoji = await getRollEmoji(bot, interaction.guildId, sides, roll);
-  await bot.helpers.sendMessage(channelId, {
-    content: emoji,
-  });
-  return { roll, label };
-}
+  const emoji = await getRollEmoji({ guildId, sides, roll });
 
-export async function getDiceEmojiString({
-  bot,
-  guildId,
-  roll,
-}: {
-  bot: Bot;
-  guildId: bigint;
-  roll: number;
-}): Promise<string> {
-  const num = roll.toString().padStart(2, "0");
-  const name = `d20_${num}`;
-  const emojis = await bot.helpers.getEmojis(guildId);
-  const emoji = emojis.find((e) => e.name === name);
-  if (!emoji) return `:${name}:`;
-  return `<:${emoji.name}:${emoji.id}>`;
+  await bot.helpers.sendMessage(channelId, {
+    content: `${emoji} ${roll} ${label}`,
+  });
+
+  return { roll, emoji };
 }
 
 export function attackNarration({
