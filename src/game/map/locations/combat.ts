@@ -2,7 +2,7 @@ import { type Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 import { prisma } from "~/db/index.ts";
 import { basicPlayerTemplate } from "~/game/players/player-templates.ts";
 import { weightedRandom } from "~/game/weighted-random.ts";
-import type { Enemy, Location } from "~/generated/prisma/client.ts";
+import type { Enemy, Location, Player } from "~/generated/prisma/client.ts";
 import {
   enemyTemplatesByName,
   isEnemyTemplateKey,
@@ -10,6 +10,7 @@ import {
 import { bot } from "~/bot/index.ts";
 import { narrate } from "~/llm/index.ts";
 import { narrateEncounter } from "~/prompts.ts";
+import { getOrCreatePlayer } from "~/db/player.ts";
 
 const enemyWeights = {
   goblin: 5,
@@ -21,6 +22,50 @@ const enemyStats = {
   orc: { maxHealth: 18 },
   slime: { maxHealth: 8 },
 };
+
+async function getOrCreatePlayersForCombat({
+  guildId,
+  userId,
+  username,
+  channelId,
+}: {
+  guildId: bigint;
+  userId: bigint;
+  username: string;
+  channelId: bigint;
+}): Promise<Player[]> {
+  // ensure the player exists
+  await getOrCreatePlayer({
+    id: userId,
+    name: username,
+    guildId,
+  });
+  const foundPlayers = await prisma.player.findMany({ where: { guildId } });
+  console.log(
+    `[handleCombat] Found ${foundPlayers.length} players in guild.`,
+    foundPlayers.map((p) => p.id),
+  );
+
+  if (foundPlayers.length === 0) {
+    await bot.helpers.sendMessage(channelId, {
+      content:
+        `No players found in this guild. Created a new adventurer for you!`,
+    });
+    return [
+      await prisma.player.create({
+        data: {
+          id: userId,
+          name: username ?? `Player ${userId}`,
+          health: 10,
+          maxHealth: 10,
+          guildId,
+        },
+      }),
+    ];
+  }
+
+  return foundPlayers;
+}
 
 export async function handleCombat({
   interaction,
@@ -47,17 +92,12 @@ export async function handleCombat({
     return;
   }
 
-  const allPlayers = await prisma.player.findMany({ where: { guildId } });
-  console.log(
-    `[handleCombat] Found ${allPlayers.length} players in guild.`,
-    allPlayers.map((p) => p.id),
-  );
-  if (allPlayers.length === 0) {
-    await bot.helpers.sendMessage(channelId, {
-      content: `No players found in this guild.`,
-    });
-    return;
-  }
+  const playersInCombat = await getOrCreatePlayersForCombat({
+    guildId,
+    userId: user.id,
+    username: user.username ?? `Player ${user.id}`,
+    channelId,
+  });
 
   // Generate enemies for this encounter
   const enemyType = weightedRandom(enemyWeights, random);
@@ -81,7 +121,7 @@ export async function handleCombat({
 
   // Update players to join the encounter
   await Promise.all(
-    allPlayers.map((player) =>
+    playersInCombat.map((player) =>
       prisma.player.update({
         where: { id: player.id },
         data: {
@@ -107,14 +147,14 @@ export async function handleCombat({
   // Narrate the encounter scene
   const scenePrompt = narrateEncounter({
     enemyType,
-    playerCount: allPlayers.length,
-    playerIds: allPlayers.map((p) => p.id),
+    playerCount: playersInCombat.length,
+    playerIds: playersInCombat.map((p) => p.id),
   });
   const sceneNarration = await narrate({ prompt: scenePrompt });
   await bot.helpers.sendMessage(channelId, { content: sceneNarration });
 
   // Prepare combatants
-  const playerCombatants = allPlayers.map(() =>
+  const playerCombatants = playersInCombat.map(() =>
     basicPlayerTemplate.create({
       channelId,
       guildId,
@@ -141,7 +181,7 @@ export async function handleCombat({
   });
 
   const combatants = [
-    ...allPlayers.map((p, i) => ({
+    ...playersInCombat.map((p, i) => ({
       ...playerCombatants[i],
       type: "player" as const,
       initiative: p.initiative || 0,
@@ -164,7 +204,7 @@ export async function handleCombat({
 
       if (combatant.type === "player") {
         // Find the actual player instance for this combatant
-        const playerInstance = allPlayers.find((p) =>
+        const playerInstance = playersInCombat.find((p) =>
           p.id === combatant.playerId
         );
         if (playerInstance) {
