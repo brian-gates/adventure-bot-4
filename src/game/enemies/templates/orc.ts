@@ -12,23 +12,14 @@ export const orc = {
       maxHealth: 18 + bonus,
       health: 18 + bonus,
       abilities: ["smash", "roar"],
-      act: async (encounter) => {
-        // Get the enemy instance for this encounter
-        const { prisma } = await import("~/db/index.ts");
-        const encounterEnemy = await prisma.encounterEnemy.findFirst({
-          where: { encounterId: encounter.id },
-          include: { enemy: true },
+      act: async ({ encounter, enemy }) => {
+        await attackWeakestPlayer({
+          channelId,
+          guildId,
+          random,
+          encounter,
+          attacker: enemy,
         });
-
-        if (encounterEnemy) {
-          await attackWeakestPlayer({
-            channelId,
-            guildId,
-            random,
-            encounter,
-            attacker: encounterEnemy.enemy,
-          });
-        }
       },
     };
   },

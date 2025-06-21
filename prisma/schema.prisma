@@ -9,25 +9,18 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-enum LocationType {
-    combat
-    event
-    elite
-    tavern
-    treasure
-    boss
-    campfire
-    shop
-}
-
 model Player {
-    id               BigInt            @id
-    name             String
-    health           Int
-    maxHealth        Int               @default(10)
-    createdAt        DateTime          @default(now())
-    updatedAt        DateTime          @updatedAt
-    encounterPlayers EncounterPlayer[]
+    id          BigInt     @id
+    name        String
+    health      Int
+    maxHealth   Int        @default(10)
+    createdAt   DateTime   @default(now())
+    updatedAt   DateTime   @updatedAt
+    guildId     BigInt
+    Guild       Guild      @relation(fields: [guildId], references: [id])
+    encounterId String?
+    encounter   Encounter? @relation(fields: [encounterId], references: [id])
+    initiative  Int?
 }
 
 model Location {
@@ -45,6 +38,18 @@ model Location {
     guilds      Guild[]      @relation("GuildCurrentLocation")
     map         Map          @relation(fields: [mapId], references: [id], onDelete: Cascade)
     mapId       String
+    encounter   Encounter?
+}
+
+enum LocationType {
+    combat
+    event
+    elite
+    tavern
+    treasure
+    boss
+    campfire
+    shop
 }
 
 model Path {
@@ -70,6 +75,7 @@ model Guild {
     currentLocation   Location? @relation("GuildCurrentLocation", fields: [currentLocationId], references: [id])
     map               Map?
     mapId             String?   @unique
+    players           Player[]
 }
 
 model Map {
@@ -84,41 +90,27 @@ model Map {
     guild     Guild?     @relation(fields: [guildId], references: [id])
 }
 
-model Enemy {
-    id         String           @id @default(uuid())
-    name       String
-    maxHealth  Int
-    health     Int
-    encounters EncounterEnemy[]
-}
-
 model Encounter {
-    id        String            @id @default(uuid())
-    players   EncounterPlayer[]
-    enemies   EncounterEnemy[]
-    status    EncounterStatus
-    createdAt DateTime          @default(now())
-    updatedAt DateTime          @updatedAt
+    id         String          @id @default(uuid())
+    locationId String          @unique
+    location   Location        @relation(fields: [locationId], references: [id])
+    players    Player[]
+    enemies    Enemy[]
+    status     EncounterStatus
+    createdAt  DateTime        @default(now())
+    updatedAt  DateTime        @updatedAt
 }
 
-model EncounterPlayer {
+model Enemy {
     id          String    @id @default(uuid())
-    encounter   Encounter @relation(fields: [encounterId], references: [id])
     encounterId String
-    player      Player    @relation(fields: [playerId], references: [id])
-    playerId    BigInt
-    initiative  Int
-}
-
-model EncounterEnemy {
-    id          String    @id @default(uuid())
-    encounter   Encounter @relation(fields: [encounterId], references: [id])
-    encounterId String
-    enemy       Enemy     @relation(fields: [enemyId], references: [id])
-    enemyId     String
-    initiative  Int
-    health      Int
+    name        String
     maxHealth   Int
+    health      Int
+    initiative  Int
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+    encounter   Encounter @relation(fields: [encounterId], references: [id])
 }
 
 enum EncounterStatus {

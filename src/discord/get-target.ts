@@ -11,8 +11,10 @@ export const getTargetId = ({ data }: Interaction) => {
 
 export const getTargetPlayer = async ({
   interaction,
+  guildId,
 }: {
   interaction: Interaction;
+  guildId: bigint;
 }) => {
   const targetId = getTargetId(interaction);
   if (!targetId) return;
@@ -20,5 +22,5 @@ export const getTargetPlayer = async ({
     | Record<string, { username?: string }>
     | undefined;
   const name = users?.[targetId.toString()]?.username ?? targetId.toString();
-  return await getPlayer({ id: targetId, name });
+  return await getPlayer({ id: targetId, name, guildId });
 };

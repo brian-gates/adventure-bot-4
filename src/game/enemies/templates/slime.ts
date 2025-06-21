@@ -12,23 +12,14 @@ export const slime = {
       maxHealth: 8 + bonus,
       health: 8 + bonus,
       abilities: ["split", "ooze"],
-      act: async (encounter) => {
-        // Get the enemy instance for this encounter
-        const { prisma } = await import("~/db/index.ts");
-        const encounterEnemy = await prisma.encounterEnemy.findFirst({
-          where: { encounterId: encounter.id },
-          include: { enemy: true },
+      act: async ({ encounter, enemy }) => {
+        await attackWeakestPlayer({
+          channelId,
+          guildId,
+          random,
+          encounter,
+          attacker: enemy,
         });
-
-        if (encounterEnemy) {
-          await attackWeakestPlayer({
-            channelId,
-            guildId,
-            random,
-            encounter,
-            attacker: encounterEnemy.enemy,
-          });
-        }
       },
     };
   },

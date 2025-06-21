@@ -41,13 +41,23 @@ export async function createPlayer({
   name,
   health,
   maxHealth = 10,
+  guildId,
 }: {
   id: bigint;
   name: string;
   health: number;
   maxHealth?: number;
+  guildId: bigint;
 }) {
-  return await prisma.player.create({ data: { id, name, health, maxHealth } });
+  return await prisma.player.create({
+    data: {
+      id,
+      name,
+      health,
+      maxHealth,
+      guildId,
+    },
+  });
 }
 
 export async function getPlayer({
@@ -55,13 +65,15 @@ export async function getPlayer({
   name,
   health = 10,
   maxHealth = 10,
+  guildId,
 }: {
   id: bigint;
   name: string;
   health?: number;
   maxHealth?: number;
+  guildId: bigint;
 }) {
   const player = await prisma.player.findUnique({ where: { id } });
   if (player) return player;
-  return await createPlayer({ id, name, health, maxHealth });
+  return await createPlayer({ id, name, health, maxHealth, guildId });
 }

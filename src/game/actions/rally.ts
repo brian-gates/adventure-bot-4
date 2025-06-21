@@ -8,11 +8,13 @@ import type { Player } from "~/generated/prisma/client.ts";
 
 export async function getRalliedPlayers({
   channelId,
+  guildId,
   waitTime = 10000,
   message =
     "A call to arms echoes through the realm! React with ⚔️ to join the rally!",
 }: {
   channelId: bigint;
+  guildId: bigint;
   waitTime?: number;
   message?: string;
 }): Promise<Player[]> {
@@ -50,7 +52,9 @@ export async function getRalliedPlayers({
 
   console.log("[rally] Finding or creating players for human users...");
   const players = await Promise.all(
-    humanUsers.map((user) => getPlayer({ id: user.id, name: user.username })),
+    humanUsers.map((user) =>
+      getPlayer({ id: user.id, name: user.username, guildId })
+    ),
   );
   console.log(
     "[rally] Finished creating players. Players:",
@@ -72,7 +76,8 @@ export async function rally({
   }
 
   const channelId = interaction.channelId;
-  const players = await getRalliedPlayers({ channelId });
+  const guildId = interaction.guildId;
+  const players = await getRalliedPlayers({ channelId, guildId });
 
   if (players.length === 0) {
     await bot.helpers.sendMessage(channelId, {

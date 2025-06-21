@@ -23,15 +23,10 @@ export async function attackWeakestPlayer({
   encounter: Encounter;
   attacker: Enemy | Player;
 }) {
-  const weakestPlayer = await prisma.encounterPlayer.findFirst({
+  const weakestPlayer = await prisma.player.findFirst({
     where: { encounterId: encounter.id },
     orderBy: {
-      player: {
-        health: "asc",
-      },
-    },
-    include: {
-      player: true,
+      health: "asc",
     },
   });
 
@@ -53,7 +48,7 @@ export async function attackWeakestPlayer({
     // Narrate the miss
     const missPrompt = narrateCombatAction({
       attacker: attacker.name,
-      target: weakestPlayer.player.name,
+      target: weakestPlayer.name,
       hit: false,
     });
     const missNarration = await narrate({ prompt: missPrompt });
@@ -70,10 +65,10 @@ export async function attackWeakestPlayer({
     random,
   });
 
-  const newHealth = Math.max(0, weakestPlayer.player.health - damage);
+  const newHealth = Math.max(0, weakestPlayer.health - damage);
 
   await setPlayerHealth({
-    id: weakestPlayer.player.id,
+    id: weakestPlayer.id,
     health: newHealth,
     channelId,
     damageAmount: damage,
@@ -82,11 +77,11 @@ export async function attackWeakestPlayer({
   // Narrate the hit
   const hitPrompt = narrateCombatAction({
     attacker: attacker.name,
-    target: weakestPlayer.player.name,
+    target: weakestPlayer.name,
     hit: true,
     damage,
     newHealth,
-    maxHealth: weakestPlayer.player.maxHealth,
+    maxHealth: weakestPlayer.maxHealth,
   });
   const hitNarration = await narrate({ prompt: hitPrompt });
   const { bot } = await import("~/bot/index.ts");

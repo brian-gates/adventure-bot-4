@@ -1,6 +1,5 @@
 import { attackWeakestPlayer } from "../attack-weakest-player.ts";
 import { EnemyTemplate } from "./index.ts";
-import { prisma } from "~/db/index.ts";
 
 export const goblin = {
   name: "goblin",
@@ -13,21 +12,14 @@ export const goblin = {
       maxHealth: 10 + bonus,
       health: 10 + bonus,
       abilities: ["stab", "taunt"],
-      act: async (encounter) => {
-        const encounterEnemy = await prisma.encounterEnemy.findFirst({
-          where: { encounterId: encounter.id },
-          include: { enemy: true },
+      act: async ({ encounter, enemy }) => {
+        await attackWeakestPlayer({
+          channelId,
+          guildId,
+          random,
+          encounter,
+          attacker: enemy,
         });
-
-        if (encounterEnemy) {
-          await attackWeakestPlayer({
-            channelId,
-            guildId,
-            random,
-            encounter,
-            attacker: encounterEnemy.enemy,
-          });
-        }
       },
     };
   },
