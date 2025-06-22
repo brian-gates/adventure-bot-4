@@ -57,7 +57,7 @@ export function narrateAttack({
   ].filter(Boolean).join(" ");
 
   return [
-    `Narrate a brief attack in a fantasy RPG.`,
+    `Narrate a brief attack in a fantasy RPG. Keep it readible within a second or two, as it will be in a fast moving loop. Keep it concise and to the point but with a bit of flavor.`,
     `Attacker: ${attackerId ? `<@${attackerId}>` : attacker}. Target: ${
       targetId ? `<@${targetId}>` : target
     }.`,

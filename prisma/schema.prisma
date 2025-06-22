@@ -10,17 +10,65 @@ datasource db {
 }
 
 model Player {
-    id          BigInt     @id
+    id          BigInt            @id
     name        String
     health      Int
-    maxHealth   Int        @default(10)
-    createdAt   DateTime   @default(now())
-    updatedAt   DateTime   @updatedAt
+    maxHealth   Int               @default(10)
+    experience  Int               @default(0)
+    gold        Int               @default(0)
+    level       Int               @default(1)
+    createdAt   DateTime          @default(now())
+    updatedAt   DateTime          @updatedAt
     guildId     BigInt
-    Guild       Guild      @relation(fields: [guildId], references: [id])
+    Guild       Guild             @relation(fields: [guildId], references: [id])
     encounterId String?
-    encounter   Encounter? @relation(fields: [encounterId], references: [id], onDelete: SetNull)
+    encounter   Encounter?        @relation(fields: [encounterId], references: [id], onDelete: SetNull)
     initiative  Int?
+    inventory   PlayerInventory[]
+}
+
+model Gear {
+    id          String            @id @default(uuid())
+    name        String
+    description String
+    type        GearType
+    rarity      Rarity
+    level       Int               @default(1)
+    attack      Int               @default(0)
+    defense     Int               @default(0)
+    health      Int               @default(0)
+    value       Int               @default(0)
+    createdAt   DateTime          @default(now())
+    updatedAt   DateTime          @updatedAt
+    inventory   PlayerInventory[]
+}
+
+model PlayerInventory {
+    id        String   @id @default(uuid())
+    playerId  BigInt
+    gearId    String
+    equipped  Boolean  @default(false)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+    gear      Gear     @relation(fields: [gearId], references: [id], onDelete: Cascade)
+
+    @@unique([playerId, gearId])
+}
+
+enum GearType {
+    weapon
+    armor
+    accessory
+    consumable
+}
+
+enum Rarity {
+    common
+    uncommon
+    rare
+    epic
+    legendary
 }
 
 model Location {
