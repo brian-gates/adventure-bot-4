@@ -19,7 +19,7 @@ export function makeBot({ token, botId }: { token: string; botId: bigint }) {
       Intents.MessageContent |
       Intents.GuildMembers,
     events: {
-      guildCreate: async (bot, guild) => {
+      guildCreate: async (_, guild) => {
         await seedMapForGuild({ id: guild.id });
         await registerCommandsAndPermissions({
           guildId: guild.id,

@@ -86,6 +86,11 @@ export async function registerCommandsAndPermissions({
         },
       ],
     },
+    {
+      name: "emoji",
+      description: "Upload dice emojis to the server",
+      options: [],
+    },
   ]);
   await ensureAdventurerRole({ guildId });
   console.log(`[Bot] Command registration complete for guild ${guildId}`);
