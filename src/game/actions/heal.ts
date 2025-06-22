@@ -2,6 +2,7 @@ import {
   type Bot,
   type Interaction,
 } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { getOrCreatePlayer, setPlayerHealth } from "~/db/player.ts";
 import { getTargetPlayer } from "~/discord/get-target.ts";
 import { rollAndAnnounceDie } from "~/game/dice.ts";
@@ -58,8 +59,26 @@ export async function heal({
       healAmount,
       maxHealth: player.maxHealth,
     });
-    const narration = await narrate({ prompt });
-    await bot.helpers.sendMessage(interaction.channelId, {
+    const narrationResult = await narrate({ prompt });
+    const LLMResponse = z.object({ response: z.string() });
+    const narration = (() => {
+      if (typeof narrationResult === "string") {
+        try {
+          return LLMResponse.parse(JSON.parse(narrationResult)).response;
+        } catch {
+          return narrationResult;
+        }
+      }
+      if (
+        narrationResult &&
+        typeof narrationResult === "object" &&
+        "response" in narrationResult
+      ) {
+        return (narrationResult as { response: string }).response;
+      }
+      return JSON.stringify(narrationResult);
+    })();
+    await bot.helpers.editOriginalInteractionResponse(interaction.token, {
       content: narration,
     });
 
@@ -101,6 +120,26 @@ export async function heal({
     healAmount,
     maxHealth: player.maxHealth,
   });
-  const narration = await narrate({ prompt });
-  await bot.helpers.sendMessage(interaction.channelId, { content: narration });
+  const narrationResult = await narrate({ prompt });
+  const LLMResponse = z.object({ response: z.string() });
+  const narration = (() => {
+    if (typeof narrationResult === "string") {
+      try {
+        return LLMResponse.parse(JSON.parse(narrationResult)).response;
+      } catch {
+        return narrationResult;
+      }
+    }
+    if (
+      narrationResult &&
+      typeof narrationResult === "object" &&
+      "response" in narrationResult
+    ) {
+      return (narrationResult as { response: string }).response;
+    }
+    return JSON.stringify(narrationResult);
+  })();
+  await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+    content: narration,
+  });
 }

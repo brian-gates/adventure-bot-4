@@ -83,7 +83,9 @@ export async function attack({
     }
     return JSON.stringify(narrationResult);
   })();
-  await bot.helpers.sendMessage(channelId, { content: narration });
+  await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+    content: narration,
+  });
 
   // Health bar is now automatically displayed by setPlayerHealth
 }

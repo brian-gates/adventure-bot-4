@@ -1,10 +1,9 @@
-import type { Bot, Role } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
+import type { Role } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
+import { bot } from "~/bot/index.ts";
 
 export async function ensureAdventurerRole({
-  bot,
   guildId,
 }: {
-  bot: Bot;
   guildId: bigint;
 }): Promise<string> {
   console.log(`[Bot] Ensuring Adventurer role exists in guild ${guildId}`);

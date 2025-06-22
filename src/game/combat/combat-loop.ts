@@ -178,7 +178,7 @@ const processPlayerTurn = async ({
     file: combatResult.healthBarImage
       ? {
         blob: new Blob([combatResult.healthBarImage]),
-        name: "healthbar.png",
+        name: `${target.name}-healthbar.png`,
       }
       : undefined,
   });
@@ -255,7 +255,7 @@ const processEnemyTurn = async ({
     file: combatResult.healthBarImage
       ? {
         blob: new Blob([combatResult.healthBarImage]),
-        name: "healthbar.png",
+        name: `${target.name}-healthbar.png`,
       }
       : undefined,
   });
