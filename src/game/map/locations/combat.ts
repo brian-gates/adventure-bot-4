@@ -137,7 +137,6 @@ export async function handleCombat({
         players,
         enemies,
         channelId,
-        guildId,
         random,
       }));
   }

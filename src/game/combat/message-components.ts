@@ -4,9 +4,6 @@ import { narrate } from "~/llm/index.ts";
 import { narrateCombatAction } from "~/prompts.ts";
 
 export async function attackMessage({
-  guildId,
-  attackerId,
-  target,
   attackSides,
   damageSides,
   attackLabel,
@@ -14,9 +11,6 @@ export async function attackMessage({
   ac,
   random,
 }: {
-  guildId: bigint;
-  attackerId?: bigint;
-  target: string;
   attackSides: number;
   damageSides: number;
   attackLabel: string;
@@ -25,9 +19,6 @@ export async function attackMessage({
   random: () => number;
 }) {
   const result = await rollAttackWithMessage({
-    guildId,
-    _attackerId: attackerId ?? BigInt(0),
-    _target: target,
     attackSides,
     damageSides,
     attackLabel,
@@ -91,8 +82,6 @@ export async function healthBarImage({
 }
 
 export async function combatMessage({
-  guildId,
-  attackerId,
   attackerName,
   targetName,
   attackSides,
@@ -105,8 +94,6 @@ export async function combatMessage({
   currentHealth,
   maxHealth,
 }: {
-  guildId: bigint;
-  attackerId?: bigint;
   attackerName: string;
   targetName: string;
   attackSides: number;
@@ -120,9 +107,6 @@ export async function combatMessage({
   maxHealth?: number;
 }) {
   const attackResult = await attackMessage({
-    guildId,
-    attackerId: attackerId ?? BigInt(0),
-    target: targetName,
     attackSides,
     damageSides,
     attackLabel,

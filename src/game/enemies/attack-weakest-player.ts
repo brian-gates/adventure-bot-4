@@ -8,11 +8,9 @@ export async function attackWeakestPlayer({
   random,
   attacker,
   channelId,
-  guildId,
   encounter,
 }: {
   channelId: bigint;
-  guildId: bigint;
   random: () => number;
   encounter: Encounter;
   attacker: Enemy | Player;
