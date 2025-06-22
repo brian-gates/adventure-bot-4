@@ -22,14 +22,20 @@ export async function setPlayerHealth({
 
   // Display health bar if channelId is provided
   if (channelId) {
-    const { displayHealthBar } = await import("~/ui/health-bar.ts");
-    await displayHealthBar({
-      channelId,
-      playerId: id,
-      currentHealth: health,
-      maxHealth: player.maxHealth,
-      healAmount,
-      damageAmount,
+    const { getHealthBarImage } = await import("~/ui/health-bar.ts");
+    const image = await getHealthBarImage({
+      current: health,
+      max: player.maxHealth,
+      heal: healAmount,
+      damage: damageAmount,
+      label: player.name,
+    });
+    const { bot } = await import("~/bot/index.ts");
+    await bot.helpers.sendMessage(channelId, {
+      file: {
+        blob: new Blob([image]),
+        name: "health-bar.png",
+      },
     });
   }
 

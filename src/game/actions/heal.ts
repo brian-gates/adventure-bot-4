@@ -38,7 +38,6 @@ export async function heal({
     const oldHealth = player.health;
     const { roll: healAmount } = await rollAndAnnounceDie({
       channelId: interaction.channelId,
-      guildId: interaction.guildId,
       sides: 4,
       label: "heal",
       random,
@@ -99,7 +98,6 @@ export async function heal({
   const oldHealth = player.health;
   const { roll: healAmount } = await rollAndAnnounceDie({
     channelId: interaction.channelId,
-    guildId: interaction.guildId,
     sides: 4,
     label: "heal",
     random,

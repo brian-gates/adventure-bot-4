@@ -82,10 +82,10 @@ export async function healthBarImage({
   label?: string;
 }) {
   return await getHealthBarImage({
-    currentHealth,
-    maxHealth,
-    healAmount,
-    damageAmount,
+    current: currentHealth,
+    max: maxHealth,
+    heal: healAmount,
+    damage: damageAmount,
     label,
   });
 }
@@ -131,6 +131,7 @@ export async function combatMessage({
     random,
   });
 
+  console.log("[combatMessage] Calling combatNarration...");
   const narration = await combatNarration({
     attacker: attackerName,
     target: targetName,
@@ -139,6 +140,7 @@ export async function combatMessage({
     newHealth: currentHealth,
     maxHealth,
   });
+  console.log("[combatMessage] combatNarration returned.");
 
   // Add a clear action line at the beginning
   const actionLine = `**${attackerName} attacks ${targetName}**`;
@@ -148,10 +150,11 @@ export async function combatMessage({
   if (
     includeHealthBar && currentHealth !== undefined && maxHealth !== undefined
   ) {
-    healthBarData = await healthBarImage({
-      currentHealth,
-      maxHealth,
-      damageAmount: attackResult.hit ? attackResult.damageRoll : 0,
+    const { getHealthBarImage } = await import("~/ui/health-bar.ts");
+    healthBarData = await getHealthBarImage({
+      current: currentHealth,
+      max: maxHealth,
+      damage: attackResult.hit ? attackResult.damageRoll : 0,
       label: targetName,
     });
   }

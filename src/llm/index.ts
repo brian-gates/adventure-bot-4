@@ -14,14 +14,28 @@ export async function callLLM({
   const start = Date.now();
   const body: Record<string, unknown> = { model: LLM_MODEL, prompt, stream };
   if (max_tokens) body.max_tokens = max_tokens;
-  const response = await fetch("http://localhost:11434/api/generate", {
-    method: "POST",
-    body: JSON.stringify(body),
-    headers: { "Content-Type": "application/json" },
-  }).then((res) => res.text());
-  const duration = Date.now() - start;
-  console.log(`LLM (${LLM_MODEL}) call took ${duration}ms: ${response}`);
-  return response;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+  try {
+    const response = await fetch("http://localhost:11434/api/generate", {
+      method: "POST",
+      body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+    }).then((res) => res.text());
+
+    const duration = Date.now() - start;
+    console.log(`LLM (${LLM_MODEL}) call took ${duration}ms: ${response}`);
+    return response;
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === "AbortError") {
+      console.error("LLM call timed out.");
+      return '{"response": "The narration was lost in the heat of battle..."}';
+    }
+    throw error;
+  }
 }
 
 export async function narrate({ prompt }: { prompt: string }) {
