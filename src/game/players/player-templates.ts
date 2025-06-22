@@ -5,6 +5,7 @@ import { rollAndAnnounceDie } from "../dice.ts";
 import { narrate } from "~/llm/index.ts";
 import { narrateCombatAction } from "~/prompts.ts";
 import { displayHealthBar } from "~/ui/health-bar.ts";
+import { bot } from "~/bot/index.ts";
 
 export type PlayerTemplate = {
   create: (ctx: {
@@ -77,7 +78,6 @@ async function attackWeakestEnemy({
       hit: false,
     });
     const missNarration = await narrate({ prompt: missPrompt });
-    const { bot } = await import("~/bot/index.ts");
     await bot.helpers.sendMessage(channelId, { content: missNarration });
     return;
   }
@@ -107,7 +107,6 @@ async function attackWeakestEnemy({
     maxHealth: weakestEnemy.maxHealth,
   });
   const hitNarration = await narrate({ prompt: hitPrompt });
-  const { bot } = await import("~/bot/index.ts");
   await bot.helpers.sendMessage(channelId, { content: hitNarration });
 
   await displayHealthBar({
