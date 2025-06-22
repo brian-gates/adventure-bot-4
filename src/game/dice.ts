@@ -54,33 +54,81 @@ export async function rollAndAnnounceDie({
   return { roll, emoji };
 }
 
-export function attackNarration({
-  roll,
-  ac,
-  target,
+export async function rollDieWithMessage({
+  guildId,
+  sides,
+  label,
+  random,
 }: {
-  roll: number;
+  guildId: bigint;
+  sides: number;
+  label: string;
+  random: () => number;
+}) {
+  const roll = rollDie({ sides, random });
+  const emoji = await getRollEmoji({ guildId, sides, roll });
+  const message = `${emoji} ${roll} ${label}`;
+  return { roll, emoji, message };
+}
+
+export async function rollAttackWithMessage({
+  guildId,
+  _attackerId,
+  _target,
+  attackSides,
+  damageSides,
+  attackLabel,
+  damageLabel,
+  ac,
+  random,
+}: {
+  guildId: bigint;
+  _attackerId?: bigint;
+  _target: string;
+  attackSides: number;
+  damageSides: number;
+  attackLabel: string;
+  damageLabel: string;
   ac: number;
-  target: string;
-}): string {
-  const delta = roll - ac;
-  if (roll === 1) {
-    return `Critical miss! You swing wildly and miss ${target} completely!`;
+  random: () => number;
+}) {
+  // Roll attack
+  const attackRoll = rollDie({ sides: attackSides, random });
+  const attackEmoji = await getRollEmoji({
+    guildId,
+    sides: attackSides,
+    roll: attackRoll,
+  });
+
+  // Determine if hit
+  const hit = attackRoll >= ac;
+
+  // Roll damage if hit
+  let damageRoll = 0;
+  let damageEmoji = "";
+  if (hit) {
+    damageRoll = rollDie({ sides: damageSides, random });
+    damageEmoji = await getRollEmoji({
+      guildId,
+      sides: damageSides,
+      roll: damageRoll,
+    });
   }
-  if (roll === 20) {
-    return `Critical hit! You devastate ${target}!`;
-  }
-  if (roll < ac) {
-    return `Your attack glances off ${target}.`;
-  }
-  if (roll === ac) {
-    return `You barely manage to hit ${target}!`;
-  }
-  if (delta < 5) {
-    return `You strike ${target} with a solid blow!`;
-  }
-  if (delta < 10) {
-    return `A powerful hit! ${target} reels.`;
-  }
-  return `Overwhelming blow! ${target} is crushed!`;
+
+  // Create grouped message
+  const attackLine =
+    `${attackEmoji} ${attackRoll} ${attackLabel} (vs AC ${ac})`;
+  const damageLine = hit
+    ? `${damageEmoji} ${damageRoll} ${damageLabel}`
+    : "Miss!";
+  const message = `${attackLine}\n${damageLine}`;
+
+  return {
+    attackRoll,
+    attackEmoji,
+    hit,
+    damageRoll,
+    damageEmoji,
+    message,
+  };
 }

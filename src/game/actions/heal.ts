@@ -34,6 +34,7 @@ export async function heal({
       throw new Error("Missing channel or guild ID.");
     }
 
+    const oldHealth = player.health;
     const { roll: healAmount } = await rollAndAnnounceDie({
       channelId: interaction.channelId,
       guildId: interaction.guildId,
@@ -42,19 +43,19 @@ export async function heal({
       random,
     });
 
-    const newHealth = Math.min(player.maxHealth, player.health + healAmount);
+    const newHealth = Math.min(player.maxHealth, oldHealth + healAmount);
+    const effectiveHeal = newHealth - oldHealth;
     await setPlayerHealth({
       id: healerId,
       health: newHealth,
       channelId: interaction.channelId,
-      healAmount,
+      healAmount: effectiveHeal,
     });
 
     const prompt = narrateHeal({
       healerId,
       targetId: healerId,
       healAmount,
-      newHealth,
       maxHealth: player.maxHealth,
     });
     const narration = await narrate({ prompt });
@@ -76,6 +77,7 @@ export async function heal({
     throw new Error("Missing channel or guild ID.");
   }
 
+  const oldHealth = player.health;
   const { roll: healAmount } = await rollAndAnnounceDie({
     channelId: interaction.channelId,
     guildId: interaction.guildId,
@@ -84,23 +86,21 @@ export async function heal({
     random,
   });
 
-  const newHealth = Math.min(player.maxHealth, player.health + healAmount);
+  const newHealth = Math.min(player.maxHealth, oldHealth + healAmount);
+  const effectiveHeal = newHealth - oldHealth;
   await setPlayerHealth({
     id: targetPlayer.id,
     health: newHealth,
     channelId: interaction.channelId,
-    healAmount,
+    healAmount: effectiveHeal,
   });
 
   const prompt = narrateHeal({
     healerId: interaction.user.id,
     targetId: targetPlayer.id,
     healAmount,
-    newHealth,
     maxHealth: player.maxHealth,
   });
   const narration = await narrate({ prompt });
   await bot.helpers.sendMessage(interaction.channelId, { content: narration });
-
-  // Health bar is now automatically displayed by setPlayerHealth
 }

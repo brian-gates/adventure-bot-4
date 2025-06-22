@@ -56,11 +56,12 @@ export async function attack({
     });
   }
   const prompt = narrateAttack({
-    attackerId: authorId,
+    attacker: "Unknown",
     target: targetPlayer.name,
+    hit: d20 >= 10,
+    damage: actualDamage,
     d20,
-    damage,
-    newHealth,
+    attackerId: authorId,
   });
 
   const narrationResult = await narrate({ prompt });

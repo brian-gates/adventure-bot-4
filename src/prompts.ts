@@ -2,7 +2,7 @@ export const immersiveRoleplay =
   "Express effects in roleplay terms—avoid mentioning mechanics like health points overtly. Keep it flavorful and immersive.";
 
 export const defaultResponseTemplate = [
-  "Respond ONLY with a single vivid, immersive sentence.",
+  "Respond with a single, concise sentence.",
   "Do not include any JSON or extra formatting.",
 ];
 
@@ -13,33 +13,59 @@ export function mentionInstruction({
   role: string;
   userId: bigint;
 }) {
-  return `Always refer to the ${role} using the exact mention string <@${userId}> so Discord renders it as a clickable mention.`;
+  return `IMPORTANT: Always refer to the ${role} using the exact Discord mention format <@${userId}> so Discord renders it as a clickable mention. Do not use raw user IDs like ${userId}.`;
 }
 
 export function narrateAttack({
-  attackerId,
+  attacker,
   target,
-  d20,
+  hit,
   damage,
+  d20,
+  attackerId,
+  targetId,
   newHealth,
+  maxHealth,
 }: {
-  attackerId: bigint;
+  attacker: string;
   target: string;
-  d20: number;
-  damage: number;
+  hit: boolean;
+  damage?: number;
+  d20?: number;
+  attackerId?: bigint;
+  targetId?: bigint;
   newHealth?: number;
+  maxHealth?: number;
 }) {
+  const healthPercentage = newHealth && maxHealth
+    ? Math.round((newHealth / maxHealth) * 100)
+    : undefined;
+
+  const attackDescription = d20 !== undefined
+    ? `Roll: ${d20} vs AC 10. Damage: ${damage}.`
+    : hit
+    ? `Hit for ${damage} damage.`
+    : `Miss.`;
+
+  const healthInfo = healthPercentage !== undefined
+    ? `Target at ${healthPercentage}% health.`
+    : ``;
+
+  const mentionInstructions = [
+    attackerId && mentionInstruction({ role: "attacker", userId: attackerId }),
+    targetId && mentionInstruction({ role: "target", userId: targetId }),
+  ].filter(Boolean).join(" ");
+
   return [
-    `Narrate an attack in a fantasy Discord RPG.`,
-    `The attacker is <@${attackerId}> (use this exact mention format for the attacker).`,
-    `The target is ${target}.`,
-    `The d20 roll was ${d20} against AC 10.`,
-    `The damage roll was ${damage} (1d4 unarmed).`,
-    newHealth !== undefined
-      ? `The target's new health is ${newHealth}.`
-      : `The target's health is unknown.`,
+    `Narrate a brief attack in a fantasy RPG.`,
+    `Attacker: ${attackerId ? `<@${attackerId}>` : attacker}. Target: ${
+      targetId ? `<@${targetId}>` : target
+    }.`,
+    attackDescription,
+    healthInfo,
+    `Do not mention raw numbers.`,
     ...defaultResponseTemplate,
-    mentionInstruction({ role: "attacker", userId: attackerId }),
+    mentionInstructions,
     immersiveRoleplay,
   ].join(" ");
 }
@@ -48,22 +74,20 @@ export function narrateHeal({
   healerId,
   targetId,
   healAmount,
-  newHealth,
   maxHealth,
 }: {
   healerId: bigint;
   targetId: bigint;
   healAmount: number;
-  newHealth: number;
   maxHealth: number;
 }) {
   const healPercentage = Math.round((healAmount / maxHealth) * 100);
 
   return [
-    `Narrate a magical or fantasy healing in a Discord RPG.`,
-    `The target was healed for about ${healPercentage}% of their total life force, bringing them to ${newHealth} health.`,
-    `Do not mention the words "percentage", "percent", or the "%" symbol. Instead, use descriptive language to convey the amount of healing. For example, instead of "25%", you could say "a quarter of their vitality", "a sliver of their life force", or "a significant portion of their health".`,
-    `Do not mention the raw health numbers.`,
+    `Narrate a brief healing in a fantasy RPG.`,
+    `Healer: <@${healerId}>. Target: <@${targetId}>.`,
+    `Healed for ${healPercentage}% of max health.`,
+    `Do not mention raw health numbers or percentages, keep the description narrative.`,
     ...defaultResponseTemplate,
     mentionInstruction({ role: "healer", userId: healerId }),
     mentionInstruction({ role: "target", userId: targetId }),
@@ -73,29 +97,22 @@ export function narrateHeal({
 
 export function narrateEncounter({
   enemyType,
-  playerCount,
   playerIds,
 }: {
   enemyType: string;
-  playerCount: number;
   playerIds: bigint[];
 }) {
   const playerMentions = playerIds.map((id) => `<@${id}>`).join(", ");
 
   return [
-    `Narrate the beginning of a combat encounter in a fantasy Discord RPG.`,
-    `The enemy is a ${enemyType}.`,
-    `The players are: ${playerMentions}.`,
-    `There are ${playerCount} player${
-      playerCount === 1 ? "" : "s"
-    } facing the ${enemyType}.`,
-    `Describe the scene as the ${enemyType} appears and the players prepare for battle.`,
-    `Make it dramatic and atmospheric.`,
+    `Briefly describe a ${enemyType} appearing before ${playerMentions}.`,
+    `Keep it very brief but atmospheric.`,
     ...defaultResponseTemplate,
     immersiveRoleplay,
   ].join(" ");
 }
 
+// Deprecated: Use narrateAttack instead
 export function narrateCombatAction({
   attacker,
   target,
@@ -111,24 +128,12 @@ export function narrateCombatAction({
   newHealth?: number;
   maxHealth?: number;
 }) {
-  const healthPercentage = newHealth && maxHealth
-    ? Math.round((newHealth / maxHealth) * 100)
-    : undefined;
-
-  return [
-    `Narrate a combat action in a fantasy Discord RPG.`,
-    `The attacker is ${attacker}.`,
-    `The target is ${target}.`,
-    hit
-      ? `The attack hits and deals ${damage} damage.`
-      : `The attack misses completely.`,
-    healthPercentage !== undefined
-      ? `The target's vitality is now at ${healthPercentage}% of their full strength.`
-      : `The target's condition is unclear.`,
-    `Do not mention the words "percentage", "percent", or the "%" symbol. Instead, use descriptive language like "badly wounded", "lightly injured", "barely standing", etc.`,
-    `Do not mention raw numbers like damage or health values.`,
-    `Make it dramatic and cinematic.`,
-    ...defaultResponseTemplate,
-    immersiveRoleplay,
-  ].join(" ");
+  return narrateAttack({
+    attacker,
+    target,
+    hit,
+    damage,
+    newHealth,
+    maxHealth,
+  });
 }

@@ -19,7 +19,7 @@ model Player {
     guildId     BigInt
     Guild       Guild      @relation(fields: [guildId], references: [id])
     encounterId String?
-    encounter   Encounter? @relation(fields: [encounterId], references: [id])
+    encounter   Encounter? @relation(fields: [encounterId], references: [id], onDelete: SetNull)
     initiative  Int?
 }
 
@@ -93,7 +93,7 @@ model Map {
 model Encounter {
     id         String          @id @default(uuid())
     locationId String          @unique
-    location   Location        @relation(fields: [locationId], references: [id])
+    location   Location        @relation(fields: [locationId], references: [id], onDelete: Cascade)
     players    Player[]
     enemies    Enemy[]
     status     EncounterStatus
@@ -110,7 +110,7 @@ model Enemy {
     initiative  Int
     createdAt   DateTime  @default(now())
     updatedAt   DateTime  @updatedAt
-    encounter   Encounter @relation(fields: [encounterId], references: [id])
+    encounter   Encounter @relation(fields: [encounterId], references: [id], onDelete: Cascade)
 }
 
 enum EncounterStatus {

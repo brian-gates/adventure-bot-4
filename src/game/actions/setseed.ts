@@ -32,11 +32,13 @@ export const setseed = async ({
       update: { seed, randomCursor: 0 },
       create: { id: guildId, seed },
     });
+
+    // Delete the map - cascade deletes will handle all related records
     await prisma.map.deleteMany({ where: { guild: { is: { id: guildId } } } });
+
     await seedMapForGuild({ id: guildId });
     await bot.helpers.editOriginalInteractionResponse(interaction.token, {
-      content: `Seed set to \
-\`${seed}\`\nMap has been regenerated.`,
+      content: `Seed set to \`${seed}\`\nMap has been regenerated.`,
     });
   } catch (err) {
     await bot.helpers.editOriginalInteractionResponse(interaction.token, {

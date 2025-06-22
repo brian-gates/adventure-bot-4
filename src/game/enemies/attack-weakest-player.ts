@@ -1,14 +1,8 @@
-import { prisma } from "../../db/index.ts";
-import { setPlayerHealth } from "../../db/player.ts";
-import type {
-  Encounter,
-  Enemy,
-  Player,
-} from "../../generated/prisma/client.ts";
-import { checkEncounterStatus } from "../check-encounter-status.ts";
+import { prisma } from "~/db/index.ts";
 import { rollAndAnnounceDie } from "../dice.ts";
 import { narrate } from "~/llm/index.ts";
 import { narrateCombatAction } from "~/prompts.ts";
+import type { Encounter, Enemy, Player } from "~/generated/prisma/client.ts";
 
 export async function attackWeakestPlayer({
   random,
@@ -67,11 +61,10 @@ export async function attackWeakestPlayer({
 
   const newHealth = Math.max(0, weakestPlayer.health - damage);
 
-  await setPlayerHealth({
-    id: weakestPlayer.id,
-    health: newHealth,
-    channelId,
-    damageAmount: damage,
+  // Update player health
+  await prisma.player.update({
+    where: { id: weakestPlayer.id },
+    data: { health: newHealth },
   });
 
   // Narrate the hit
@@ -87,5 +80,15 @@ export async function attackWeakestPlayer({
   const { bot } = await import("~/bot/index.ts");
   await bot.helpers.sendMessage(channelId, { content: hitNarration });
 
+  // Display player health bar using the proper health bar system
+  const { displayHealthBar } = await import("~/ui/health-bar.ts");
+  await displayHealthBar({
+    channelId,
+    playerId: weakestPlayer.id,
+    currentHealth: newHealth,
+    maxHealth: weakestPlayer.maxHealth,
+  });
+
+  const { checkEncounterStatus } = await import("../check-encounter-status.ts");
   await checkEncounterStatus(encounter, channelId);
 }

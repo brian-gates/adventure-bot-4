@@ -4,6 +4,7 @@ import { checkEncounterStatus } from "../check-encounter-status.ts";
 import { rollAndAnnounceDie } from "../dice.ts";
 import { narrate } from "~/llm/index.ts";
 import { narrateCombatAction } from "~/prompts.ts";
+import { displayHealthBar } from "~/ui/health-bar.ts";
 
 export type PlayerTemplate = {
   create: (ctx: {
@@ -16,7 +17,7 @@ export type PlayerTemplate = {
     health: number;
     abilities: string[];
     act: (
-      { encounter, player }: { encounter: Encounter; player: Player },
+      { encounter, self }: { encounter: Encounter; self: Player },
     ) => Promise<void>;
   };
 };
@@ -27,13 +28,13 @@ export const basicPlayerTemplate: PlayerTemplate = {
     maxHealth: 10,
     health: 10,
     abilities: ["attack"],
-    act: async ({ encounter, player }) => {
+    act: async ({ encounter, self }) => {
       await attackWeakestEnemy({
         random,
         channelId,
         guildId,
         encounter,
-        attacker: player,
+        attacker: self,
       });
     },
   }),
@@ -115,16 +116,11 @@ async function attackWeakestEnemy({
   const { bot } = await import("~/bot/index.ts");
   await bot.helpers.sendMessage(channelId, { content: hitNarration });
 
-  // Display enemy health bar (using a simple text format since enemies don't have Discord IDs)
-  const healthPercentage = Math.round(
-    (newHealth / weakestEnemy.maxHealth) * 100,
-  );
-  const healthBarText = `[${"█".repeat(Math.floor(healthPercentage / 10))}${
-    "░".repeat(10 - Math.floor(healthPercentage / 10))
-  }] ${newHealth}/${weakestEnemy.maxHealth} (${healthPercentage}%)`;
-
-  await bot.helpers.sendMessage(channelId, {
-    content: `${weakestEnemy.name}'s health: ${healthBarText}`,
+  await displayHealthBar({
+    channelId,
+    currentHealth: newHealth,
+    maxHealth: weakestEnemy.maxHealth,
+    entityName: weakestEnemy.name,
   });
 
   await checkEncounterStatus(encounter, channelId);
