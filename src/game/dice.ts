@@ -56,12 +56,10 @@ export async function rollAndAnnounceDie({
 }
 
 export async function rollDieWithMessage({
-  guildId,
   sides,
   label,
   random,
 }: {
-  guildId: bigint;
   sides: number;
   label: string;
   random: () => number;
@@ -73,9 +71,6 @@ export async function rollDieWithMessage({
 }
 
 export async function rollAttackWithMessage({
-  guildId,
-  _attackerId,
-  _target,
   attackSides,
   damageSides,
   attackLabel,
@@ -83,9 +78,6 @@ export async function rollAttackWithMessage({
   ac,
   random,
 }: {
-  guildId: bigint;
-  _attackerId?: bigint;
-  _target: string;
   attackSides: number;
   damageSides: number;
   attackLabel: string;

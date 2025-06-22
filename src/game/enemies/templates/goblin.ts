@@ -5,7 +5,7 @@ export const goblin = {
   name: "goblin",
   baseHealth: 10,
   abilities: ["stab", "taunt"],
-  create: ({ random, channelId, guildId }) => {
+  create: ({ random, channelId }) => {
     const bonus = Math.floor(random() * 3);
     return {
       name: "goblin",
@@ -15,7 +15,6 @@ export const goblin = {
       act: async ({ encounter, enemy }) => {
         await attackWeakestPlayer({
           channelId,
-          guildId,
           random,
           encounter,
           attacker: enemy,

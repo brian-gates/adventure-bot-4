@@ -5,7 +5,7 @@ export const orc = {
   name: "orc",
   baseHealth: 18,
   abilities: ["smash", "roar"],
-  create: ({ random, channelId, guildId }) => {
+  create: ({ random, channelId }) => {
     const bonus = Math.floor(random() * 5);
     return {
       name: "orc",
@@ -15,7 +15,6 @@ export const orc = {
       act: async ({ encounter, enemy }) => {
         await attackWeakestPlayer({
           channelId,
-          guildId,
           random,
           encounter,
           attacker: enemy,

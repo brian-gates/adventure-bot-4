@@ -66,14 +66,12 @@ export const processCombatRound = async ({
   players,
   enemies,
   channelId,
-  guildId,
   random,
 }: {
   encounter: EncounterWithCombatants;
   players: Player[];
   enemies: Enemy[];
   channelId: bigint;
-  guildId: bigint;
   random: () => number;
 }) => {
   // Sort by initiative
@@ -93,7 +91,6 @@ export const processCombatRound = async ({
         enemies,
         player: combatant,
         channelId,
-        guildId,
         random,
       }));
     } else {
@@ -103,7 +100,6 @@ export const processCombatRound = async ({
         enemies,
         enemy: combatant,
         channelId,
-        guildId,
         random,
       }));
     }
@@ -128,7 +124,6 @@ const processPlayerTurn = async ({
   enemies,
   player,
   channelId,
-  guildId,
   random,
 }: {
   encounter: EncounterWithCombatants;
@@ -136,7 +131,6 @@ const processPlayerTurn = async ({
   enemies: Enemy[];
   player: Player;
   channelId: bigint;
-  guildId: bigint;
   random: () => number;
 }) => {
   if (player.health <= 0) return { encounter, players, enemies };
@@ -148,8 +142,6 @@ const processPlayerTurn = async ({
 
   // Create composed combat message
   const combatResult = await combatMessage({
-    guildId,
-    attackerId: player.id,
     attackerName: user.username,
     targetName: target.name,
     attackSides: 20,
@@ -201,7 +193,6 @@ const processEnemyTurn = async ({
   enemies,
   enemy,
   channelId,
-  guildId,
   random,
 }: {
   encounter: EncounterWithCombatants;
@@ -209,7 +200,6 @@ const processEnemyTurn = async ({
   enemies: Enemy[];
   enemy: Enemy;
   channelId: bigint;
-  guildId: bigint;
   random: () => number;
 }) => {
   if (enemy.health <= 0) return { encounter, players, enemies };
@@ -221,7 +211,6 @@ const processEnemyTurn = async ({
 
   // Create composed combat message
   const combatResult = await combatMessage({
-    guildId,
     attackerName: enemy.name,
     targetName: targetUser.username,
     attackSides: 20,

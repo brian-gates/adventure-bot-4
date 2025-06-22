@@ -16,7 +16,7 @@ export async function callLLM({
   if (max_tokens) body.max_tokens = max_tokens;
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+  setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
   try {
     const response = await fetch("http://localhost:11434/api/generate", {

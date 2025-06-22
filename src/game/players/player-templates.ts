@@ -10,7 +10,6 @@ export type PlayerTemplate = {
   create: (ctx: {
     random: () => number;
     channelId: bigint;
-    guildId: bigint;
   }) => {
     name: string;
     maxHealth: number;
@@ -23,7 +22,7 @@ export type PlayerTemplate = {
 };
 
 export const basicPlayerTemplate: PlayerTemplate = {
-  create: ({ random, channelId, guildId }) => ({
+  create: ({ random, channelId }) => ({
     name: "Basic Player",
     maxHealth: 10,
     health: 10,
@@ -32,7 +31,6 @@ export const basicPlayerTemplate: PlayerTemplate = {
       await attackWeakestEnemy({
         random,
         channelId,
-        guildId,
         encounter,
         attacker: self,
       });
@@ -43,13 +41,11 @@ export const basicPlayerTemplate: PlayerTemplate = {
 async function attackWeakestEnemy({
   random,
   channelId,
-  guildId,
   encounter,
   attacker,
 }: {
   random: () => number;
   channelId: bigint;
-  guildId: bigint;
   encounter: Encounter;
   attacker: Player;
 }) {

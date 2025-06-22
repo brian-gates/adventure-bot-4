@@ -5,7 +5,7 @@ export const slime = {
   name: "slime",
   baseHealth: 8,
   abilities: ["split", "ooze"],
-  create: ({ random, channelId, guildId }) => {
+  create: ({ random, channelId }) => {
     const bonus = Math.floor(random() * 2);
     return {
       name: "slime",
@@ -15,7 +15,6 @@ export const slime = {
       act: async ({ encounter, enemy }) => {
         await attackWeakestPlayer({
           channelId,
-          guildId,
           random,
           encounter,
           attacker: enemy,
