@@ -13,16 +13,16 @@ const enemyStats: Record<EnemyName, { maxHealth: number }> = {
   slime: { maxHealth: 8 },
 };
 
-export function generateEnemyData(random: () => number) {
+export function generateEnemies(random: () => number) {
   const enemyType = weightedRandom(enemyWeights, random);
   const stats = enemyStats[enemyType];
   const enemiesToSpawn = 1;
-  const enemyData = Array.from({ length: enemiesToSpawn }).map(() => ({
+  const enemies = Array.from({ length: enemiesToSpawn }).map(() => ({
     name: enemyType,
     maxHealth: stats.maxHealth,
     health: stats.maxHealth,
     initiative: Math.floor(random() * 20),
   }));
 
-  return { enemyData, enemyType };
+  return { enemies, enemyType };
 }

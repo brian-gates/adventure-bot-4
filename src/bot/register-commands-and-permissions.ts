@@ -1,11 +1,9 @@
-import type { Bot } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 import { ensureAdventurerRole } from "./ensure-adventurer-role.ts";
+import { bot } from "~/bot/index.ts";
 
 async function logBotGuildPermissions({
-  bot,
   guildId,
 }: {
-  bot: Bot;
   guildId: bigint;
 }) {
   const botId = bot.applicationId.toString();
@@ -23,13 +21,11 @@ async function logBotGuildPermissions({
 }
 
 export async function registerCommandsAndPermissions({
-  bot,
   guildId,
 }: {
-  bot: Bot;
   guildId: bigint;
 }) {
-  await logBotGuildPermissions({ bot, guildId });
+  await logBotGuildPermissions({ guildId });
   console.log(`[Bot] Registering commands for guild ${guildId}`);
   await bot.helpers.upsertGuildApplicationCommands(guildId, [
     {
@@ -91,6 +87,6 @@ export async function registerCommandsAndPermissions({
       ],
     },
   ]);
-  await ensureAdventurerRole({ bot, guildId });
+  await ensureAdventurerRole({ guildId });
   console.log(`[Bot] Command registration complete for guild ${guildId}`);
 }

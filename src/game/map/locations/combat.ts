@@ -6,7 +6,7 @@ import { narrate } from "~/llm/index.ts";
 import { narrateEncounter } from "~/prompts.ts";
 import { getOrCreatePlayer } from "~/db/player.ts";
 import { findOrCreateEncounter } from "~/db/encounter.ts";
-import { generateEnemyData } from "~/game/enemies/enemy-generation.ts";
+import { generateEnemies } from "~/game/enemies/enemy-generation.ts";
 import {
   initializeCombat,
   processCombatRound,
@@ -89,11 +89,16 @@ export async function handleCombat({
   });
 
   const encounter = await findOrCreateEncounter({ locationId: location.id });
-  let enemyData: any[] = [];
+  let enemyData: Array<{
+    name: string;
+    maxHealth: number;
+    health: number;
+    initiative: number;
+  }> = [];
 
   if (encounter.enemies.length === 0) {
-    const { enemyData: newEnemyData, enemyType } = generateEnemyData(random);
-    enemyData = newEnemyData;
+    const { enemies: newEnemies, enemyType } = generateEnemies(random);
+    enemyData = newEnemies;
     // Narrate the encounter scene
     await bot.helpers.sendMessage(channelId, {
       content: await narrate({

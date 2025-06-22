@@ -5,6 +5,7 @@ export async function healthBar({
   damage = 0,
   width = 200,
   height = 24,
+  label,
 }: {
   current: number;
   max: number;
@@ -12,6 +13,7 @@ export async function healthBar({
   damage?: number;
   width?: number;
   height?: number;
+  label?: string;
 }): Promise<Uint8Array> {
   const healthAfterAction = Math.max(0, Math.min(max, current + heal - damage));
   const healthToShowAsGreen = damage > 0
@@ -32,17 +34,22 @@ export async function healthBar({
   const redBox = damageWidth > 0
     ? `drawbox=x=${healthWidth}:y=0:w=${damageWidth}:h=${height}:color=#b71c1c@1:t=fill,`
     : "";
+
+  const labelText = label
+    ? `drawtext=fontfile=media/MedievalSharp-Regular.ttf:text='${label}':x=(w-text_w)/2:y=5:fontsize=12:fontcolor=white:borderw=1:bordercolor=black,`
+    : "";
+
   // Input: solid black background
   const ffmpegArgs = [
     "-f", // input format
     "lavfi", // use FFmpeg's virtual input device
     "-i", // input
-    `color=c=black:s=${width}x${height}`,
+    `color=c=black:s=${width}x${height + 20}`, // increased height for label
     // Input: semi-transparent black overlay
     "-f",
     "lavfi",
     "-i",
-    `color=c=black@0.3:s=${width}x${height}`,
+    `color=c=black@0.3:s=${width}x${height + 20}`,
     // Input: mask image for rounded corners
     "-i",
     "media/mask.png",
@@ -50,11 +57,13 @@ export async function healthBar({
     "-filter_complex",
     [
       `[0][1]overlay=0:0:shortest=1[base];`, // overlay semi-transparent black on base
-      `[base]drawbox=x=0:y=0:w=${width}:h=${height}:color=white@1:t=2,`, // border
-      greenBox, // health (green)
-      whiteBox, // heal (white)
-      redBox, // damage (red)
-      `drawtext=fontfile=media/MedievalSharp-Regular.ttf:text='${healthAfterAction}/${max}':x=(w-text_w)/2:y=(h-text_h)/2:fontsize=16:fontcolor=white:borderw=2:bordercolor=black[drawn];`, // center text
+      `[base]drawbox=x=0:y=20:w=${width}:h=${height}:color=white@1:t=2,`, // border (moved down 20px)
+      `drawbox=x=0:y=20:w=${width}:h=${height}:color=black@1:t=fill,`, // background for health bar
+      greenBox.replace(/y=0/g, "y=20"), // health (green) - moved down 20px
+      whiteBox.replace(/y=0/g, "y=20"), // heal (white) - moved down 20px
+      redBox.replace(/y=0/g, "y=20"), // damage (red) - moved down 20px
+      labelText, // label text at top
+      `drawtext=fontfile=media/MedievalSharp-Regular.ttf:text='${healthAfterAction}/${max}':x=(w-text_w)/2:y=20+(h-text_h)/2:fontsize=16:fontcolor=white:borderw=2:bordercolor=black[drawn];`, // center text (moved down 20px)
       `[drawn][2]alphamerge`, // apply mask for rounded corners
     ].join(""),
     // Output: single frame as PNG
@@ -129,6 +138,7 @@ export async function getHealthBarImage({
   damageAmount = 0,
   width = 200,
   height = 24,
+  label,
 }: {
   currentHealth: number;
   maxHealth: number;
@@ -136,6 +146,7 @@ export async function getHealthBarImage({
   damageAmount?: number;
   width?: number;
   height?: number;
+  label?: string;
 }): Promise<Uint8Array> {
   return await healthBar({
     current: currentHealth,
@@ -144,5 +155,6 @@ export async function getHealthBarImage({
     damage: damageAmount,
     width,
     height,
+    label,
   });
 }

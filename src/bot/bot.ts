@@ -22,7 +22,6 @@ export function makeBot({ token, botId }: { token: string; botId: bigint }) {
       guildCreate: async (bot, guild) => {
         await seedMapForGuild({ id: guild.id });
         await registerCommandsAndPermissions({
-          bot,
           guildId: guild.id,
         });
         console.log(

@@ -73,17 +73,20 @@ export async function healthBarImage({
   maxHealth,
   healAmount = 0,
   damageAmount = 0,
+  label,
 }: {
   currentHealth: number;
   maxHealth: number;
   healAmount?: number;
   damageAmount?: number;
+  label?: string;
 }) {
   return await getHealthBarImage({
     currentHealth,
     maxHealth,
     healAmount,
     damageAmount,
+    label,
   });
 }
 
@@ -149,6 +152,7 @@ export async function combatMessage({
       currentHealth,
       maxHealth,
       damageAmount: attackResult.hit ? attackResult.damageRoll : 0,
+      label: targetName,
     });
   }
 
