@@ -161,7 +161,7 @@ function calculateNewLevel(experience: number): number {
   return Math.floor(experience / 100) + 1;
 }
 
-function createPlayerUpdateData({
+function calculatePlayerStatsAfterReward({
   player,
   reward,
 }: {
@@ -172,21 +172,21 @@ function createPlayerUpdateData({
   const newLevel = calculateNewLevel(newExperience);
   const levelUp = newLevel > (player.level ?? 1);
 
-  const updateData: Record<string, unknown> = {
+  const playerUpdates: Record<string, unknown> = {
     experience: newExperience,
     gold: (player.gold ?? 0) + reward.gold,
     level: newLevel,
   };
 
   if (levelUp) {
-    updateData.maxHealth = (player.maxHealth ?? 10) + 2;
-    updateData.health = Math.min(
+    playerUpdates.maxHealth = (player.maxHealth ?? 10) + 2;
+    playerUpdates.health = Math.min(
       (player.health ?? 10) + 2,
       (player.maxHealth ?? 10) + 2,
     );
   }
 
-  return updateData;
+  return playerUpdates;
 }
 
 async function findOrCreateGear(selectedGear: GearTemplate) {
@@ -233,10 +233,10 @@ export async function grantRewards({
 
   if (!player) return;
 
-  const updateData = createPlayerUpdateData({ player, reward });
+  const playerUpdates = calculatePlayerStatsAfterReward({ player, reward });
   await prisma.player.update({
     where: { id: playerId },
-    data: updateData,
+    data: playerUpdates,
   });
 
   if (
@@ -255,7 +255,7 @@ export async function grantRewards({
     });
   }
 
-  const newLevel = calculateNewLevel(updateData.experience as number);
+  const newLevel = calculateNewLevel(playerUpdates.experience as number);
   const levelUp = newLevel > (player.level ?? 1);
 
   return {
