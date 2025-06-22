@@ -29,7 +29,7 @@ export async function narrate({ prompt }: { prompt: string }) {
   const LLMResponse = z.object({ response: z.string() });
   try {
     const parsed = JSON.parse(raw);
-    console.log("[LLM] Full response:", parsed);
+    console.log("[LLM] Full response:", parsed.response);
     if (LLMResponse.safeParse(parsed).success) {
       return LLMResponse.parse(parsed).response;
     }
