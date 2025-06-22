@@ -6,6 +6,9 @@ import {
 import { registerCommandsAndPermissions } from "~/bot/register-commands-and-permissions.ts";
 import { actions } from "~/game/actions/index.ts";
 import { seedMapForGuild } from "../game/map/seed-map-for-guild.ts";
+import { handleLootChoice } from "~/game/loot/loot-choice-handler.ts";
+import { seededRandom } from "../game/seeded-random.ts";
+import { findOrCreateGuild } from "../db/find-or-create-guild.ts";
 
 export { startBot } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 
@@ -29,6 +32,12 @@ export function makeBot({ token, botId }: { token: string; botId: bigint }) {
         );
       },
       interactionCreate: async (bot, interaction) => {
+        console.log("[Interaction] Received interaction:", {
+          type: interaction.type,
+          customId: interaction.data?.customId,
+          name: interaction.data?.name,
+        });
+
         if (
           interaction.type === 4 &&
           (interaction.data?.name === "attack" ||
@@ -77,11 +86,56 @@ export function makeBot({ token, botId }: { token: string; botId: bigint }) {
               type: InteractionResponseTypes.DeferredChannelMessageWithSource,
             },
           );
+
+          if (!interaction.guildId) {
+            return;
+          }
+
+          const guild = await findOrCreateGuild({ id: interaction.guildId });
           await actions[interaction.data.name as keyof typeof actions]({
             bot,
             interaction,
-            random: () => Math.random(),
+            random: seededRandom(guild.seed, guild.randomCursor),
           });
+        }
+
+        // Handle button interactions for loot choices
+        if (
+          interaction.type === 3 &&
+          interaction.data?.customId?.startsWith("loot_choice_")
+        ) {
+          const choiceIndex = parseInt(interaction.data.customId.split("_")[2]);
+          const playerId = BigInt(interaction.user.id);
+          const messageId = interaction.message?.id.toString() || "";
+
+          console.log("[Button Interaction] Loot choice clicked:", {
+            playerId: playerId.toString(),
+            choiceIndex,
+            messageId,
+            customId: interaction.data.customId,
+          });
+
+          const result = await handleLootChoice({
+            playerId,
+            choiceIndex,
+            messageId,
+            token: interaction.token,
+          });
+
+          if (!result.success) {
+            await bot.helpers.sendInteractionResponse(
+              interaction.id,
+              interaction.token,
+              {
+                type: InteractionResponseTypes.ChannelMessageWithSource,
+                data: {
+                  content: result.message,
+                  flags: 64, // Ephemeral
+                },
+              },
+            );
+          }
+          return;
         }
       },
     },
