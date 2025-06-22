@@ -1,4 +1,6 @@
 import { prisma } from "~/db/index.ts";
+import { getHealthBarImage } from "~/ui/health-bar.ts";
+import { bot } from "~/bot/index.ts";
 
 export async function setPlayerHealth({
   id,
@@ -22,15 +24,14 @@ export async function setPlayerHealth({
 
   // Display health bar if channelId is provided
   if (channelId) {
-    const { getHealthBarImage } = await import("~/ui/health-bar.ts");
+    const healthBeforeAction = health - healAmount + damageAmount;
     const image = await getHealthBarImage({
-      current: health,
+      current: healthBeforeAction,
       max: player.maxHealth,
       heal: healAmount,
       damage: damageAmount,
       label: player.name,
     });
-    const { bot } = await import("~/bot/index.ts");
     await bot.helpers.sendMessage(channelId, {
       file: {
         blob: new Blob([image]),

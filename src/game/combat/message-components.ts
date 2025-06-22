@@ -134,7 +134,6 @@ export async function combatMessage({
   if (
     includeHealthBar && currentHealth !== undefined && maxHealth !== undefined
   ) {
-    const { getHealthBarImage } = await import("~/ui/health-bar.ts");
     healthBarData = await getHealthBarImage({
       current: currentHealth,
       max: maxHealth,

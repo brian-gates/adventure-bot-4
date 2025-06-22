@@ -3,6 +3,9 @@ import { rollAndAnnounceDie } from "../dice.ts";
 import { narrate } from "~/llm/index.ts";
 import { narrateCombatAction } from "~/prompts.ts";
 import type { Encounter, Enemy, Player } from "~/generated/prisma/client.ts";
+import { bot } from "~/bot/index.ts";
+import { displayHealthBar } from "~/ui/health-bar.ts";
+import { checkEncounterStatus } from "../check-encounter-status.ts";
 
 export async function attackWeakestPlayer({
   random,
@@ -43,7 +46,6 @@ export async function attackWeakestPlayer({
       hit: false,
     });
     const missNarration = await narrate({ prompt: missPrompt });
-    const { bot } = await import("~/bot/index.ts");
     await bot.helpers.sendMessage(channelId, { content: missNarration });
     return;
   }
@@ -73,11 +75,9 @@ export async function attackWeakestPlayer({
     maxHealth: weakestPlayer.maxHealth,
   });
   const hitNarration = await narrate({ prompt: hitPrompt });
-  const { bot } = await import("~/bot/index.ts");
   await bot.helpers.sendMessage(channelId, { content: hitNarration });
 
   // Display player health bar using the proper health bar system
-  const { displayHealthBar } = await import("~/ui/health-bar.ts");
   await displayHealthBar({
     channelId,
     entity: weakestPlayer,
@@ -86,6 +86,5 @@ export async function attackWeakestPlayer({
     damage,
   });
 
-  const { checkEncounterStatus } = await import("../check-encounter-status.ts");
   await checkEncounterStatus(encounter, channelId);
 }
