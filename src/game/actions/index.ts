@@ -1,5 +1,6 @@
 import { adventure } from "./adventure.ts";
 import { attack } from "./attack.ts";
+import { emoji } from "./emoji.ts";
 import { heal } from "./heal.ts";
 import { map } from "./map.ts";
 import { rally } from "./rally.ts";
@@ -14,4 +15,5 @@ export const actions = {
   rally,
   resetmap,
   setseed,
+  emoji,
 };
