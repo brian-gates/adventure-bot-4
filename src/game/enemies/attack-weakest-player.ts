@@ -30,7 +30,6 @@ export async function attackWeakestPlayer({
 
   const { roll: attack } = await rollAndAnnounceDie({
     channelId,
-    guildId,
     sides: 20,
     label: "attack",
     random,
@@ -53,7 +52,6 @@ export async function attackWeakestPlayer({
 
   const { roll: damage } = await rollAndAnnounceDie({
     channelId,
-    guildId,
     sides: 4,
     label: "1d4 (unarmed)",
     random,
@@ -84,9 +82,10 @@ export async function attackWeakestPlayer({
   const { displayHealthBar } = await import("~/ui/health-bar.ts");
   await displayHealthBar({
     channelId,
-    playerId: weakestPlayer.id,
-    currentHealth: newHealth,
-    maxHealth: weakestPlayer.maxHealth,
+    entity: weakestPlayer,
+    current: newHealth,
+    max: weakestPlayer.maxHealth,
+    damage,
   });
 
   const { checkEncounterStatus } = await import("../check-encounter-status.ts");

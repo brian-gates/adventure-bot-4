@@ -66,7 +66,6 @@ async function attackWeakestEnemy({
 
   const { roll: attack } = await rollAndAnnounceDie({
     channelId,
-    guildId,
     sides: 20,
     label: "attack",
     random,
@@ -89,7 +88,6 @@ async function attackWeakestEnemy({
 
   const { roll: damage } = await rollAndAnnounceDie({
     channelId,
-    guildId,
     sides: 4,
     label: "1d4 (unarmed)",
     random,
@@ -118,9 +116,10 @@ async function attackWeakestEnemy({
 
   await displayHealthBar({
     channelId,
-    currentHealth: newHealth,
-    maxHealth: weakestEnemy.maxHealth,
-    entityName: weakestEnemy.name,
+    entity: weakestEnemy,
+    current: newHealth,
+    max: weakestEnemy.maxHealth,
+    damage,
   });
 
   await checkEncounterStatus(encounter, channelId);

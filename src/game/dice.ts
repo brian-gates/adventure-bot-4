@@ -1,4 +1,5 @@
 import { bot } from "~/bot/index.ts";
+import type { Emoji } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 
 export function rollDie({
   sides,
@@ -11,44 +12,44 @@ export function rollDie({
 }
 
 async function getRollEmoji({
-  guildId,
   sides,
   roll,
 }: {
-  guildId: bigint;
   sides: number;
   roll: number;
 }): Promise<string> {
   const name = `d${sides}_${roll}`;
   try {
-    const emojis = await bot.helpers.getEmojis(guildId);
-    const emoji = emojis.find((e) => e.name === name);
+    const emojis = await bot.rest.runMethod<{ items: Emoji[] }>(
+      bot.rest,
+      "GET",
+      `/applications/${bot.id}/emojis`,
+    );
+    const emoji = emojis.items.find((e) => e.name === name);
     if (emoji) return `<:${emoji.name}:${emoji.id}>`;
     console.log(`No emoji found for ${name}`);
   } catch (error) {
-    console.error(`Error fetching emoji ${name} from guild ${guildId}:`, error);
+    console.error(`Error fetching emoji ${name} from application:`, error);
   }
   return "🎲";
 }
 
 export async function rollAndAnnounceDie({
   channelId,
-  guildId,
   sides,
   label,
   random,
 }: {
   channelId: bigint;
-  guildId: bigint;
   sides: number;
   label: string;
   random: () => number;
 }) {
   const roll = rollDie({ sides, random });
-  const emoji = await getRollEmoji({ guildId, sides, roll });
+  const emoji = await getRollEmoji({ sides, roll });
 
   await bot.helpers.sendMessage(channelId, {
-    content: `${emoji} ${roll} ${label}`,
+    content: `${emoji} ${label}`,
   });
 
   return { roll, emoji };
@@ -66,7 +67,7 @@ export async function rollDieWithMessage({
   random: () => number;
 }) {
   const roll = rollDie({ sides, random });
-  const emoji = await getRollEmoji({ guildId, sides, roll });
+  const emoji = await getRollEmoji({ sides, roll });
   const message = `${emoji} ${roll} ${label}`;
   return { roll, emoji, message };
 }
@@ -95,7 +96,6 @@ export async function rollAttackWithMessage({
   // Roll attack
   const attackRoll = rollDie({ sides: attackSides, random });
   const attackEmoji = await getRollEmoji({
-    guildId,
     sides: attackSides,
     roll: attackRoll,
   });
@@ -109,7 +109,6 @@ export async function rollAttackWithMessage({
   if (hit) {
     damageRoll = rollDie({ sides: damageSides, random });
     damageEmoji = await getRollEmoji({
-      guildId,
       sides: damageSides,
       roll: damageRoll,
     });

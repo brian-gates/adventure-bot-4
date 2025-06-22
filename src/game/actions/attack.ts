@@ -23,12 +23,10 @@ export async function attack({
     channelId,
     sides: 20,
     label: "d20",
-    guildId,
     random,
   });
   const { roll: damage } = await rollAndAnnounceDie({
     channelId,
-    guildId,
     sides: 4,
     label: "1d4 (unarmed)",
     random,

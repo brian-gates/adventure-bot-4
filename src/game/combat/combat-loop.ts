@@ -13,6 +13,7 @@ import type {
   Prisma,
 } from "~/generated/prisma/client.ts";
 import { bot } from "~/bot/index.ts";
+import { checkEncounterStatus } from "../check-encounter-status.ts";
 
 export type EncounterWithCombatants = Prisma.EncounterGetPayload<{
   include: { enemies: true; players: true };
@@ -107,7 +108,8 @@ export const processCombatRound = async ({
       }));
     }
 
-    // Refresh encounter status
+    // After each turn, check if the encounter has ended and refresh the state.
+    await checkEncounterStatus(encounter, channelId);
     encounter = await prisma.encounter.findUniqueOrThrow({
       where: { id: encounter.id },
       include: {
@@ -142,11 +144,13 @@ const processPlayerTurn = async ({
   const target = await findWeakestEnemy({ encounterId: encounter.id });
   if (!target) return { encounter, players, enemies };
 
+  const user = await bot.helpers.getUser(player.id);
+
   // Create composed combat message
   const combatResult = await combatMessage({
     guildId,
     attackerId: player.id,
-    attackerName: player.name,
+    attackerName: user.username,
     targetName: target.name,
     attackSides: 20,
     damageSides: 4,
@@ -188,10 +192,6 @@ const processPlayerTurn = async ({
     e.id === target.id ? updatedEnemy : e
   );
 
-  // Check encounter status
-  const { checkEncounterStatus } = await import("../check-encounter-status.ts");
-  await checkEncounterStatus(encounter, channelId);
-
   return { encounter, players, enemies: updatedEnemies };
 };
 
@@ -217,11 +217,13 @@ const processEnemyTurn = async ({
   const target = await findWeakestPlayer({ encounterId: encounter.id });
   if (!target) return { encounter, players, enemies };
 
+  const targetUser = await bot.helpers.getUser(target.id);
+
   // Create composed combat message
   const combatResult = await combatMessage({
     guildId,
     attackerName: enemy.name,
-    targetName: target.name,
+    targetName: targetUser.username,
     attackSides: 20,
     damageSides: 4,
     attackLabel: "attack",
@@ -234,7 +236,6 @@ const processEnemyTurn = async ({
   });
 
   if (!combatResult.hit) {
-    const { bot } = await import("~/bot/index.ts");
     await bot.helpers.sendMessage(channelId, {
       content: combatResult.message,
     });
@@ -249,7 +250,6 @@ const processEnemyTurn = async ({
   });
 
   // Send the composed message with health bar
-  const { bot } = await import("~/bot/index.ts");
   await bot.helpers.sendMessage(channelId, {
     content: combatResult.message,
     file: combatResult.healthBarImage
@@ -264,10 +264,6 @@ const processEnemyTurn = async ({
   const updatedPlayers = players.map((p) =>
     p.id === target.id ? updatedPlayer : p
   );
-
-  // Check encounter status
-  const { checkEncounterStatus } = await import("../check-encounter-status.ts");
-  await checkEncounterStatus(encounter, channelId);
 
   return { encounter, players: updatedPlayers, enemies };
 };
