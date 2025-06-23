@@ -50,7 +50,7 @@ export function locationType({
         : 0,
       event: !preceedingLocationTypes.includes("event") ? 1 : 0,
       shop: row > 5 && !preceedingLocationTypes.includes("shop") ? 1 : 0,
-      combat: preceedingLocationTypes.includes("combat") ? 2 : 3,
+      combat: preceedingLocationTypes.includes("combat") ? 1 : 2,
       campfire: row > 5 && !preceedingLocationTypes.includes("campfire")
         ? 1
         : 0,
