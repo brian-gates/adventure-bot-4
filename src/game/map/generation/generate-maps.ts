@@ -4,7 +4,7 @@ import { Table } from "https://deno.land/x/cliffy@v1.0.0-rc.4/table/mod.ts";
 import { Map } from "~/game/map/index.ts";
 import { seededRandom } from "~/game/seeded-random.ts";
 import { stringToSeed } from "~/game/string-to-seed.ts";
-import { testMap } from "../test-map-validity.ts";
+import { testMap } from "../map-stats.ts";
 import { walkStrategy } from "./index.ts";
 import { asciiMapString } from "./log-ascii-map.ts";
 import {
