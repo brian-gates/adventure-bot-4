@@ -26,6 +26,7 @@ export function narrateAttack({
   targetId,
   newHealth,
   maxHealth,
+  weaponName,
 }: {
   attacker: string;
   target: string;
@@ -36,6 +37,7 @@ export function narrateAttack({
   targetId?: bigint;
   newHealth?: number;
   maxHealth?: number;
+  weaponName?: string | null;
 }) {
   const healthPercentage = newHealth && maxHealth
     ? Math.round((newHealth / maxHealth) * 100)
@@ -51,6 +53,10 @@ export function narrateAttack({
     ? `Target at ${healthPercentage}% health.`
     : ``;
 
+  const weaponInfo = weaponName
+    ? `Attacker is using: ${weaponName}.`
+    : `Attacker is unarmed.`;
+
   const mentionInstructions = [
     attackerId && mentionInstruction({ role: "attacker", userId: attackerId }),
     targetId && mentionInstruction({ role: "target", userId: targetId }),
@@ -61,6 +67,7 @@ export function narrateAttack({
     `Attacker: ${attackerId ? `<@${attackerId}>` : attacker}. Target: ${
       targetId ? `<@${targetId}>` : target
     }.`,
+    weaponInfo,
     attackDescription,
     healthInfo,
     `Do not mention raw numbers.`,
@@ -120,6 +127,7 @@ export function narrateCombatAction({
   damage,
   newHealth,
   maxHealth,
+  weaponName,
 }: {
   attacker: string;
   target: string;
@@ -127,6 +135,7 @@ export function narrateCombatAction({
   damage?: number;
   newHealth?: number;
   maxHealth?: number;
+  weaponName?: string | null;
 }) {
   return narrateAttack({
     attacker,
@@ -135,5 +144,6 @@ export function narrateCombatAction({
     damage,
     newHealth,
     maxHealth,
+    weaponName,
   });
 }

@@ -104,6 +104,11 @@ export async function registerCommandsAndPermissions({
         },
       ],
     },
+    {
+      name: "equip",
+      description: "Equip a weapon from your inventory",
+      options: [],
+    },
   ]);
   await ensureAdventurerRole({ guildId });
   console.log(`[Bot] Command registration complete for guild ${guildId}`);
