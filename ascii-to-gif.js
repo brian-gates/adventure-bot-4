@@ -22,7 +22,6 @@ const glyphStyles = {
   "$": { fg: "#ffd700", bg: "#111" }, // treasure: yellow on dark
   "X": { fg: "#0c0", bg: null }, // combat: green
   "E": { fg: "#a0a", bg: null }, // elite: magenta
-  "T": { fg: "#0cc", bg: null }, // tavern: cyan
   "?": { fg: "#08f", bg: null }, // event: blue
   "B": { fg: "#ac04a4", bg: null }, // boss: purple
   "S": { fg: "#9013FE", bg: null }, // shop: violet

@@ -2,6 +2,7 @@ import { walkStrategy } from "~/game/map/generation/walk/walk-strategy.ts";
 import { seededRandom } from "~/game/seeded-random.ts";
 import { locationSymbols } from "~/game/map/generation/location-types.ts";
 import type { Location, Map } from "~/game/map/index.ts";
+import type { LocationType } from "~/generated/prisma/client.ts";
 import { Table } from "https://deno.land/x/cliffy@v1.0.0-rc.4/table/mod.ts";
 import { colors } from "https://deno.land/x/cliffy@v1.0.0-rc.4/ansi/colors.ts";
 
@@ -20,7 +21,6 @@ function getColorForType({ type }: { type: string }) {
   const colorMap: Record<string, (text: string) => string> = {
     combat: colors.green,
     elite: colors.magenta,
-    tavern: colors.cyan,
     treasure: colors.yellow,
     event: colors.blue,
     boss: colors.red,
@@ -44,6 +44,64 @@ function getBar(
   return "█".repeat(Math.round((count / total) * width));
 }
 
+function findConsecutiveElites({
+  locations,
+  paths,
+}: {
+  locations: Location[];
+  paths: any[];
+}) {
+  const consecutivePairs: Array<
+    { from: Location; to: Location; type: string }
+  > = [];
+  const locationById = new Map(locations.map((loc) => [loc.id, loc]));
+
+  // Check path-connected consecutive elites
+  for (const path of paths) {
+    const fromLocation = locationById.get(path.fromLocationId);
+    const toLocation = locationById.get(path.toLocationId);
+
+    if (
+      fromLocation && toLocation &&
+      fromLocation.type === "elite" && toLocation.type === "elite"
+    ) {
+      consecutivePairs.push({
+        from: fromLocation,
+        to: toLocation,
+        type: "path-connected",
+      });
+    }
+  }
+
+  // Check spatially adjacent consecutive elites
+  for (let i = 0; i < locations.length; i++) {
+    const location1 = locations[i];
+    if (location1.type !== "elite") continue;
+
+    for (let j = i + 1; j < locations.length; j++) {
+      const location2 = locations[j];
+      if (location2.type !== "elite") continue;
+
+      // Check if they're adjacent (same row or adjacent rows/columns)
+      const rowDiff = Math.abs(location1.row - location2.row);
+      const colDiff = Math.abs(location1.col - location2.col);
+
+      if (
+        (rowDiff === 0 && colDiff === 1) || // Same row, adjacent columns
+        (rowDiff === 1 && colDiff <= 1)
+      ) { // Adjacent rows, same or adjacent columns
+        consecutivePairs.push({
+          from: location1,
+          to: location2,
+          type: "spatially-adjacent",
+        });
+      }
+    }
+  }
+
+  return consecutivePairs;
+}
+
 function testMap(
   { locations, paths, cols, rows }: Map,
   { minNodes, maxNodes }: { minNodes: number; maxNodes: number },
@@ -55,6 +113,21 @@ function testMap(
     byRow[node.row] = byRow[node.row] || [];
     byRow[node.row].push(node);
   }
+
+  // Check for consecutive elites in paths
+  const consecutiveElites = findConsecutiveElites({ locations, paths });
+  if (consecutiveElites.length > 0) {
+    const pathConnected = consecutiveElites.filter((p) =>
+      p.type === "path-connected"
+    ).length;
+    const spatiallyAdjacent = consecutiveElites.filter((p) =>
+      p.type === "spatially-adjacent"
+    ).length;
+    warnings.push(
+      `Found ${consecutiveElites.length} consecutive elite pairs (${pathConnected} path-connected, ${spatiallyAdjacent} spatially adjacent)`,
+    );
+  }
+
   // Check for out-of-bounds nodes
   for (const node of locations) {
     if (node.row < 0 || node.row >= rows || node.col < 0 || node.col >= cols) {

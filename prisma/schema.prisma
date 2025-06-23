@@ -93,7 +93,6 @@ enum LocationType {
     combat
     event
     elite
-    tavern
     treasure
     boss
     campfire

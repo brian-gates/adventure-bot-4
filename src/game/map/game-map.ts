@@ -215,4 +215,27 @@ export class GameMap {
       },
     });
   }
+
+  getSiblingLocations({ id }: { id: string }) {
+    const currentLocation = this.locationsById[id];
+    if (!currentLocation) return [];
+
+    // Get parent locations of the current location
+    const parentLocations = this.getPrevLocations({ id });
+
+    // Find all locations that share any of the same parents
+    return this.locations.filter((location) => {
+      if (location.id === id) return false; // Exclude self
+
+      // Get this location's parents
+      const locationParents = this.getPrevLocations({ id: location.id });
+
+      // If they share any parents, they are siblings
+      return parentLocations.some((parent) =>
+        locationParents.some((locationParent) =>
+          locationParent.id === parent.id
+        )
+      );
+    });
+  }
 }

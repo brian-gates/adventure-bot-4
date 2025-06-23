@@ -10,7 +10,6 @@ import { handleCombat } from "./combat.ts";
 import { handleElite } from "./elite.ts";
 import { handleEvent } from "./event.ts";
 import { handleShop } from "./shop.ts";
-import { handleTavern } from "./tavern.ts";
 import { handleTreasure } from "./treasure.ts";
 
 type LocationHandler = (params: {
@@ -24,7 +23,6 @@ export const locationHandlers: Record<LocationType, LocationHandler> = {
   combat: handleCombat,
   event: handleEvent,
   shop: handleShop,
-  tavern: handleTavern,
   elite: handleElite,
   treasure: handleTreasure,
   boss: handleBoss,
@@ -39,6 +37,5 @@ export {
   handleElite,
   handleEvent,
   handleShop,
-  handleTavern,
   handleTreasure,
 };

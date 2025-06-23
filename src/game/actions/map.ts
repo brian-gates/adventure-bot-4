@@ -15,7 +15,6 @@ export const iconDominantColors: Record<LocationType, string> = {
   boss: "#ac04a4",
   combat: "#447404",
   elite: "#ac0404",
-  tavern: "#8c542c",
   treasure: "#b47404",
   event: "#b40474",
   campfire: "#04b4b4",

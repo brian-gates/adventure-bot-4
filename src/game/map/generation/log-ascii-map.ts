@@ -121,7 +121,6 @@ export function getPathAngle({
 const locationTypeChar: Record<LocationType, string> = {
   combat: "X",
   elite: "E",
-  tavern: "T",
   treasure: "$",
   event: "?",
   boss: "B",
@@ -132,7 +131,6 @@ const locationTypeChar: Record<LocationType, string> = {
 const locationTypeColor: Record<LocationType, string> = {
   combat: "\x1b[32m", // Green
   elite: "\x1b[35m", // Magenta
-  tavern: "\x1b[36m", // Cyan
   treasure: "\x1b[33m", // Yellow
   event: "\x1b[34m", // Blue
   boss: "\x1b[31m", // Red

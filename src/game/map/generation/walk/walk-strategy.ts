@@ -22,15 +22,17 @@ export const walkStrategy = ({
 }) => {
   let map = emptyMap({ cols, rows });
   const locMap = new Map<string, Location>();
+
   function getOrCreateLocation(row: number, col: number): Location {
     const key = `${row},${col}`;
     let loc = locMap.get(key);
     if (!loc) {
-      loc = createLocation({ row, col, random, map });
+      loc = createLocationSimple({ row, col, map });
       locMap.set(key, loc);
     }
     return loc;
   }
+
   const centerCol = Math.floor(cols / 2);
   const boss = getOrCreateLocation(rows - 1, centerCol);
   const start = { row: 0, col: centerCol };
@@ -47,7 +49,31 @@ export const walkStrategy = ({
       target: i === 1 ? start : boss,
     }));
   }
+
   map.locations = Array.from(locMap.values());
+
+  // Now reassign location types based on the complete path structure
+  // Process row by row from top to bottom to ensure proper traversal order
+  const visited = new Set<string>();
+
+  // Sort locations by row, then by col for consistent ordering
+  const sortedLocations = [...map.locations].sort((a, b) => {
+    if (a.row !== b.row) return a.row - b.row;
+    return a.col - b.col;
+  });
+
+  // Process each location in row-by-row order
+  for (const location of sortedLocations) {
+    if (!visited.has(location.id)) {
+      location.type = locationType({
+        map,
+        position: { row: location.row, col: location.col },
+        random,
+      });
+      visited.add(location.id);
+    }
+  }
+
   const locationIds = new Set(map.locations.map((l) => l.id));
   const allPathEndpointIds = map.paths.flatMap((
     p,
@@ -68,8 +94,7 @@ function walkPath({
   map: initialMap,
   random,
   onStep,
-  recordCols,
-  avoidOccupied,
+  avoidOccupied = false,
   getOrCreateLocation,
   target,
 }: {
@@ -77,7 +102,6 @@ function walkPath({
   map: Map;
   random: () => number;
   onStep?: (map: Map) => void;
-  recordCols?: number[];
   avoidOccupied?: boolean;
   getOrCreateLocation: (row: number, col: number) => Location;
   target: { row: number; col: number };
@@ -94,9 +118,6 @@ function walkPath({
       getOrCreateLocation,
       target,
     }));
-    if (recordCols) {
-      recordCols[position.row] = position.col;
-    }
   }
   return { position, map };
 }
@@ -156,7 +177,7 @@ function step({
   position,
   random,
   onStep,
-  avoidOccupied,
+  avoidOccupied = false,
   getOrCreateLocation,
   target,
 }: {
@@ -166,7 +187,7 @@ function step({
   onStep?: (map: Map) => void;
   avoidOccupied?: boolean;
   getOrCreateLocation: (row: number, col: number) => Location;
-  target: { row: number; col: number };
+  target: Position;
 }) {
   const map = structuredClone(initialMap);
   const fromLocation = getOrCreateLocation(position.row, position.col);
@@ -186,19 +207,16 @@ function step({
   const boundedSteps = initialSteps.filter((pos) =>
     pos.col >= 0 && pos.col < map.cols && pos.row >= 0 && pos.row < map.rows
   );
-  const filteredSteps = boundedSteps.map((pos) => {
-    const valid = canReachTargetFromPosition({
-      position: pos,
+  let possibleSteps = boundedSteps.filter((position) => {
+    return canReachTargetFromPosition({
+      position,
       target,
-    });
-    const cross = wouldCrossExistingPath({
-      from: fromLocation.row < pos.row ? fromLocation : pos,
-      to: fromLocation.row < pos.row ? pos : fromLocation,
+    }) && !wouldCrossExistingPath({
+      from: fromLocation.row < position.row ? fromLocation : position,
+      to: fromLocation.row < position.row ? position : fromLocation,
       map,
     });
-    return { ...pos, valid, cross };
   });
-  let possibleSteps = filteredSteps.filter((pos) => pos.valid && !pos.cross);
   if (avoidOccupied) {
     const occupiedCols = map.locations.filter((l) => l.row === nextRow).map((
       l,
@@ -248,15 +266,13 @@ function step({
   };
 }
 
-function createLocation({
+function createLocationSimple({
   row,
   col,
   map,
-  random,
 }: {
   row: number;
   col: number;
-  random: () => number;
   map: Map;
 }): Location {
   return {
@@ -266,7 +282,7 @@ function createLocation({
     description: `A location at ${row}, ${col}`,
     row,
     col,
-    type: locationType({ map, position: { row, col }, random }),
+    type: "combat",
     attributes: {},
     createdAt: new Date(),
     updatedAt: new Date(),
