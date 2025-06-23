@@ -6,7 +6,6 @@ import { handleCombat } from "~/game/map/locations/combat.ts";
 import { handleElite } from "~/game/map/locations/elite.ts";
 import { handleEvent } from "~/game/map/locations/event.ts";
 import { handleShop } from "~/game/map/locations/shop.ts";
-import { handleTavern } from "~/game/map/locations/tavern.ts";
 import { handleTreasure } from "~/game/map/locations/treasure.ts";
 import { LocationType } from "~/generated/prisma/client.ts";
 
@@ -18,7 +17,6 @@ const locationHandlers = {
   [LocationType.boss]: handleBoss,
   [LocationType.campfire]: handleCampfire,
   [LocationType.shop]: handleShop,
-  [LocationType.tavern]: handleTavern,
 };
 
 export async function adventure({

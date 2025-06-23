@@ -1,6 +1,7 @@
 import type { LocationType } from "~/generated/prisma/client.ts";
 import { weightedRandom } from "~/game/weighted-random.ts";
 import type { Map, Position } from "~/game/map/index.ts";
+import { GameMap } from "~/game/map/game-map.ts";
 
 /**
  * Context-aware location type assignment for in-game map generation.
@@ -24,57 +25,46 @@ export function locationType({
   if (row === map.rows - 2) {
     return "campfire";
   }
-  // taverns in the middle
-  if (row === Math.floor(map.rows / 2)) {
-    return "tavern";
-  }
   // first row is always combat
   if (row === 0) {
     return "combat";
   }
+
   const currentLocation = map.locations.find(
     (l) => l.row === row && l.col === col,
   );
-  const preceedingPaths = map.paths.filter(
-    (p) => p.toLocationId === currentLocation?.id,
-  );
-  const preceedingLocations = map.locations.filter((l) =>
-    preceedingPaths.some((p) => p.fromLocationId === l.id)
-  );
-  const preceedingLocationTypes = preceedingLocations.map((l) => l.type);
+
+  if (!currentLocation) {
+    return "combat"; // fallback
+  }
+
+  // Use GameMap utilities for cleaner sibling detection
+  const gameMap = new GameMap(map);
+
+  // Get parent locations (locations that have paths to this location)
+  const parentLocations = gameMap.getPrevLocations({ id: currentLocation.id });
+
+  // Get sibling locations (other locations that share the same parents)
+  const siblingLocations = gameMap.getSiblingLocations({
+    id: currentLocation.id,
+  });
+
+  // Get types of parent and sibling locations to exclude
+  const parentTypes = parentLocations.map((l) => l.type);
+  const siblingTypes = siblingLocations.map((l) => l.type);
+  const excludedTypes = [...new Set([...parentTypes, ...siblingTypes])];
+
   return weightedRandom(
     {
-      elite: row > 5 && !preceedingLocationTypes.includes("elite") ? 1 : 0,
-      treasure: row > 5 && !preceedingLocationTypes.includes("treasure")
-        ? 2
-        : 0,
-      event: !preceedingLocationTypes.includes("event") ? 1 : 0,
-      shop: row > 5 && !preceedingLocationTypes.includes("shop") ? 1 : 0,
-      combat: preceedingLocationTypes.includes("combat") ? 1 : 2,
-      campfire: row > 5 && !preceedingLocationTypes.includes("campfire")
-        ? 1
-        : 0,
+      elite: row > 5 && !excludedTypes.includes("elite") ? 2 : 0,
+      treasure: row > 5 && !excludedTypes.includes("treasure") ? 2 : 0,
+      event: !excludedTypes.includes("event") ? 2 : 0,
+      shop: row > 5 && !excludedTypes.includes("shop") ? 1 : 0,
+      combat: excludedTypes.includes("combat") ? 1 : 2,
+      campfire: row > 5 && !excludedTypes.includes("campfire") ? 1 : 0,
     },
     random,
   ) as LocationType;
-}
-
-/**
- * Simple weighted random location type generator for statistical analysis/testing only.
- * Does not consider map structure or adjacency.
- */
-export function generateLocationType(random: () => number): LocationType {
-  const weights: Record<LocationType, number> = {
-    combat: 40,
-    event: 15,
-    campfire: 12,
-    treasure: 10,
-    tavern: 8,
-    shop: 5,
-    elite: 5,
-    boss: 5,
-  };
-  return weightedRandom(weights, random);
 }
 
 // Legend mapping for location types
@@ -86,14 +76,12 @@ export const locationSymbols: Record<LocationType, string> = {
   boss: "B",
   campfire: "C",
   shop: "S",
-  tavern: "T",
 };
 
 // Color codes for location types
 export const locationTypeColor: Record<LocationType, string> = {
   combat: "\x1b[32m", // Green
   elite: "\x1b[35m", // Magenta
-  tavern: "\x1b[36m", // Cyan
   treasure: "\x1b[33m", // Yellow
   event: "\x1b[34m", // Blue
   boss: "\x1b[31m", // Red
@@ -106,10 +94,9 @@ export const resetColor = "\x1b[0m";
 // Location type weights for generation
 export const locationTypeWeights: Record<LocationType, number> = {
   combat: 40,
-  event: 15,
+  event: 23,
   campfire: 12,
   treasure: 10,
-  tavern: 8,
   shop: 5,
   elite: 5,
   boss: 5,

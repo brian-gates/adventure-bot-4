@@ -1,13 +1,12 @@
 # Location Types Requirements
 
 This document expands on the map generation requirements to specify rules and
-logic for different location types: **Event**, **Combat**, **Elite**, and
-**Tavern (Rest)**.
+logic for different location types: **Event**, **Combat**, and **Elite**.
 
 ## General Principles
 
 - Each location in the map has a `type` property: one of `event`, `combat`,
-  `elite`, or `tavern`.
+  `elite`, `treasure`, `boss`, `campfire`, or `shop`.
 - Location types are assigned during map generation, after location placement
   but before path generation.
 - The distribution of location types should create a balanced, interesting, and
@@ -38,6 +37,8 @@ logic for different location types: **Event**, **Combat**, **Elite**, and
     (avoid event clusters).
 - **Special Logic:**
   - If a row has only 2 locations, avoid both being events.
+- **Future Enhancement:**
+  - Tavern functionality will be folded into events as a special event type.
 
 ### Elite Locations
 
@@ -53,33 +54,26 @@ logic for different location types: **Event**, **Combat**, **Elite**, and
 - **Special Logic:**
   - If the map is long, spread elites out (not consecutive rows).
 
-### Tavern (Rest) Locations
+### Other Location Types
 
-- Allow players to rest, heal, or shop.
-- **Frequency:**
-  - At least 1 tavern per map (configurable, e.g., 1–3 per map).
-  - Never in the first or last row.
-- **Placement:**
-  - Never place two taverns in consecutive rows.
-  - Never place a tavern adjacent to an elite location in the same or adjacent
-    row.
-  - Prefer to place taverns after an elite location (in the next row).
-- **Special Logic:**
-  - If a row has only 2 locations, avoid both being taverns.
+- **Treasure**: Locations that provide loot and rewards
+- **Boss**: Final encounter at the end of the map
+- **Campfire**: Rest locations for healing and recovery
+- **Shop**: Locations where players can purchase items
 
 ## Assignment Algorithm
 
 - After location positions are generated, assign location types in this order:
   1. Place elite locations according to constraints.
-  2. Place tavern locations, respecting elite adjacency rules.
-  3. Place event locations, respecting frequency and adjacency rules.
+  2. Place event locations, respecting frequency and adjacency rules.
+  3. Place other special location types (treasure, shop, campfire) as
+     appropriate.
   4. Assign all remaining locations as combat.
 - Validate that all constraints are satisfied after assignment.
 - If constraints cannot be satisfied, retry or adjust location placement.
 
 ## Extensibility
 
-- New location types (e.g., shop, boss, mystery) can be added with similar
-  rules.
+- New location types can be added with similar rules.
 - Location type assignment should be deterministic if seeded.
 - All location type logic should be testable and debuggable.

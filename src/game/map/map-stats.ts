@@ -20,7 +20,6 @@ function getColorForType({ type }: { type: string }) {
   const colorMap: Record<string, (text: string) => string> = {
     combat: colors.green,
     elite: colors.magenta,
-    tavern: colors.cyan,
     treasure: colors.yellow,
     event: colors.blue,
     boss: colors.red,
