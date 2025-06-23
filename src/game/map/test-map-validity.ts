@@ -1,6 +1,55 @@
 import { walkStrategy } from "~/game/map/generation/walk/walk-strategy.ts";
-import type { Location, Map } from "~/game/map/index.ts";
 import { seededRandom } from "~/game/seeded-random.ts";
+import { locationSymbols } from "~/game/map/generation/location-types.ts";
+import type { Location, Map } from "~/game/map/index.ts";
+import { Table } from "https://deno.land/x/cliffy@v1.0.0-rc.4/table/mod.ts";
+import { colors } from "https://deno.land/x/cliffy@v1.0.0-rc.4/ansi/colors.ts";
+
+function getNodeTypeDistribution(map: Map) {
+  const distribution: Record<string, number> = {};
+
+  for (const location of map.locations) {
+    const type = location.type;
+    distribution[type] = (distribution[type] || 0) + 1;
+  }
+
+  return distribution;
+}
+
+function getColorForType({ type }: { type: string }) {
+  const colorMap: Record<string, (text: string) => string> = {
+    combat: colors.green,
+    elite: colors.magenta,
+    tavern: colors.cyan,
+    treasure: colors.yellow,
+    event: colors.blue,
+    boss: colors.red,
+    campfire: colors.white,
+    shop: colors.gray,
+  };
+  return colorMap[type] || colors.white;
+}
+
+function getColorSymbol({ type }: { type: string }) {
+  const symbol = locationSymbols[type as keyof typeof locationSymbols] || "?";
+  const colorFn = getColorForType({ type });
+  return colorFn(symbol);
+}
+
+function getPercentage({ count, total }: { count: number; total: number }) {
+  return ((count / total) * 100).toFixed(1);
+}
+
+function getBar(
+  { count, total, i, width = 20 }: {
+    count: number;
+    total: number;
+    i: number;
+    width?: number;
+  },
+) {
+  return "█".repeat(Math.round((count / total) * width));
+}
 
 function testMap(
   { locations, paths, cols, rows }: Map,
@@ -139,6 +188,13 @@ if (import.meta.main) {
   const allErrors: string[] = [];
   const allWarnings: string[] = [];
 
+  // Distribution tracking
+  const distributionStats: Record<
+    string,
+    { total: number; min: number; max: number; avg: number; runs: number[] }
+  > = {};
+  const totalNodesPerRun: number[] = [];
+
   const { cols, rows, numPaths, minNodes, maxNodes } = {
     cols: 7,
     rows: 15,
@@ -147,7 +203,10 @@ if (import.meta.main) {
     maxNodes: 5,
   };
 
-  for (let run = 1; run <= 1000; run++) {
+  const numRuns = 1000;
+  console.log(`Running ${numRuns} map generation tests...`);
+
+  for (let run = 1; run <= numRuns; run++) {
     const map = walkStrategy({
       cols,
       rows,
@@ -155,9 +214,36 @@ if (import.meta.main) {
       random: seededRandom(run),
       onStep: () => {},
     });
+
     const { errors, warnings } = testMap(map, { minNodes, maxNodes });
     allErrors.push(...errors);
     allWarnings.push(...warnings);
+
+    // Track distribution metrics
+    const distribution = getNodeTypeDistribution(map);
+    const totalNodes = Object.values(distribution).reduce(
+      (sum, count) => sum + count,
+      0,
+    );
+    totalNodesPerRun.push(totalNodes);
+
+    for (const [type, count] of Object.entries(distribution)) {
+      if (!distributionStats[type]) {
+        distributionStats[type] = {
+          total: 0,
+          min: count,
+          max: count,
+          avg: 0,
+          runs: [],
+        };
+      }
+      const stats = distributionStats[type];
+      stats.total += count;
+      stats.min = Math.min(stats.min, count);
+      stats.max = Math.max(stats.max, count);
+      stats.runs.push(count);
+    }
+
     if (warnings.length) {
       warningCount++;
     }
@@ -168,35 +254,62 @@ if (import.meta.main) {
     }
   }
 
+  // Calculate averages
+  for (const type in distributionStats) {
+    const stats = distributionStats[type];
+    stats.avg = stats.total / numRuns;
+  }
+
   const percent = ((passCount / (passCount + failCount)) * 100).toFixed(2);
   console.log(
-    `${name}: ${passCount}/${passCount + failCount} (${percent}%) success rate`,
+    `\n=== MAP VALIDATION RESULTS ===`,
+  );
+  console.log(
+    `Success rate: ${passCount}/${passCount + failCount} (${percent}%)`,
+  );
+  console.log(`Total passes: ${passCount}`);
+  console.log(`Total fails: ${failCount}`);
+  console.log(`Total with warnings: ${warningCount}`);
+
+  // Display distribution statistics
+  console.log(`\n=== NODE TYPE DISTRIBUTION STATISTICS ===`);
+  console.log(renderDistributionTable({ distributionStats, totalNodesPerRun }));
+
+  // Total nodes statistics
+  const avgTotalNodes = totalNodesPerRun.reduce((sum, count) =>
+    sum + count, 0) / totalNodesPerRun.length;
+  const minTotalNodes = Math.min(...totalNodesPerRun);
+  const maxTotalNodes = Math.max(...totalNodesPerRun);
+  console.log(
+    `\nTotal nodes per map: Avg ${
+      avgTotalNodes.toFixed(1)
+    }, Range ${minTotalNodes}-${maxTotalNodes}`,
   );
 
   const errorCounts = countBy(allErrors);
   const warningCounts = countBy(allWarnings);
 
-  const sortedErrors = Object.entries(errorCounts).sort((a, b) => b[1] - a[1]);
+  const sortedErrors = Object.entries(errorCounts).sort((a, b) =>
+    b[1] - a[1]
+  );
   const sortedWarnings = Object.entries(warningCounts).sort((a, b) =>
     b[1] - a[1]
   );
 
   if (sortedErrors.length) {
-    console.log("\nError frequencies:");
+    console.log("\n=== ERROR FREQUENCIES ===");
     for (const [msg, count] of sortedErrors) {
-      console.log(`${count}\t${msg}`);
+      console.log(`${count.toString().padStart(4)}\t${msg}`);
     }
   }
   if (sortedWarnings.length) {
-    console.log("\nWarning frequencies:");
+    console.log("\n=== WARNING FREQUENCIES ===");
     for (const [msg, count] of sortedWarnings) {
-      console.log(`${count}\t${msg}`);
+      console.log(`${count.toString().padStart(4)}\t${msg}`);
     }
   }
-  console.log(`\nTotal passes: ${passCount}`);
-  console.log(`Total fails: ${failCount}`);
-  console.log(`Total with warnings: ${warningCount}`);
-  console.log(`Unique error types: ${sortedErrors.length}`);
+
+  console.log(`\nUnique error types: ${sortedErrors.length}`);
   console.log(`Unique warning types: ${sortedWarnings.length}`);
 }
 
@@ -207,4 +320,52 @@ function countBy(arr: string[]) {
     acc[msg] = (acc[msg] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
+}
+
+function renderDistributionTable(
+  { distributionStats, totalNodesPerRun }: {
+    distributionStats: Record<
+      string,
+      { total: number; min: number; max: number; avg: number; runs: number[] }
+    >;
+    totalNodesPerRun: number[];
+  },
+) {
+  const sortedTypes = Object.entries(distributionStats).sort((a, b) =>
+    b[1].total - a[1].total
+  );
+
+  // Calculate average total nodes across all runs
+  const avgTotalNodes =
+    totalNodesPerRun.reduce((sum, count) => sum + count, 0) /
+    totalNodesPerRun.length;
+
+  const table = new Table()
+    .header(["Symbol", "Type", "Total", "Avg", "Range", "Avg %", "Bar"])
+    .body(sortedTypes.map(([type, stats], i) => {
+      const colorFn = getColorForType({ type });
+      const symbol = locationSymbols[type as keyof typeof locationSymbols] ||
+        "?";
+
+      return [
+        colorFn(symbol),
+        colorFn(type),
+        colorFn(stats.total.toString()),
+        colorFn(stats.avg.toFixed(1)),
+        colorFn(`${stats.min}-${stats.max}`),
+        colorFn(
+          `${getPercentage({ count: stats.avg, total: avgTotalNodes })}%`,
+        ),
+        colorFn(
+          getBar({
+            count: Math.round(stats.avg),
+            total: Math.round(avgTotalNodes),
+            i,
+          }),
+        ),
+      ];
+    }))
+    .border(true)
+    .padding(1);
+  return table.toString();
 }

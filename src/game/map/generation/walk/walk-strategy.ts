@@ -266,11 +266,7 @@ function createLocation({
     description: `A location at ${row}, ${col}`,
     row,
     col,
-    type: locationType({
-      map,
-      position: { row, col },
-      random,
-    }),
+    type: locationType({ map, position: { row, col }, random }),
     attributes: {},
     createdAt: new Date(),
     updatedAt: new Date(),

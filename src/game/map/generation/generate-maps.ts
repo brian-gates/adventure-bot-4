@@ -7,6 +7,11 @@ import { stringToSeed } from "~/game/string-to-seed.ts";
 import { testMap } from "../test-map-validity.ts";
 import { walkStrategy } from "./index.ts";
 import { asciiMapString } from "./log-ascii-map.ts";
+import {
+  locationSymbols,
+  locationTypeColor,
+  resetColor,
+} from "./location-types.ts";
 
 async function promptInt(msg: string, def: number) {
   const input = await Input.prompt({
@@ -27,31 +32,6 @@ let frames: Map[] = [];
 let frameIndex = 0;
 let isPlaying = false;
 
-// Legend mapping for location types
-const locationSymbols: Record<string, string> = {
-  combat: "X",
-  treasure: "$",
-  event: "?",
-  elite: "E",
-  boss: "B",
-  campfire: "C",
-  shop: "S",
-  tavern: "T",
-};
-
-// Color codes for location types (matching log-ascii-map.ts)
-const locationTypeColor: Record<string, string> = {
-  combat: "\x1b[32m", // Green
-  elite: "\x1b[35m", // Magenta
-  tavern: "\x1b[36m", // Cyan
-  treasure: "\x1b[33m", // Yellow
-  event: "\x1b[34m", // Blue
-  boss: "\x1b[31m", // Red
-  campfire: "\x1b[37m", // White
-  shop: "\x1b[90m", // Bright Black (Gray)
-};
-const resetColor = "\x1b[0m";
-
 function getNodeTypeDistribution(map: Map) {
   const distribution: Record<string, number> = {};
 
@@ -62,39 +42,6 @@ function getNodeTypeDistribution(map: Map) {
   }
 
   return distribution;
-}
-
-function formatDistribution(distribution: Record<string, number>) {
-  const total = Object.values(distribution).reduce(
-    (sum, count) => sum + count,
-    0,
-  );
-  const sorted = Object.entries(distribution).sort((a, b) => b[1] - a[1]);
-
-  let result = `\n[Node Type Distribution] (Total: ${total})\n`;
-  for (const [type, count] of sorted) {
-    const percentage = ((count / total) * 100).toFixed(1);
-    const bar = "█".repeat(Math.round((count / total) * 20));
-    const symbol = locationSymbols[type] || "?";
-    result += `${symbol} ${type.padEnd(10)} ${count.toString().padStart(2)} (${
-      percentage.padStart(4)
-    }%) ${bar}\n`;
-  }
-
-  return result;
-}
-
-function formatLegend() {
-  let result = "\n[Legend]\n";
-  const sortedTypes = Object.entries(locationSymbols).sort((a, b) =>
-    a[0].localeCompare(b[0])
-  );
-
-  for (const [type, symbol] of sortedTypes) {
-    result += `${symbol} = ${type}\n`;
-  }
-
-  return result;
 }
 
 async function exportAnimation() {
@@ -128,7 +75,7 @@ function renderFrame() {
   const { errors, warnings } = testMap(map, { minNodes, maxNodes });
 
   // Build right column content - more compact
-  let rightColumn = [];
+  const rightColumn = [];
   rightColumn.push(
     `Seed: ${seed} | Frame: ${frameIndex + 1}/${frames.length}${
       isPlaying ? " | Playing..." : ""
@@ -166,8 +113,10 @@ function renderFrame() {
     .header(["Symbol", "Type", "Count", "Percentage"])
     .body(sorted.map(([type, count]) => {
       const percentage = ((count / total) * 100).toFixed(1);
-      const symbol = locationSymbols[type] || "?";
-      const color = locationTypeColor[type] || "";
+      const symbol = locationSymbols[type as keyof typeof locationSymbols] ||
+        "?";
+      const color = locationTypeColor[type as keyof typeof locationTypeColor] ||
+        "";
       return [
         `${color}${symbol}${resetColor}`,
         type,
