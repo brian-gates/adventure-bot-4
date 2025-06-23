@@ -19,6 +19,24 @@ export type EncounterWithCombatants = Prisma.EncounterGetPayload<{
   include: { enemies: true; players: true };
 }>;
 
+// Function to get player's equipped weapon
+async function getPlayerEquippedWeapon(playerId: bigint) {
+  const equippedWeapon = await prisma.playerInventory.findFirst({
+    where: {
+      playerId,
+      equipped: true,
+      gear: {
+        type: "weapon",
+      },
+    },
+    include: {
+      gear: true,
+    },
+  });
+
+  return equippedWeapon?.gear || null;
+}
+
 export const initializeCombat = async ({
   playersInCombat,
   enemyData,
@@ -139,20 +157,30 @@ const processPlayerTurn = async ({
   if (!target) return { encounter, players, enemies };
 
   const user = await bot.helpers.getUser(player.id);
+  const equippedWeapon = await getPlayerEquippedWeapon(player.id);
+
+  // Determine attack parameters based on equipped weapon
+  const attackSides = 20;
+  const damageSides = equippedWeapon ? 4 + equippedWeapon.attack : 4; // Base 1d4 + weapon bonus
+  const attackLabel = "attack";
+  const damageLabel = equippedWeapon
+    ? `1d${damageSides} (${equippedWeapon.name})`
+    : "1d4 (unarmed)";
 
   // Create composed combat message
   const combatResult = await combatMessage({
     attackerName: user.username,
     targetName: target.name,
-    attackSides: 20,
-    damageSides: 4,
-    attackLabel: "attack",
-    damageLabel: "1d4 (unarmed)",
+    attackSides,
+    damageSides,
+    attackLabel,
+    damageLabel,
     ac: 10,
     random,
     includeHealthBar: true,
     currentHealth: target.health,
     maxHealth: target.maxHealth,
+    weaponName: equippedWeapon?.name || null,
   });
 
   if (!combatResult.hit) {
@@ -216,7 +244,7 @@ const processEnemyTurn = async ({
     attackSides: 20,
     damageSides: 4,
     attackLabel: "attack",
-    damageLabel: "1d4 (unarmed)",
+    damageLabel: "1d4 (claws/fangs)",
     ac: 10,
     random,
     includeHealthBar: true,

@@ -40,6 +40,7 @@ export async function combatNarration({
   damage,
   newHealth,
   maxHealth,
+  weaponName,
 }: {
   attacker: string;
   target: string;
@@ -47,6 +48,7 @@ export async function combatNarration({
   damage?: number;
   newHealth?: number;
   maxHealth?: number;
+  weaponName?: string | null;
 }) {
   const prompt = narrateCombatAction({
     attacker,
@@ -55,6 +57,7 @@ export async function combatNarration({
     damage,
     newHealth,
     maxHealth,
+    weaponName,
   });
   return await narrate({ prompt });
 }
@@ -93,6 +96,7 @@ export async function combatMessage({
   includeHealthBar = false,
   currentHealth,
   maxHealth,
+  weaponName,
 }: {
   attackerName: string;
   targetName: string;
@@ -105,6 +109,7 @@ export async function combatMessage({
   includeHealthBar?: boolean;
   currentHealth?: number;
   maxHealth?: number;
+  weaponName?: string | null;
 }) {
   const attackResult = await attackMessage({
     attackSides,
@@ -123,6 +128,7 @@ export async function combatMessage({
     damage: attackResult.damageRoll,
     newHealth: currentHealth,
     maxHealth,
+    weaponName,
   });
   console.log("[combatMessage] combatNarration returned.");
 

@@ -7,6 +7,7 @@ import { rally } from "./rally.ts";
 import { resetmap } from "./resetmap.ts";
 import { setseed } from "./setseed.ts";
 import { inspect } from "./inspect.ts";
+import { equip } from "./equip.ts";
 
 export const actions = {
   attack,
@@ -18,4 +19,5 @@ export const actions = {
   setseed,
   emoji,
   inspect,
+  equip,
 };

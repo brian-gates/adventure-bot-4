@@ -92,9 +92,9 @@ export async function checkEncounterStatus(
       );
 
       if (reward.gearOptions && reward.gearOptions.length > 0) {
-        // Send message with buttons for gear choice
+        // Send message with buttons for gear choice - mention the player to make it clear it's for them
         const lootMessage = await bot.helpers.sendMessage(channelId, {
-          content: message,
+          content: `<@${player.id}>\n\n${message}`,
           components: [{
             type: 1, // Action row
             components: createLootChoiceButtons(reward.gearOptions),
@@ -113,8 +113,11 @@ export async function checkEncounterStatus(
           channelId,
         });
       } else {
-        // No gear options, just send the message
-        await bot.helpers.sendMessage(channelId, { content: message });
+        // No gear options, send simple message to public channel
+        await bot.helpers.sendMessage(channelId, {
+          content:
+            `**${player.name}** received ${reward.experience} experience and ${reward.gold} gold!`,
+        });
       }
     }
   }
