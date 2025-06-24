@@ -1,6 +1,8 @@
 import type { Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
 import { bot } from "~/bot/index.ts";
+import { encodeBase64 } from "jsr:@std/encoding/base64";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 /**
  * Uploads all dice images directly to the bot's application as emojis.
@@ -59,18 +61,52 @@ export async function emoji({
     for (let value = 1; value <= diceType.sides; value++) {
       const emojiName = `${diceType.prefix}_${value}`;
       const imagePath = join(
-        "media/dice/output",
+        "media/dice/emoji",
         `${diceType.prefix}_${value}.png`,
       );
 
       try {
-        const imageData = await Deno.readFile(imagePath);
-        const base64 = btoa(
-          new Uint8Array(imageData).reduce(
-            (data, byte) => data + String.fromCharCode(byte),
-            "",
-          ),
+        // Fetch existing emojis for the application
+        const emojiListRes = await fetch(
+          `https://discord.com/api/v10/applications/${bot.id}/emojis`,
+          {
+            headers: {
+              "Authorization": `Bot ${bot.token}`,
+            },
+          },
         );
+        const emojiListData = await emojiListRes.json();
+        const EmojiArraySchema = z.object({
+          items: z.array(z.object({ name: z.string(), id: z.string() })),
+        });
+        const parseResult = EmojiArraySchema.safeParse(emojiListData);
+        if (!parseResult.success) {
+          console.error(
+            "[emoji-app] Unexpected emoji list response:",
+            emojiListData,
+          );
+          throw new Error(
+            "Failed to fetch emoji list or received unexpected response.",
+          );
+        }
+        const emojis = parseResult.data.items;
+        // Find emoji with the same name
+        const existing = emojis.find((e) => e.name === emojiName);
+        if (existing) {
+          // Delete the existing emoji
+          await fetch(
+            `https://discord.com/api/v10/applications/${bot.id}/emojis/${existing.id}`,
+            {
+              method: "DELETE",
+              headers: {
+                "Authorization": `Bot ${bot.token}`,
+              },
+            },
+          );
+        }
+
+        const imageData = await Deno.readFile(imagePath);
+        const base64 = encodeBase64(imageData);
         const dataUri = `data:image/png;base64,${base64}`;
 
         const response = await fetch(
@@ -89,14 +125,34 @@ export async function emoji({
         );
 
         if (!response.ok) {
-          const error = await response.json();
-          throw new Error(
-            `[${response.status}] ${error.message || "Failed to upload"}`,
+          const errorBody = await response.text();
+          let errorJson;
+          try {
+            errorJson = JSON.parse(errorBody);
+          } catch {
+            errorJson = { raw: errorBody };
+          }
+          console.error(
+            "Discord API error:",
+            JSON.stringify(
+              {
+                status: response.status,
+                statusText: response.statusText,
+                error: errorJson,
+              },
+              null,
+              2,
+            ),
           );
+          let errorMessage = "An unknown error occurred.";
+          if (errorJson.message) {
+            errorMessage = errorJson.message;
+          }
+          failedEmojis.push(`${emojiName} (${errorMessage})`);
+        } else {
+          const newEmoji = await response.json();
+          uploadedEmojis.push(`<:${newEmoji.name}:${newEmoji.id}>`);
         }
-
-        const newEmoji = await response.json();
-        uploadedEmojis.push(`<:${newEmoji.name}:${newEmoji.id}>`);
       } catch (error) {
         console.error(`[emoji-app] Failed to upload ${emojiName}:`, error);
         let errorMessage = "An unknown error occurred.";
