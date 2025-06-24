@@ -1,8 +1,7 @@
 import { walkStrategy } from "~/game/map/generation/walk/walk-strategy.ts";
 import { seededRandom } from "~/game/seeded-random.ts";
 import { locationSymbols } from "~/game/map/generation/location-types.ts";
-import type { Location, Map } from "~/game/map/index.ts";
-import type { LocationType } from "~/generated/prisma/client.ts";
+import type { Location, Map, Path } from "~/game/map/index.ts";
 import { Table } from "https://deno.land/x/cliffy@v1.0.0-rc.4/table/mod.ts";
 import { colors } from "https://deno.land/x/cliffy@v1.0.0-rc.4/ansi/colors.ts";
 
@@ -49,7 +48,7 @@ function findConsecutiveElites({
   paths,
 }: {
   locations: Location[];
-  paths: any[];
+  paths: Path[];
 }) {
   const consecutivePairs: Array<
     { from: Location; to: Location; type: string }
