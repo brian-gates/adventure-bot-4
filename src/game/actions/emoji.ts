@@ -18,9 +18,11 @@ export async function emoji({
   });
 
   const diceTypes = [
-    { sides: 4, path: "media/dice/d4" },
-    { sides: 6, path: "media/dice/d6" },
-    { sides: 20, path: "media/dice/d20" },
+    { sides: 4, prefix: "d4" },
+    { sides: 6, prefix: "d6" },
+    { sides: 8, prefix: "d8" },
+    { sides: 12, prefix: "d12" },
+    { sides: 20, prefix: "d20" },
   ];
 
   const uploadedEmojis: string[] = [];
@@ -55,8 +57,11 @@ export async function emoji({
 
   for (const diceType of diceTypes) {
     for (let value = 1; value <= diceType.sides; value++) {
-      const emojiName = `d${diceType.sides}_${value}`;
-      const imagePath = join(diceType.path, `${value}_tiny.png`);
+      const emojiName = `${diceType.prefix}_${value}`;
+      const imagePath = join(
+        "media/dice/output",
+        `${diceType.prefix}_${value}.png`,
+      );
 
       try {
         const imageData = await Deno.readFile(imagePath);

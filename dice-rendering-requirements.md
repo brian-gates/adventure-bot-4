@@ -1,5 +1,12 @@
 # Dice Rendering Pipeline Requirements
 
+**For quickstart, CLI usage, and user-facing instructions, see
+[media/dice/README.md](media/dice/README.md).**
+
+This file is the single source of truth for requirements, design rationale, and
+implementation notes for the dice rendering pipeline. Keep it updated as the
+implementation evolves.
+
 ## Goal
 
 Generate PNG images for every face of standard polyhedral dice sets (d4, d6, d8,
@@ -111,6 +118,3 @@ The implementation now lives in `render-all-dice.py` – adjust the hue formula 
 artistic tweaks are required.
 
 ---
-
-This file is the single source of truth for dice-rendering work. Keep it updated
-as the implementation evolves.

@@ -60,3 +60,37 @@ deno task start
 - `src/llm/` — LLM intent inference logic
 - `.env` — Environment variables (not committed)
 - `ecosystem.config.js` — pm2 process configuration
+
+## Running Blender Scripts on macOS
+
+If Blender is not in your PATH, you can run scripts using the full path to the
+Blender executable. For example, to run the simple-render.py script:
+
+```bash
+/Applications/Blender.app/Contents/MacOS/Blender --background --python media/dice/simple-render.py
+```
+
+Replace the script path as needed for other automation scripts.
+
+## Rendering Dice Assets
+
+To render all dice faces in bulk:
+
+```bash
+/Applications/Blender.app/Contents/MacOS/Blender media/dice/dice.blend --background --python media/dice/render-all-dice.py
+```
+
+To render only a specific die (e.g., d20):
+
+```bash
+/Applications/Blender.app/Contents/MacOS/Blender media/dice/dice.blend --background --python media/dice/render-all-dice.py -- d20
+```
+
+To render only a specific face (e.g., d20 face 20):
+
+```bash
+/Applications/Blender.app/Contents/MacOS/Blender media/dice/dice.blend --background --python media/dice/render-all-dice.py -- d20 20
+```
+
+The old simple-render.py script is no longer needed, as the bulk render script
+now supports targeted rendering for testing and iteration.
