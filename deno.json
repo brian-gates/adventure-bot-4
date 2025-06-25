@@ -2,10 +2,8 @@
   "importMap": "import_map.json",
   "nodeModulesDir": "auto",
   "lint": {
-    "files": {
-      "include": ["src/**/*.ts", "src/**/*.tsx"],
-      "exclude": ["**/*.js"]
-    }
+    "include": ["src/**/*.ts", "src/**/*.tsx"],
+    "exclude": ["**/*.js"]
   },
   "fmt": {
     "exclude": ["pnpm-lock.yaml"]
