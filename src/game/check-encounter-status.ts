@@ -92,9 +92,9 @@ export async function checkEncounterStatus(
       );
 
       if (reward.gearOptions && reward.gearOptions.length > 0) {
-        // Send message with buttons for gear choice - mention the player to make it clear it's for them
+        // Send message with buttons for gear choice - clearly marked for the specific player
         const lootMessage = await bot.helpers.sendMessage(channelId, {
-          content: `<@${player.id}>\n\n${message}`,
+          content: `🎁 **LOOT FOR ${player.name}**\n\n${message}`,
           components: [{
             type: 1, // Action row
             components: createLootChoiceButtons(reward.gearOptions),

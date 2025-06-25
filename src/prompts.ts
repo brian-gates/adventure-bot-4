@@ -67,6 +67,7 @@ export function narrateAttack({
     `Attacker: ${attackerId ? `<@${attackerId}>` : attacker}. Target: ${
       targetId ? `<@${targetId}>` : target
     }.`,
+    `Be concise and pithy - avoid verbose descriptions. Focus on the key action.`,
     weaponInfo,
     attackDescription,
     healthInfo,
@@ -91,9 +92,10 @@ export function narrateHeal({
   const healPercentage = Math.round((healAmount / maxHealth) * 100);
 
   return [
-    `Narrate a brief healing in a fantasy RPG.`,
+    `Narrate a brief healing in a fantasy RPG. Keep it under 120 characters.`,
     `Healer: <@${healerId}>. Target: <@${targetId}>.`,
     `Healed for ${healPercentage}% of max health.`,
+    `Be concise and pithy - avoid verbose descriptions. Focus on the key action.`,
     `Do not mention raw health numbers or percentages, keep the description narrative.`,
     ...defaultResponseTemplate,
     mentionInstruction({ role: "healer", userId: healerId }),

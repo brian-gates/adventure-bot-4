@@ -28,6 +28,7 @@ export async function handleButton(bot: Bot, interaction: Interaction) {
     choiceIndex,
     messageId,
     token: interaction.token,
+    interactionId: interaction.id,
   });
 
   if (!result.success) {

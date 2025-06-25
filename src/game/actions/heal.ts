@@ -3,11 +3,49 @@ import {
   type Interaction,
 } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
-import { getOrCreatePlayer, setPlayerHealth } from "~/db/player.ts";
-import { getTargetPlayer } from "~/discord/get-target.ts";
-import { rollAndAnnounceDie } from "~/game/dice.ts";
+import { getOrCreatePlayer, updatePlayerHealth } from "~/db/player.ts";
+import {
+  getTargetPlayer,
+  getUsernameFromInteraction,
+} from "~/discord/get-target.ts";
+import { composeDiceAndHealthbarImage } from "~/game/dice.ts";
+import { getHealthBarImage } from "~/ui/health-bar.ts";
 import { narrate } from "~/llm/index.ts";
 import { narrateHeal } from "~/prompts.ts";
+import { prisma } from "~/db/index.ts";
+
+async function getUpdatedHealthBarImage(
+  { id, name, guildId, heal }: {
+    id: bigint;
+    name: string;
+    guildId: bigint;
+    heal: number;
+  },
+) {
+  const { health, maxHealth } = await getOrCreatePlayer({ id, name, guildId });
+  return await getHealthBarImage({
+    current: health,
+    max: maxHealth,
+    heal,
+    label: name,
+  });
+}
+
+async function healAndFetchPlayer(
+  { id, name, guildId, healAmount }: {
+    id: bigint;
+    name: string;
+    guildId: bigint;
+    healAmount: number;
+  },
+) {
+  // Fetch, update, and return the updated player atomically
+  const player = await prisma.player.findUnique({ where: { id } });
+  if (!player) throw new Error("Player not found");
+  const newHealth = Math.min(player.maxHealth, player.health + healAmount);
+  await updatePlayerHealth({ id, health: newHealth });
+  return await getOrCreatePlayer({ id, name, guildId });
+}
 
 export async function heal({
   bot,
@@ -23,7 +61,10 @@ export async function heal({
   if (!targetPlayer) {
     // If no target specified, heal the user who ran the command
     const healerId = interaction.user.id;
-    const healerName = interaction.user.username ?? healerId.toString();
+    const healerName = getUsernameFromInteraction({
+      interaction,
+      userId: healerId,
+    });
 
     const player = await getOrCreatePlayer({
       id: healerId,
@@ -35,28 +76,38 @@ export async function heal({
       throw new Error("Missing channel or guild ID.");
     }
 
-    const oldHealth = player.health;
-    const { roll: healAmount } = await rollAndAnnounceDie({
-      channelId: interaction.channelId,
-      sides: 4,
-      label: "heal",
-      random,
+    const healAmount = Math.floor(random() * 4) + 1;
+    const diceImagePaths = [`media/dice/output/d4_${healAmount}.png`];
+
+    // Atomically update and fetch the player
+    const updatedPlayer = await healAndFetchPlayer({
+      id: healerId,
+      name: healerName,
+      guildId,
+      healAmount,
+    });
+    const effectiveHeal = updatedPlayer.health - player.health;
+
+    // Generate health bar image
+    const healthBarImage = await getHealthBarImage({
+      current: updatedPlayer.health,
+      max: updatedPlayer.maxHealth,
+      heal: effectiveHeal,
+      label: updatedPlayer.name,
     });
 
-    const newHealth = Math.min(player.maxHealth, oldHealth + healAmount);
-    const effectiveHeal = newHealth - oldHealth;
-    await setPlayerHealth({
-      id: healerId,
-      health: newHealth,
-      channelId: interaction.channelId,
-      healAmount: effectiveHeal,
+    // Compose dice and health bar image
+    const composedImage = await composeDiceAndHealthbarImage({
+      imagePaths: diceImagePaths,
+      healthBarImage,
     });
+    const fileName = `heal_${healAmount}.png`;
 
     const prompt = narrateHeal({
       healerId,
       targetId: healerId,
       healAmount,
-      maxHealth: player.maxHealth,
+      maxHealth: updatedPlayer.maxHealth,
     });
     const narrationResult = await narrate({ prompt });
     const LLMResponse = z.object({ response: z.string() });
@@ -77,11 +128,29 @@ export async function heal({
       }
       return JSON.stringify(narrationResult);
     })();
-    await bot.helpers.editOriginalInteractionResponse(interaction.token, {
-      content: narration,
+
+    // Get user's avatar URL
+    const avatarUrl = interaction.user.avatar
+      ? `https://cdn.discordapp.com/avatars/${interaction.user.id}/${interaction.user.avatar}.png`
+      : `https://cdn.discordapp.com/embed/avatars/${
+        Number(interaction.user.discriminator) % 5
+      }.png`;
+
+    // Send embed with narration and composed image
+    await bot.helpers.sendMessage(interaction.channelId, {
+      embeds: [
+        {
+          description: narration,
+          image: { url: `attachment://${fileName}` },
+          thumbnail: { url: avatarUrl },
+        },
+      ],
+      file: {
+        blob: new Blob([composedImage]),
+        name: fileName,
+      },
     });
 
-    // Health bar is now automatically displayed by setPlayerHealth
     return;
   }
 
@@ -95,28 +164,38 @@ export async function heal({
     throw new Error("Missing channel or guild ID.");
   }
 
-  const oldHealth = player.health;
-  const { roll: healAmount } = await rollAndAnnounceDie({
-    channelId: interaction.channelId,
-    sides: 4,
-    label: "heal",
-    random,
+  const healAmount = Math.floor(random() * 4) + 1;
+  const diceImagePaths = [`media/dice/output/d4_${healAmount}.png`];
+
+  // Atomically update and fetch the player
+  const updatedPlayer = await healAndFetchPlayer({
+    id: targetPlayer.id,
+    name: targetPlayer.name,
+    guildId,
+    healAmount,
+  });
+  const effectiveHeal = updatedPlayer.health - player.health;
+
+  // Generate health bar image
+  const healthBarImage = await getHealthBarImage({
+    current: updatedPlayer.health,
+    max: updatedPlayer.maxHealth,
+    heal: effectiveHeal,
+    label: updatedPlayer.name,
   });
 
-  const newHealth = Math.min(player.maxHealth, oldHealth + healAmount);
-  const effectiveHeal = newHealth - oldHealth;
-  await setPlayerHealth({
-    id: targetPlayer.id,
-    health: newHealth,
-    channelId: interaction.channelId,
-    healAmount: effectiveHeal,
+  // Compose dice and health bar image
+  const composedImage = await composeDiceAndHealthbarImage({
+    imagePaths: diceImagePaths,
+    healthBarImage,
   });
+  const fileName = `heal_${healAmount}.png`;
 
   const prompt = narrateHeal({
     healerId: interaction.user.id,
     targetId: targetPlayer.id,
     healAmount,
-    maxHealth: player.maxHealth,
+    maxHealth: updatedPlayer.maxHealth,
   });
   const narrationResult = await narrate({ prompt });
   const LLMResponse = z.object({ response: z.string() });
@@ -137,7 +216,26 @@ export async function heal({
     }
     return JSON.stringify(narrationResult);
   })();
-  await bot.helpers.editOriginalInteractionResponse(interaction.token, {
-    content: narration,
+
+  // Get user's avatar URL
+  const avatarUrl = interaction.user.avatar
+    ? `https://cdn.discordapp.com/avatars/${interaction.user.id}/${interaction.user.avatar}.png`
+    : `https://cdn.discordapp.com/embed/avatars/${
+      Number(interaction.user.discriminator) % 5
+    }.png`;
+
+  // Send embed with narration and composed image
+  await bot.helpers.sendMessage(interaction.channelId, {
+    embeds: [
+      {
+        description: narration,
+        image: { url: `attachment://${fileName}` },
+        thumbnail: { url: avatarUrl },
+      },
+    ],
+    file: {
+      blob: new Blob([composedImage]),
+      name: fileName,
+    },
   });
 }

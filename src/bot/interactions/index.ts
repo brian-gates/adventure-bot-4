@@ -5,6 +5,7 @@ import {
 import { handleAutocomplete } from "./autocomplete.ts";
 import { handleButton } from "./button.ts";
 import { handleCommand } from "./command.ts";
+import { handleSelectMenu } from "./select-menu.ts";
 
 export async function handleInteraction(bot: Bot, interaction: Interaction) {
   console.log("[Interaction] Received interaction:", {
@@ -14,6 +15,7 @@ export async function handleInteraction(bot: Bot, interaction: Interaction) {
   });
 
   await handleAutocomplete(bot, interaction);
+  await handleSelectMenu(bot, interaction);
   await handleButton(bot, interaction);
   await handleCommand(bot, interaction);
 }

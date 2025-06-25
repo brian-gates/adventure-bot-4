@@ -74,11 +74,13 @@ export async function handleLootChoice({
   choiceIndex,
   messageId,
   token,
+  interactionId,
 }: {
   playerId: bigint;
   choiceIndex: number;
   messageId: string;
   token: string;
+  interactionId: bigint;
 }) {
   const key = `${playerId}_${messageId}`;
   console.log("[handleLootChoice] Looking up key:", key);
@@ -121,7 +123,7 @@ export async function handleLootChoice({
   });
 
   // Acknowledge the interaction
-  await bot.helpers.sendInteractionResponse(messageId, token, {
+  await bot.helpers.sendInteractionResponse(interactionId, token, {
     type: 4, // Channel message with source
     data: {
       content: choiceMessage,

@@ -132,7 +132,7 @@ def setup_scene(script_dir):
     emission_shader = nodes.new(type='ShaderNodeEmission')
     emission_shader.name = "EmissiveNumber"
     emission_shader.inputs['Color'].default_value = (1, 1, 1, 1)
-    emission_shader.inputs['Strength'].default_value = 1.0
+    emission_shader.inputs['Strength'].default_value = 5.0
     output_node = nodes.new(type='ShaderNodeOutputMaterial')
     text_mat.node_tree.links.new(emission_shader.outputs['Emission'], output_node.inputs['Surface'])
     # Dice meshes

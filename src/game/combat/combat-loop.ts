@@ -1,5 +1,5 @@
 import { prisma } from "~/db/index.ts";
-import { combatMessage } from "./message-components.ts";
+import { combatEmbedMessage } from "./message-components.ts";
 import {
   findWeakestEnemy,
   findWeakestPlayer,
@@ -159,33 +159,47 @@ const processPlayerTurn = async ({
   const user = await bot.helpers.getUser(player.id);
   const equippedWeapon = await getPlayerEquippedWeapon(player.id);
 
+  // Get user's avatar URL
+  const avatarUrl = user.avatar
+    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
+    : `https://cdn.discordapp.com/embed/avatars/${
+      Number(user.discriminator) % 5
+    }.png`;
+
   // Determine attack parameters based on equipped weapon
   const attackSides = 20;
   const damageSides = equippedWeapon ? 4 + equippedWeapon.attack : 4; // Base 1d4 + weapon bonus
-  const attackLabel = "attack";
-  const damageLabel = equippedWeapon
-    ? `1d${damageSides} (${equippedWeapon.name})`
-    : "1d4 (unarmed)";
 
-  // Create composed combat message
-  const combatResult = await combatMessage({
+  // Create composed combat message with embed
+  const combatResult = await combatEmbedMessage({
     attackerName: user.username,
     targetName: target.name,
     attackSides,
     damageSides,
-    attackLabel,
-    damageLabel,
     ac: 10,
     random,
-    includeHealthBar: true,
     currentHealth: target.health,
     maxHealth: target.maxHealth,
     weaponName: equippedWeapon?.name || null,
+    avatarUrl,
   });
 
   if (!combatResult.hit) {
     await bot.helpers.sendMessage(channelId, {
-      content: combatResult.message,
+      embeds: [
+        {
+          author: {
+            name: user.username,
+            iconUrl: combatResult.avatarUrl,
+          },
+          description: combatResult.narration,
+          image: { url: `attachment://${combatResult.fileName}` },
+        },
+      ],
+      file: {
+        blob: new Blob([combatResult.composedImage]),
+        name: combatResult.fileName,
+      },
     });
     return { encounter, players, enemies };
   }
@@ -198,13 +212,20 @@ const processPlayerTurn = async ({
   });
 
   await bot.helpers.sendMessage(channelId, {
-    content: combatResult.message,
-    file: combatResult.healthBarImage
-      ? {
-        blob: new Blob([combatResult.healthBarImage]),
-        name: `${target.name}-healthbar.png`,
-      }
-      : undefined,
+    embeds: [
+      {
+        author: {
+          name: user.username,
+          iconUrl: combatResult.avatarUrl,
+        },
+        description: combatResult.narration,
+        image: { url: `attachment://${combatResult.fileName}` },
+      },
+    ],
+    file: {
+      blob: new Blob([combatResult.composedImage]),
+      name: combatResult.fileName,
+    },
   });
 
   // Update enemies array
@@ -237,24 +258,30 @@ const processEnemyTurn = async ({
 
   const targetUser = await bot.helpers.getUser(target.id);
 
-  // Create composed combat message
-  const combatResult = await combatMessage({
+  // Create composed combat message with embed
+  const combatResult = await combatEmbedMessage({
     attackerName: enemy.name,
     targetName: targetUser.username,
     attackSides: 20,
     damageSides: 4,
-    attackLabel: "attack",
-    damageLabel: "1d4 (claws/fangs)",
     ac: 10,
     random,
-    includeHealthBar: true,
     currentHealth: target.health,
     maxHealth: target.maxHealth,
   });
 
   if (!combatResult.hit) {
     await bot.helpers.sendMessage(channelId, {
-      content: combatResult.message,
+      embeds: [
+        {
+          description: combatResult.narration,
+          image: { url: `attachment://${combatResult.fileName}` },
+        },
+      ],
+      file: {
+        blob: new Blob([combatResult.composedImage]),
+        name: combatResult.fileName,
+      },
     });
     return { encounter, players, enemies };
   }
@@ -266,15 +293,18 @@ const processEnemyTurn = async ({
     newHealth,
   });
 
-  // Send the composed message with health bar
+  // Send the composed message with embed
   await bot.helpers.sendMessage(channelId, {
-    content: combatResult.message,
-    file: combatResult.healthBarImage
-      ? {
-        blob: new Blob([combatResult.healthBarImage]),
-        name: `${target.name}-healthbar.png`,
-      }
-      : undefined,
+    embeds: [
+      {
+        description: combatResult.narration,
+        image: { url: `attachment://${combatResult.fileName}` },
+      },
+    ],
+    file: {
+      blob: new Blob([combatResult.composedImage]),
+      name: combatResult.fileName,
+    },
   });
 
   // Update players array

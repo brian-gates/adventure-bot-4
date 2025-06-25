@@ -17,53 +17,47 @@ export async function equip({
 
   const playerId = interaction.user.id;
 
-  // Get player's inventory with gear details
-  const inventory = await prisma.playerInventory.findMany({
+  // Get player's unequipped gear
+  const unequippedGear = await prisma.playerInventory.findMany({
     where: {
       playerId,
-      gear: {
-        type: "weapon",
-      },
+      equipped: false,
     },
     include: {
       gear: true,
     },
   });
 
-  if (inventory.length === 0) {
+  if (unequippedGear.length === 0) {
     await bot.helpers.editOriginalInteractionResponse(interaction.token, {
-      content: "You don't have any weapons in your inventory to equip.",
+      content: "You don't have any unequipped gear in your inventory.",
     });
     return;
   }
 
-  // Unequip all current weapons first
-  await prisma.playerInventory.updateMany({
-    where: {
-      playerId,
-      equipped: true,
-      gear: {
-        type: "weapon",
-      },
-    },
-    data: {
-      equipped: false,
-    },
-  });
-
-  // Equip the first weapon (for now, just equip the first one)
-  // In the future, this could be enhanced to let players choose which weapon to equip
-  const firstWeapon = inventory[0];
-  await prisma.playerInventory.update({
-    where: {
-      id: firstWeapon.id,
-    },
-    data: {
-      equipped: true,
-    },
-  });
+  // Create select menu options
+  const options = unequippedGear.map((item) => ({
+    label: item.gear.name,
+    value: item.id.toString(),
+    description: `${item.gear.type}${
+      item.gear.attack ? ` | Attack: +${item.gear.attack}` : ""
+    }${item.gear.defense ? ` | Defense: +${item.gear.defense}` : ""}`,
+  }));
 
   await bot.helpers.editOriginalInteractionResponse(interaction.token, {
-    content: `You have equipped **${firstWeapon.gear.name}**!`,
+    content: "Choose gear to equip:",
+    components: [
+      {
+        type: 1, // Action Row
+        components: [
+          {
+            type: 3, // Select Menu
+            customId: "equip_gear",
+            placeholder: "Select gear to equip",
+            options,
+          },
+        ],
+      },
+    ],
   });
 }

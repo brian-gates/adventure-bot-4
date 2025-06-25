@@ -1,7 +1,8 @@
-import { rollAttackWithMessage } from "../dice.ts";
+import { combineDiceImages, rollAttackWithMessage } from "../dice.ts";
 import { getHealthBarImage } from "~/ui/health-bar.ts";
 import { narrate } from "~/llm/index.ts";
 import { narrateCombatAction } from "~/prompts.ts";
+import { composeDiceAndHealthbarImage } from "../dice.ts";
 
 export async function attackMessage({
   attackSides,
@@ -153,5 +154,89 @@ export async function combatMessage({
     hit: attackResult.hit,
     damageRoll: attackResult.damageRoll,
     healthBarImage: healthBarData,
+  };
+}
+
+export async function combatEmbedMessage({
+  attackerName,
+  targetName,
+  attackSides,
+  damageSides,
+  ac,
+  random,
+  currentHealth,
+  maxHealth,
+  weaponName,
+  avatarUrl,
+}: {
+  attackerName: string;
+  targetName: string;
+  attackSides: number;
+  damageSides: number;
+  ac: number;
+  random: () => number;
+  currentHealth?: number;
+  maxHealth?: number;
+  weaponName?: string | null;
+  avatarUrl?: string;
+}) {
+  // Roll attack die
+  const d20 = Math.floor(random() * attackSides) + 1;
+  const diceImagePaths = [`media/dice/output/d${attackSides}_${d20}.png`];
+
+  // Check if hit
+  const hit = d20 >= ac;
+  let damageRoll = 0;
+
+  // Roll damage die if hit
+  if (hit) {
+    damageRoll = Math.floor(random() * damageSides) + 1;
+    diceImagePaths.push(`media/dice/output/d${damageSides}_${damageRoll}.png`);
+  }
+
+  // Generate narration
+  const narration = await combatNarration({
+    attacker: attackerName,
+    target: targetName,
+    hit,
+    damage: damageRoll,
+    newHealth: currentHealth,
+    maxHealth,
+    weaponName,
+  });
+
+  let composedImage: Uint8Array;
+  let fileName: string;
+
+  if (hit && currentHealth !== undefined && maxHealth !== undefined) {
+    // Only generate health bar if there's a hit and we have health data
+    const healthBarImage = await getHealthBarImage({
+      current: currentHealth,
+      max: maxHealth,
+      damage: damageRoll,
+      label: targetName,
+    });
+
+    // Compose dice and health bar image
+    composedImage = await composeDiceAndHealthbarImage({
+      imagePaths: diceImagePaths,
+      healthBarImage,
+    });
+    fileName = `combat_${d20}_${damageRoll}.png`;
+  } else {
+    // Just combine the dice images without health bar
+    composedImage = await combineDiceImages({
+      imagePaths: diceImagePaths,
+    });
+    fileName = `combat_${d20}.png`;
+  }
+
+  return {
+    narration,
+    hit,
+    damageRoll,
+    composedImage,
+    fileName,
+    avatarUrl,
   };
 }

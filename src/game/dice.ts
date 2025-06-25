@@ -1,5 +1,6 @@
 import { bot } from "~/bot/index.ts";
 import type { Emoji } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
+import { Image } from "https://deno.land/x/imagescript@1.2.15/mod.ts";
 
 export function rollDie({
   sides,
@@ -32,42 +33,6 @@ async function getRollEmoji({
     console.error(`Error fetching emoji ${name} from application:`, error);
   }
   return "🎲";
-}
-
-export async function rollAndAnnounceDie({
-  channelId,
-  sides,
-  label,
-  random,
-}: {
-  channelId: bigint;
-  sides: number;
-  label: string;
-  random: () => number;
-}) {
-  const roll = rollDie({ sides, random });
-  const emoji = await getRollEmoji({ sides, roll });
-
-  await bot.helpers.sendMessage(channelId, {
-    content: `${emoji} ${label}`,
-  });
-
-  return { roll, emoji };
-}
-
-export async function rollDieWithMessage({
-  sides,
-  label,
-  random,
-}: {
-  sides: number;
-  label: string;
-  random: () => number;
-}) {
-  const roll = rollDie({ sides, random });
-  const emoji = await getRollEmoji({ sides, roll });
-  const message = `${emoji} ${roll} ${label}`;
-  return { roll, emoji, message };
 }
 
 export async function rollAttackWithMessage({
@@ -122,4 +87,76 @@ export async function rollAttackWithMessage({
     damageEmoji,
     message,
   };
+}
+
+export async function combineDiceImages(
+  { imagePaths }: { imagePaths: string[] },
+): Promise<Uint8Array> {
+  const images = await Promise.all(
+    imagePaths.map(async (p) => Image.decode(await Deno.readFile(p))),
+  );
+  const width = images.reduce((sum: number, img: Image) => sum + img.width, 0);
+  const height = Math.max(...images.map((img: Image) => img.height));
+  const combined = new Image(width, height);
+  let x = 0;
+  for (const img of images) {
+    combined.composite(img, x, 0);
+    x += img.width;
+  }
+  return await combined.encode();
+}
+
+export async function composeDiceAndHealthbarImage(
+  { imagePaths, healthBarImage }: {
+    imagePaths: string[];
+    healthBarImage: Uint8Array;
+  },
+): Promise<Uint8Array> {
+  const diceImages = await Promise.all(
+    imagePaths.map(async (p) => Image.decode(await Deno.readFile(p))),
+  );
+
+  // Scale dice images to 50% of original size
+  const scaledDiceImages = await Promise.all(diceImages.map((img) => {
+    const scaledWidth = Math.floor(img.width * 0.5);
+    const scaledHeight = Math.floor(img.height * 0.5);
+    return img.resize(scaledWidth, scaledHeight);
+  }));
+
+  const diceWidth = scaledDiceImages.reduce(
+    (sum: number, img: Image) => sum + img.width,
+    0,
+  );
+  const diceHeight = Math.max(
+    ...scaledDiceImages.map((img: Image) => img.height),
+  );
+  const diceRow = new Image(diceWidth, diceHeight);
+  let x = 0;
+  for (const img of scaledDiceImages) {
+    diceRow.composite(img, x, 0);
+    x += img.width;
+  }
+
+  const healthBar = await Image.decode(healthBarImage);
+  // Scale health bar to 5x its original size
+  const scaledHealthBarWidth = healthBar.width * 5;
+  const scaledHealthBarHeight = healthBar.height * 5;
+  const scaledHealthBar = healthBar.resize(
+    scaledHealthBarWidth,
+    scaledHealthBarHeight,
+  );
+
+  const totalWidth = Math.max(diceWidth, scaledHealthBarWidth);
+  const totalHeight = diceHeight + scaledHealthBarHeight;
+  const combined = new Image(totalWidth, totalHeight);
+
+  // Center the dice row horizontally
+  const diceX = Math.floor((totalWidth - diceWidth) / 2);
+  combined.composite(diceRow, diceX, 0);
+
+  // Center the health bar horizontally and place it below the dice
+  const healthBarX = Math.floor((totalWidth - scaledHealthBarWidth) / 2);
+  combined.composite(scaledHealthBar, healthBarX, diceHeight);
+
+  return await combined.encode();
 }

@@ -36,8 +36,8 @@ export async function getHealthBarImage({
   max,
   heal = 0,
   damage = 0,
-  width = 200,
-  height = 24,
+  width = 800,
+  height = 96,
   label,
 }: {
   current: number;
@@ -70,32 +70,33 @@ export async function getHealthBarImage({
 
   const healthBarDrawing = [
     // Base layer filters
-    `drawbox=w=${width}:h=${height}:color=white:t=2`, // Border
+    `drawbox=w=${width}:h=${height}:color=white:t=8`, // Border (increased thickness)
     `drawbox=w=${width}:h=${height}:color=black:t=fill`, // Black background for bar
   ];
   if (greenBox) healthBarDrawing.push(greenBox);
   if (whiteBox) healthBarDrawing.push(whiteBox);
   if (redBox) healthBarDrawing.push(redBox);
 
-  // Text on top
+  // Text on top (increased font size)
   healthBarDrawing.push(
-    `drawtext=fontfile=media/MedievalSharp-Regular.ttf:text='${healthAfterAction}/${max}':x=(w-text_w)/2:y=(h-text_h)/2:fontsize=16:fontcolor=white:borderw=2:bordercolor=black`,
+    `drawtext=fontfile=media/MedievalSharp-Regular.ttf:text='${healthAfterAction}/${max}':x=(w-text_w)/2:y=(h-text_h)/2:fontsize=64:fontcolor=white:borderw=8:bordercolor=black`,
   );
 
   // Filter graph for the health bar part ONLY
   const healthBarFilter = [
     `color=s=${width}x${height}:c=black@0[hb_base]`, // Base transparent canvas for the bar
     `[hb_base]${healthBarDrawing.join(",")}[hb_drawn]`, // All drawing happens here
-    `[hb_drawn][0:v]alphamerge[hb_final]`, // Apply the mask (input 0)
+    `[0:v]scale=${width}:${height}[scaled_mask]`, // Scale mask to match health bar size
+    `[hb_drawn][scaled_mask]alphamerge[hb_final]`, // Apply the scaled mask
   ].join(";");
 
   let finalFilter;
   if (label) {
-    const labelHeight = 20;
+    const labelHeight = 80; // Increased label height
     // If there's a label, create it and stack it on top of the health bar
     const labelFilter = [
       `color=s=${width}x${labelHeight}:c=black[label_base]`,
-      `[label_base]drawtext=fontfile=media/MedievalSharp-Regular.ttf:text='${label}':x=(w-text_w)/2:y=(h-text_h)/2:fontsize=12:fontcolor=white[label_final]`,
+      `[label_base]drawtext=fontfile=media/MedievalSharp-Regular.ttf:text='${label}':x=(w-text_w)/2:y=(h-text_h)/2:fontsize=48:fontcolor=white[label_final]`, // Increased font size
       `[label_final][hb_final]vstack=inputs=2`,
     ].join(";");
     finalFilter = `${healthBarFilter};${labelFilter}`;
