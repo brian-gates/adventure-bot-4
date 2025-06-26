@@ -1,7 +1,7 @@
 import {
   getContrastBg,
   HEIGHT,
-  iconDominantColors,
+  iconColors,
   WIDTH,
 } from "~/game/actions/map.ts";
 import { GameMap } from "~/game/map/game-map.ts";
@@ -41,9 +41,8 @@ export function renderMapSvg(map: GameMap) {
   }
   for (const loc of locations) {
     const { x, y } = nodePos(loc);
-    const dominant =
-      iconDominantColors[loc.type as keyof typeof iconDominantColors] ??
-        "#00FF00";
+    const dominant = iconColors[loc.type as keyof typeof iconColors] ??
+      "#00FF00";
     const bg = getContrastBg(dominant);
     const isCurrent = map.currentLocation && loc.id === map.currentLocation.id;
     const stroke = isCurrent ? "#FFD700" : dominant;

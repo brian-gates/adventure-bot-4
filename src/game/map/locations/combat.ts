@@ -99,12 +99,13 @@ export async function handleCombat({
   if (encounter.enemies.length === 0) {
     const { enemies: newEnemies, enemyType } = generateEnemies(random);
     enemyData = newEnemies;
-    // Narrate the encounter scene
+    // Narrate the encounter scene, seeding the location description
     await bot.helpers.sendMessage(channelId, {
       content: await narrate({
         prompt: narrateEncounter({
           enemyType,
           playerIds: playersInCombat.map((p) => p.id),
+          locationDescription: location.description,
         }),
       }),
     });

@@ -75,14 +75,40 @@ export async function registerCommandsAndPermissions({
       options: [],
     },
     {
-      name: "setseed",
-      description: "Set or reset the adventure map seed for this guild",
+      name: "set",
+      description: "Set various game parameters (admin only)",
       options: [
         {
+          name: "health",
+          description: "Set a player's health",
+          type: 1, // SUB_COMMAND
+          options: [
+            {
+              name: "target",
+              type: 6, // USER
+              description: "Target user",
+              required: true,
+            },
+            {
+              name: "health",
+              type: 4, // INTEGER
+              description: "Health value",
+              required: true,
+            },
+          ],
+        },
+        {
           name: "seed",
-          type: 3,
-          description: "Seed value (string or UUID)",
-          required: true,
+          description: "Set the adventure map seed for this guild",
+          type: 1, // SUB_COMMAND
+          options: [
+            {
+              name: "seed",
+              type: 3, // STRING
+              description: "Seed value (string or UUID)",
+              required: true,
+            },
+          ],
         },
       ],
     },

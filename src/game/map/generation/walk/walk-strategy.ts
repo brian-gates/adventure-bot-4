@@ -278,8 +278,8 @@ function createLocationSimple({
   return {
     id: crypto.randomUUID(),
     mapId: map.id,
-    name: `Location ${row}, ${col}`,
-    description: `A location at ${row}, ${col}`,
+    name: "",
+    description: "",
     row,
     col,
     type: "combat",

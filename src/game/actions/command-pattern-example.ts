@@ -32,7 +32,7 @@ export class AttackCommand implements GameCommand {
     },
   ) {}
 
-  async execute(): Promise<CommandResult> {
+  execute(): Promise<CommandResult> {
     // Pure game logic - no UI concerns
     const combatResult: CombatActionResult = {
       attacker: this.params.attacker,

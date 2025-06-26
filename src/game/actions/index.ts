@@ -8,6 +8,12 @@ import { resetmap } from "./resetmap.ts";
 import { setseed } from "./setseed.ts";
 import { inspect } from "./inspect.ts";
 import { equip } from "./equip.ts";
+import { setHealth } from "./set-health.ts";
+
+export const set = {
+  health: setHealth,
+  seed: setseed,
+};
 
 export const actions = {
   attack,
@@ -16,8 +22,12 @@ export const actions = {
   map,
   rally,
   resetmap,
-  setseed,
   emoji,
   inspect,
   equip,
+  set,
+} as const;
+
+export const isActionName = (name: string): name is keyof typeof actions => {
+  return name in actions;
 };

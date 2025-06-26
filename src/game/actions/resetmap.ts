@@ -4,6 +4,7 @@ import type {
 } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
 import { prisma } from "~/db/index.ts";
 import { seedMapForGuild } from "../map/seed-map-for-guild.ts";
+import { guildRandom } from "~/game/guild-random.ts";
 
 export async function resetmap({
   bot,
@@ -11,6 +12,7 @@ export async function resetmap({
 }: {
   bot: Bot;
   interaction: Interaction;
+
 }) {
   const guildId = interaction.guildId;
   if (!guildId) {
@@ -20,12 +22,23 @@ export async function resetmap({
     return;
   }
   try {
-    // Delete the map - cascade deletes will handle all related records
     await prisma.map.deleteMany({
       where: { guild: { is: { id: guildId } } },
     });
 
-    await seedMapForGuild({ id: guildId });
+    const { seed, randomCursor } = await prisma.guild.update({
+      where: { id: guildId },
+      data: { randomCursor: 0 },
+    });
+
+    await seedMapForGuild({
+      id: guildId,
+      random: guildRandom({
+        guildId,
+        seed,
+        cursor: randomCursor,
+      }),
+    });
     await bot.helpers.editOriginalInteractionResponse(interaction.token, {
       content: "Map has been cleared and regenerated.",
     });

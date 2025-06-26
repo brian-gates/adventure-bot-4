@@ -154,6 +154,9 @@ export class GameMap {
     const startLocation = this.startLocation;
     if (!startLocation) throw new Error("No start location found");
 
+    console.log(
+      `[GameMap.save] Persisting map ${id} with ${locations.length} locations and ${paths.length} paths`,
+    );
     // Create the map and all locations
     await db.map.create({
       data: {
@@ -162,14 +165,19 @@ export class GameMap {
         rows,
       },
     });
-    await db.location.createMany({
-      data: locations.map((loc) => ({
-        ...loc,
-        mapId: id,
-        attributes: {},
-      })),
-      skipDuplicates: true,
-    });
+    try {
+      const locResult = await db.location.createMany({
+        data: locations.map((loc) => ({
+          ...loc,
+          mapId: id,
+          attributes: {},
+        })),
+        skipDuplicates: true,
+      });
+      console.log(`[GameMap.save] location.createMany result:`, locResult);
+    } catch (e) {
+      console.error(`[GameMap.save] Error in location.createMany:`, e);
+    }
 
     // Fetch all location IDs after insert
     const allLocationIds = new Set(
@@ -190,15 +198,19 @@ export class GameMap {
       );
     }
 
-    // Create paths and upsert guild
-    await db.path.createMany({
-      data: paths.map((path) => ({
-        ...path,
-        mapId: id,
-        attributes: {},
-      })),
-      skipDuplicates: true,
-    });
+    try {
+      const pathResult = await db.path.createMany({
+        data: paths.map((path) => ({
+          ...path,
+          mapId: id,
+          attributes: {},
+        })),
+        skipDuplicates: true,
+      });
+      console.log(`[GameMap.save] path.createMany result:`, pathResult);
+    } catch (e) {
+      console.error(`[GameMap.save] Error in path.createMany:`, e);
+    }
     console.log(
       `[GameMap] Setting guild ${guildId} currentLocation to startLocation: id=${startLocation.id}, row=${startLocation.row}, col=${startLocation.col}`,
     );

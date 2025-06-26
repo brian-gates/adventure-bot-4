@@ -11,7 +11,7 @@ import { svgToPng } from "~/util/svg-to-png.ts";
 export const WIDTH = 600;
 export const HEIGHT = 1800;
 
-export const iconDominantColors: Record<LocationType, string> = {
+export const iconColors: Record<LocationType, string> = {
   boss: "#ac04a4",
   combat: "#447404",
   elite: "#ac0404",
@@ -79,6 +79,13 @@ export async function map({
   if (interaction.channelId) {
     try {
       await bot.helpers.sendMessage(interaction.channelId, {
+        embeds: [
+          {
+            title: "Map",
+            description: guild.seed ? `Seed: \`${guild.seed}\`` : undefined,
+            image: { url: "attachment://map.png" },
+          },
+        ],
         file: [
           { blob: new Blob([png], { type: "image/png" }), name: "map.png" },
         ],

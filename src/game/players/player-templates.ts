@@ -3,7 +3,7 @@ import type { Encounter, Player } from "~/generated/prisma/client.ts";
 import { checkEncounterStatus } from "../check-encounter-status.ts";
 import { narrate } from "~/llm/index.ts";
 import { narrateCombatAction } from "~/prompts.ts";
-import { displayHealthBar, getHealthBarImage } from "~/ui/health-bar.ts";
+import { getHealthBarImage } from "~/ui/health-bar.ts";
 import { bot } from "~/bot/index.ts";
 import { composeDiceAndHealthbarImage, rollDie } from "../dice.ts";
 
@@ -119,7 +119,7 @@ async function attackWeakestEnemy({
   // Use the player's avatar if available, otherwise fallback
   const avatarUrl = getUserAvatarUrl({
     id: attacker.id.toString(),
-    avatar: (attacker as any).avatar ?? undefined,
+    avatar: (attacker as unknown as { avatar?: string }).avatar ?? undefined,
   });
 
   // Send embed with narration and composed image

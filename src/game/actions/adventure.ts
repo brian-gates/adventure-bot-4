@@ -8,6 +8,12 @@ import { handleEvent } from "~/game/map/locations/event.ts";
 import { handleShop } from "~/game/map/locations/shop.ts";
 import { handleTreasure } from "~/game/map/locations/treasure.ts";
 import { LocationType } from "~/generated/prisma/client.ts";
+import { narrate } from "~/llm/index.ts";
+import { narrateLocation } from "~/prompts.ts";
+import {
+  getLocationDescription,
+  getLocationName,
+} from "~/game/map/locations/index.ts";
 
 const locationHandlers = {
   [LocationType.combat]: handleCombat,
@@ -49,14 +55,41 @@ export async function adventure({
     return;
   }
 
+  // Get or lazily generate the location name and description
+  const name = await getLocationName(currentLocation);
+  const description = await getLocationDescription({
+    ...currentLocation,
+    name,
+  });
+
+  const narration = await narrate({
+    prompt: narrateLocation({
+      name,
+      description,
+    }),
+  });
+  await bot.helpers.sendMessage(interaction.channelId, {
+    embeds: [
+      {
+        title: name,
+        description: narration,
+      },
+    ],
+  });
+
   const handler = locationHandlers[currentLocation.type];
   if (handler) {
-    await handler({ bot, interaction, location: currentLocation, random });
+    await handler({
+      bot,
+      interaction,
+      location: { ...currentLocation, name, description },
+      random,
+    });
     return;
   }
 
   // Default/fallback if no handler
   await bot.helpers.sendMessage(interaction.channelId, {
-    content: `You arrive at ${currentLocation.name}, but nothing happens...`,
+    content: `You arrive at ${name}, but nothing happens...`,
   });
 }

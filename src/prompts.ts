@@ -107,18 +107,21 @@ export function narrateHeal({
 export function narrateEncounter({
   enemyType,
   playerIds,
+  locationDescription,
 }: {
   enemyType: string;
   playerIds: bigint[];
+  locationDescription?: string;
 }) {
   const playerMentions = playerIds.map((id) => `<@${id}>`).join(", ");
 
   return [
+    locationDescription ? `Scene: ${locationDescription}` : "",
     `Briefly describe a ${enemyType} appearing before ${playerMentions}.`,
     `Keep it very brief but atmospheric.`,
     ...defaultResponseTemplate,
     immersiveRoleplay,
-  ].join(" ");
+  ].filter(Boolean).join("\n");
 }
 
 // Deprecated: Use narrateAttack instead
@@ -148,4 +151,53 @@ export function narrateCombatAction({
     maxHealth,
     weaponName,
   });
+}
+
+export function narrateLocation({
+  name,
+  description,
+}: {
+  name: string;
+  description: string;
+}) {
+  return [
+    `Describe the scene as the party arrives at a location in a fantasy RPG.`,
+    `Location: ${name}.`,
+    `Description: ${description}.`,
+    `Keep it immersive, atmospheric, and brief.`,
+    ...defaultResponseTemplate,
+    immersiveRoleplay,
+  ].join("\n");
+}
+
+export function generateLocationDescription({
+  name,
+  type,
+}: {
+  name: string;
+  type: string;
+}) {
+  return [
+    `Write a vivid, brief, and reusable description for a location in a fantasy RPG.`,
+    `Location name: ${name}.`,
+    `Location type: ${type}.`,
+    `Do not mention any player or party.`,
+    `This description will be reused whenever the location is visited.`,
+    `Keep it immersive and atmospheric, but concise.`,
+    ...defaultResponseTemplate,
+    immersiveRoleplay,
+  ].join("\n");
+}
+
+export function generateLocationName() {
+  return [
+    `Generate a short, evocative, and reusable name for a location in a fantasy RPG.`,
+    `The name should be suitable for use on a map and in narration.`,
+    `Do not include quotes or special formatting.`,
+    ...defaultResponseTemplate,
+  ].join("\n");
+}
+
+export function cleanLocationName(name: string): string {
+  return name.replace(/^['"“"']+|['"""']+$/g, "").replace(/\.+$/, "").trim();
 }
