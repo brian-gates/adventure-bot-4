@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Gear" ADD COLUMN     "damageDice" INTEGER NOT NULL DEFAULT 0;

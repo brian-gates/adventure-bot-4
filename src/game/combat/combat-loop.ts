@@ -167,15 +167,15 @@ const processPlayerTurn = async ({
     }.png`;
 
   // Determine attack parameters based on equipped weapon
-  const attackSides = 20;
-  const damageSides = equippedWeapon ? 4 + equippedWeapon.attack : 4; // Base 1d4 + weapon bonus
+  const attackBonus = equippedWeapon ? equippedWeapon.attack : 0;
+  const damageDice = equippedWeapon?.damageDice || "d4";
 
   // Create composed combat message with embed
   const combatResult = await combatEmbedMessage({
     attackerName: user.username,
     targetName: target.name,
-    attackSides,
-    damageSides,
+    attackBonus,
+    damageDice,
     ac: 10,
     random,
     currentHealth: target.health,
@@ -262,8 +262,8 @@ const processEnemyTurn = async ({
   const combatResult = await combatEmbedMessage({
     attackerName: enemy.name,
     targetName: targetUser.username,
-    attackSides: 20,
-    damageSides: 4,
+    attackBonus: 0,
+    damageDice: "d4",
     ac: 10,
     random,
     currentHealth: target.health,

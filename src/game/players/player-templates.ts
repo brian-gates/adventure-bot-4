@@ -3,7 +3,7 @@ import type { Encounter, Player } from "~/generated/prisma/client.ts";
 import { checkEncounterStatus } from "../check-encounter-status.ts";
 import { narrate } from "~/llm/index.ts";
 import { narrateCombatAction } from "~/prompts.ts";
-import { getHealthBarImage } from "~/ui/health-bar.ts";
+import { displayHealthBar, getHealthBarImage } from "~/ui/health-bar.ts";
 import { bot } from "~/bot/index.ts";
 import { composeDiceAndHealthbarImage, rollDie } from "../dice.ts";
 

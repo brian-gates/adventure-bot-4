@@ -1,7 +1,7 @@
 # Dice Rendering Pipeline: Quickstart & Usage
 
 This README covers how to generate PNG images for all faces of standard
-polyhedral dice (d4, d6, d8, d12, d20) for use as UI assets.
+polyhedral dice (d4, d6, d8, d10, d12, d20) for use as UI assets.
 
 For technical requirements and design rationale, see
 [../../dice-rendering-requirements.md](../../dice-rendering-requirements.md).
@@ -50,6 +50,25 @@ separate setup step is needed.
 
 - Output images are saved in `media/dice/<die>/<face>.png`.
 - Re-running will overwrite existing PNGs.
+
+## d10 Special Note
+
+The d10 dice uses custom mathematical mesh generation since the "Add Mesh: Extra
+Objects" add-on doesn't support 10-sided dice. The d10 is created as a
+pentagonal trapezohedron by combining two pentagonal pyramids rotated 36°
+relative to each other.
+
+## Emoji Optimization
+
+After rendering, optimize images for emoji use:
+
+```bash
+cd media/dice
+python3 optimize-emoji.py
+```
+
+This creates smaller, optimized versions in the `emoji/` directory suitable for
+Discord emoji uploads.
 
 ## Notes
 

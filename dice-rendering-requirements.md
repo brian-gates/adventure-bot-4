@@ -10,17 +10,18 @@ implementation evolves.
 ## Goal
 
 Generate PNG images for every face of standard polyhedral dice sets (d4, d6, d8,
-d12, d20). Images are used by the game engine as UI assets.
+d10, d12, d20). Images are used by the game engine as UI assets.
 
 ## Dice to Render
 
 - **d4** – values 1-4 ➜ 4 images
 - **d6** – values 1-6 ➜ 6 images
 - **d8** – values 1-8 ➜ 8 images
+- **d10** – values 1-10 ➜ 10 images
 - **d12** – values 1-12 ➜ 12 images
 - **d20** – values 1-20 ➜ 20 images
 
-_Total output: 50 images._
+_Total output: 60 images._
 
 ## Directory Layout
 
@@ -30,6 +31,7 @@ media/
    ├─ d4/   1.png … 4.png
    ├─ d6/   1.png … 6.png
    ├─ d8/   1.png … 8.png
+   ├─ d10/  1.png … 10.png
    ├─ d12/  1.png … 12.png
    └─ d20/  1.png … 20.png
 ```
@@ -45,9 +47,13 @@ Two Python scripts executed via the Blender CLI:
      - PBR material for dice body (`DieMat`).
      - Emissive text material (`TextMat`) with emission node explicitly named
        **`EmissiveNumber`** (required by renderer).
-     - Polyhedral meshes for **d4, d6, d8, d12, d20** using
-       `bpy.ops.mesh.primitive_solid_add`. Each die is:
-       - Added at the origin, rotated to a pleasing angle `(0.6, 0, 0.8)`.
+     - Polyhedral meshes for **d4, d6, d8, d10, d12, d20**:
+       - **d4, d6, d8, d12, d20**: Using `bpy.ops.mesh.primitive_solid_add` from
+         the "Add Mesh: Extra Objects" add-on
+       - **d10**: Using custom mathematical mesh generation (pentagonal
+         trapezohedron) since the add-on doesn't support d10 dice
+     - Each die is:
+       - Added at the origin, rotated to a pleasing angle.
        - Assigned `DieMat`.
        - Hidden (`hide_render` & `hide_viewport` set `True`) — renderer will
          un-hide per iteration.
@@ -64,6 +70,7 @@ Two Python scripts executed via the Blender CLI:
          "d4":  4,
          "d6":  6,
          "d8":  8,
+         "d10": 10,
          "d12": 12,
          "d20": 20,
      }
@@ -78,6 +85,34 @@ Two Python scripts executed via the Blender CLI:
         `bpy.ops.render.render(write_still=True)`.
      6. Re-hides the die before moving to the next one.
    - Restores original `scene.render.filepath` at the end.
+
+## d10 Mathematical Mesh Generation
+
+The d10 (pentagonal trapezohedron) is mathematically generated using the
+following approach:
+
+1. **Geometry**: A d10 is created by taking two pentagonal pyramids and rotating
+   one by 36 degrees (360°/10) and joining them at their bases.
+
+2. **Implementation**: The `create_d10_mesh()` function in `render-dice.py`:
+   - Creates vertices for two pentagonal bases (top and bottom)
+   - Rotates the bottom base by 36° relative to the top
+   - Creates apex vertices for both pyramids
+   - Generates triangular faces for the pyramid sides
+   - Creates quadrilateral faces connecting the bases
+   - Applies smooth shading and bevel modifiers
+
+3. **Result**: A mathematically accurate d10 with 12 vertices and 10 faces,
+   properly oriented for rendering.
+
+## Emoji Optimization
+
+After rendering, dice images are optimized for emoji use:
+
+- **Script**: `optimize-emoji.py` resizes images to 128x128 pixels
+- **Format**: PNG with maximum compression
+- **Target size**: 6-10KB per image (suitable for Discord emoji limits)
+- **Location**: `media/dice/emoji/` directory
 
 ## Command-Line Execution
 

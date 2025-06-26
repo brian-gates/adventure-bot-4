@@ -35,6 +35,7 @@ model Gear {
     rarity      Rarity
     level       Int               @default(1)
     attack      Int               @default(0)
+    damageDice  DamageDice?       @default(none)
     defense     Int               @default(0)
     health      Int               @default(0)
     value       Int               @default(0)
@@ -69,6 +70,16 @@ enum Rarity {
     rare
     epic
     legendary
+}
+
+enum DamageDice {
+    none
+    d4
+    d6
+    d8
+    d10
+    d12
+    d20
 }
 
 model Location {

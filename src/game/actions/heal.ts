@@ -14,28 +14,9 @@ import { narrate } from "~/llm/index.ts";
 import { narrateHeal } from "~/prompts.ts";
 import { prisma } from "~/db/index.ts";
 
-async function getUpdatedHealthBarImage(
-  { id, name, guildId, heal }: {
-    id: bigint;
-    name: string;
-    guildId: bigint;
-    heal: number;
-  },
-) {
-  const { health, maxHealth } = await getOrCreatePlayer({ id, name, guildId });
-  return await getHealthBarImage({
-    current: health,
-    max: maxHealth,
-    heal,
-    label: name,
-  });
-}
-
 async function healAndFetchPlayer(
-  { id, name, guildId, healAmount }: {
+  { id, healAmount }: {
     id: bigint;
-    name: string;
-    guildId: bigint;
     healAmount: number;
   },
 ) {
@@ -43,8 +24,8 @@ async function healAndFetchPlayer(
   const player = await prisma.player.findUnique({ where: { id } });
   if (!player) throw new Error("Player not found");
   const newHealth = Math.min(player.maxHealth, player.health + healAmount);
-  await updatePlayerHealth({ id, health: newHealth });
-  return await getOrCreatePlayer({ id, name, guildId });
+  const updatedPlayer = await updatePlayerHealth({ id, health: newHealth });
+  return updatedPlayer;
 }
 
 export async function heal({
@@ -82,8 +63,6 @@ export async function heal({
     // Atomically update and fetch the player
     const updatedPlayer = await healAndFetchPlayer({
       id: healerId,
-      name: healerName,
-      guildId,
       healAmount,
     });
     const effectiveHeal = updatedPlayer.health - player.health;
@@ -170,8 +149,6 @@ export async function heal({
   // Atomically update and fetch the player
   const updatedPlayer = await healAndFetchPlayer({
     id: targetPlayer.id,
-    name: targetPlayer.name,
-    guildId,
     healAmount,
   });
   const effectiveHeal = updatedPlayer.health - player.health;

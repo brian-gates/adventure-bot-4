@@ -4,6 +4,8 @@ import bpy
 import sys
 import colorsys
 import math
+import bmesh
+from mathutils import Vector
 
 script_dir = os.path.dirname(__file__)
 if script_dir not in sys.path:
@@ -28,6 +30,13 @@ DICE_CONFIG = {
     "d8": {
         "solid": "8",
         "max": 8,
+        "rotation": (0, 0, 0),
+        "offset": (0, 0, 0),
+        "scale": 0.8,
+    },
+    "d10": {
+        "solid": "10",
+        "max": 10,
         "rotation": (0, 0, 0),
         "offset": (0, 0, 0),
         "scale": 0.8,
@@ -78,6 +87,91 @@ def clear_scene():
         bpy.ops.object.mode_set(mode='OBJECT')
     bpy.ops.object.select_all(action='SELECT')
     bpy.ops.object.delete()
+
+def create_d10_mesh():
+    """
+    Create a mathematically accurate d10 (pentagonal trapezohedron) mesh.
+    
+    A d10 is a pentagonal trapezohedron with 10 faces:
+    - 5 faces around the top (numbered 0, 1, 2, 3, 4)
+    - 5 faces around the bottom (numbered 5, 6, 7, 8, 9)
+    
+    The shape is created by taking two pentagonal pyramids and rotating
+    one by 36 degrees (360/10) and joining them at their bases.
+    """
+    
+    # Clear existing mesh data
+    mesh = bpy.data.meshes.new("d10_mesh")
+    obj = bpy.data.objects.new("d10", mesh)
+    bpy.context.collection.objects.link(obj)
+    
+    # Create bmesh for easier manipulation
+    bm = bmesh.new()
+    
+    # Constants for d10 geometry
+    # Height of each pyramid half
+    height = 0.5
+    
+    # Radius of the pentagon base
+    radius = 0.5
+    
+    # Create vertices for the top pyramid
+    top_vertices = []
+    for i in range(5):
+        angle = i * 2 * math.pi / 5
+        x = radius * math.cos(angle)
+        y = radius * math.sin(angle)
+        z = height
+        top_vertices.append(bm.verts.new((x, y, z)))
+    
+    # Create vertices for the bottom pyramid (rotated by 36 degrees)
+    bottom_vertices = []
+    for i in range(5):
+        angle = (i * 2 * math.pi / 5) + (math.pi / 5)  # 36 degree rotation
+        x = radius * math.cos(angle)
+        y = radius * math.sin(angle)
+        z = -height
+        bottom_vertices.append(bm.verts.new((x, y, z)))
+    
+    # Create the top and bottom apex vertices
+    top_apex = bm.verts.new((0, 0, height + 0.3))
+    bottom_apex = bm.verts.new((0, 0, -height - 0.3))
+    
+    # Create faces for the top pyramid
+    for i in range(5):
+        v1 = top_vertices[i]
+        v2 = top_vertices[(i + 1) % 5]
+        bm.faces.new([v1, v2, top_apex])
+    
+    # Create faces for the bottom pyramid
+    for i in range(5):
+        v1 = bottom_vertices[i]
+        v2 = bottom_vertices[(i + 1) % 5]
+        bm.faces.new([v1, v2, bottom_apex])
+    
+    # Create the connecting faces between top and bottom
+    for i in range(5):
+        v1 = top_vertices[i]
+        v2 = top_vertices[(i + 1) % 5]
+        v3 = bottom_vertices[(i + 1) % 5]
+        v4 = bottom_vertices[i]
+        bm.faces.new([v1, v2, v3, v4])
+    
+    # Update the mesh
+    bm.to_mesh(mesh)
+    bm.free()
+    
+    # Apply smooth shading
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.shade_smooth()
+    
+    # Add bevel modifier for rounded edges
+    bevel = obj.modifiers.new(name="Bevel", type='BEVEL')
+    bevel.width = 0.05
+    bevel.segments = 5
+    bevel.profile = 0.7
+    
+    return obj
 
 def setup_scene(script_dir):
     print("--- Setting up dice scene ---")
@@ -139,18 +233,28 @@ def setup_scene(script_dir):
     for die_name, cfg in DICE_CONFIG.items():
         solid = cfg["solid"]
         try:
-            bpy.ops.mesh.primitive_solid_add(source=solid, size=1.05)
-            die_obj = bpy.context.object
-            die_obj.name = die_name
+            if die_name == "d10":
+                # Use our custom d10 mesh generation
+                die_obj = create_d10_mesh()
+                die_obj.name = die_name
+            else:
+                # Use Blender's built-in solids for other dice
+                bpy.ops.mesh.primitive_solid_add(source=solid, size=1.05)
+                die_obj = bpy.context.object
+                die_obj.name = die_name
+            
             die_obj.rotation_euler = cfg["rotation"]
             die_obj.data.materials.append(die_mat)
-            # Apply smooth shading
-            bpy.ops.object.shade_smooth()
-            # Add bevel modifier
-            bevel = die_obj.modifiers.new(name="Bevel", type='BEVEL')
-            bevel.width = 0.05
-            bevel.segments = 5
-            bevel.profile = 0.7
+            
+            # Apply smooth shading (if not already done for d10)
+            if die_name != "d10":
+                bpy.ops.object.shade_smooth()
+                # Add bevel modifier (if not already done for d10)
+                bevel = die_obj.modifiers.new(name="Bevel", type='BEVEL')
+                bevel.width = 0.05
+                bevel.segments = 5
+                bevel.profile = 0.7
+            
             if die_obj.type == 'MESH' and hasattr(die_obj.data, 'vertices'):
                 vcount = len(die_obj.data.vertices)
                 if vcount == 0:
@@ -159,6 +263,7 @@ def setup_scene(script_dir):
                     print(f"  - Created '{die_name}' with {vcount} vertices")
             else:
                 print(f"[setup] WARNING: '{die_name}' is not a mesh or has no vertices attribute!")
+            
             # Don't hide dice initially - we'll manage visibility during rendering
             die_obj.hide_render = False
             die_obj.hide_viewport = False
@@ -168,7 +273,8 @@ def setup_scene(script_dir):
                 die_obj.scale = (cfg["scale"], cfg["scale"], cfg["scale"])
         except Exception as e:
             print(f"[setup] Failed to create {die_name} ({solid}): {e}")
-            print("[setup] Make sure 'Add Mesh: Extra Objects' add-on is enabled in Blender preferences")
+            if die_name != "d10":
+                print("[setup] Make sure 'Add Mesh: Extra Objects' add-on is enabled in Blender preferences")
             continue
     # Text anchor
     bpy.ops.object.empty_add(type='PLAIN_AXES', location=(0, 0, 0))

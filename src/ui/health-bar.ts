@@ -49,9 +49,12 @@ export async function getHealthBarImage({
   label?: string;
 }): Promise<Uint8Array> {
   const healthAfterAction = Math.max(0, Math.min(max, current + heal - damage));
+
+  // For healing: show original health as green, healed amount as white
+  // For damage: show remaining health as green, damage as red
   const healthToShowAsGreen = damage > 0
-    ? Math.max(0, current - damage)
-    : current;
+    ? Math.max(0, current - damage) // Show remaining health after damage
+    : current; // Show original health before healing
 
   const healthWidth = Math.round((healthToShowAsGreen / max) * width);
   const healWidth = Math.round((heal / max) * width);

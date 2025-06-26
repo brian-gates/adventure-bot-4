@@ -1,4 +1,4 @@
-import type { GearType, Rarity } from "~/generated/prisma/enums.ts";
+import type { DamageDice, GearType, Rarity } from "~/generated/prisma/enums.ts";
 
 export interface GearTemplate {
   name: string;
@@ -7,21 +7,22 @@ export interface GearTemplate {
   rarity: Rarity;
   level: number;
   attack: number;
+  damageDice: DamageDice;
   defense: number;
   health: number;
   value: number;
-  weight: number; // For loot generation probability
+  weight: number;
 }
 
 export const gearTemplates: GearTemplate[] = [
-  // Common Weapons
   {
     name: "Rusty Dagger",
     description: "A dull but serviceable blade",
     type: "weapon",
     rarity: "common",
     level: 1,
-    attack: 2,
+    attack: 0,
+    damageDice: "d4",
     defense: 0,
     health: 0,
     value: 5,
@@ -33,7 +34,8 @@ export const gearTemplates: GearTemplate[] = [
     type: "weapon",
     rarity: "common",
     level: 1,
-    attack: 3,
+    attack: 0,
+    damageDice: "d6",
     defense: 0,
     health: 0,
     value: 3,
@@ -45,7 +47,8 @@ export const gearTemplates: GearTemplate[] = [
     type: "weapon",
     rarity: "common",
     level: 1,
-    attack: 4,
+    attack: 0,
+    damageDice: "d6",
     defense: 0,
     health: 0,
     value: 8,
@@ -60,6 +63,7 @@ export const gearTemplates: GearTemplate[] = [
     rarity: "common",
     level: 1,
     attack: 0,
+    damageDice: "none",
     defense: 2,
     health: 0,
     value: 10,
@@ -72,6 +76,7 @@ export const gearTemplates: GearTemplate[] = [
     rarity: "common",
     level: 1,
     attack: 0,
+    damageDice: "none",
     defense: 1,
     health: 2,
     value: 8,
@@ -86,6 +91,7 @@ export const gearTemplates: GearTemplate[] = [
     rarity: "common",
     level: 1,
     attack: 1,
+    damageDice: "none",
     defense: 0,
     health: 1,
     value: 12,
@@ -99,7 +105,8 @@ export const gearTemplates: GearTemplate[] = [
     type: "weapon",
     rarity: "uncommon",
     level: 2,
-    attack: 6,
+    attack: 0,
+    damageDice: "d6",
     defense: 0,
     health: 0,
     value: 25,
@@ -111,11 +118,38 @@ export const gearTemplates: GearTemplate[] = [
     type: "weapon",
     rarity: "uncommon",
     level: 2,
-    attack: 7,
+    attack: 0,
+    damageDice: "d8",
     defense: 0,
     health: 0,
     value: 30,
     weight: 6,
+  },
+  {
+    name: "Short Sword",
+    description: "A quick and agile blade",
+    type: "weapon",
+    rarity: "uncommon",
+    level: 2,
+    attack: 0,
+    damageDice: "d6",
+    defense: 0,
+    health: 0,
+    value: 28,
+    weight: 7,
+  },
+  {
+    name: "Longsword",
+    description: "A balanced and versatile weapon",
+    type: "weapon",
+    rarity: "uncommon",
+    level: 2,
+    attack: 0,
+    damageDice: "d8",
+    defense: 0,
+    health: 0,
+    value: 35,
+    weight: 5,
   },
 
   // Uncommon Armor
@@ -126,6 +160,7 @@ export const gearTemplates: GearTemplate[] = [
     rarity: "uncommon",
     level: 2,
     attack: 0,
+    damageDice: "none",
     defense: 4,
     health: 0,
     value: 35,
@@ -139,11 +174,25 @@ export const gearTemplates: GearTemplate[] = [
     type: "weapon",
     rarity: "rare",
     level: 3,
-    attack: 10,
+    attack: 2,
+    damageDice: "d8",
     defense: 0,
     health: 2,
     value: 75,
     weight: 3,
+  },
+  {
+    name: "Greatsword",
+    description: "A massive two-handed blade",
+    type: "weapon",
+    rarity: "rare",
+    level: 3,
+    attack: 0,
+    damageDice: "d10",
+    defense: 0,
+    health: 0,
+    value: 80,
+    weight: 2,
   },
 
   // Rare Armor
@@ -154,6 +203,7 @@ export const gearTemplates: GearTemplate[] = [
     rarity: "rare",
     level: 3,
     attack: 0,
+    damageDice: "none",
     defense: 3,
     health: 5,
     value: 80,
@@ -167,7 +217,8 @@ export const gearTemplates: GearTemplate[] = [
     type: "weapon",
     rarity: "epic",
     level: 5,
-    attack: 15,
+    attack: 3,
+    damageDice: "d10",
     defense: 2,
     health: 3,
     value: 200,
@@ -181,7 +232,8 @@ export const gearTemplates: GearTemplate[] = [
     type: "weapon",
     rarity: "legendary",
     level: 10,
-    attack: 25,
+    attack: 5,
+    damageDice: "d12",
     defense: 5,
     health: 10,
     value: 500,

@@ -160,8 +160,8 @@ export async function combatMessage({
 export async function combatEmbedMessage({
   attackerName,
   targetName,
-  attackSides,
-  damageSides,
+  attackBonus,
+  damageDice,
   ac,
   random,
   currentHealth,
@@ -171,8 +171,8 @@ export async function combatEmbedMessage({
 }: {
   attackerName: string;
   targetName: string;
-  attackSides: number;
-  damageSides: number;
+  attackBonus: number;
+  damageDice: string;
   ac: number;
   random: () => number;
   currentHealth?: number;
@@ -180,18 +180,35 @@ export async function combatEmbedMessage({
   weaponName?: string | null;
   avatarUrl?: string;
 }) {
-  // Roll attack die
-  const d20 = Math.floor(random() * attackSides) + 1;
-  const diceImagePaths = [`media/dice/output/d${attackSides}_${d20}.png`];
+  // Roll attack die (d20 + attack bonus)
+  const d20 = Math.floor(random() * 20) + 1;
+  const totalAttack = d20 + attackBonus;
+  const diceImagePaths = [`media/dice/output/d20_${d20}.png`];
 
   // Check if hit
-  const hit = d20 >= ac;
+  const hit = totalAttack >= ac;
   let damageRoll = 0;
 
   // Roll damage die if hit
   if (hit) {
+    // Extract the number from damageDice (e.g., "d8" -> 8)
+    const damageSides = parseInt(damageDice.substring(1));
     damageRoll = Math.floor(random() * damageSides) + 1;
-    diceImagePaths.push(`media/dice/output/d${damageSides}_${damageRoll}.png`);
+
+    // Map damage sides to available dice images
+    let damageDiceSides: number;
+    if (damageSides <= 4) damageDiceSides = 4;
+    else if (damageSides <= 6) damageDiceSides = 6;
+    else if (damageSides <= 8) damageDiceSides = 8;
+    else if (damageSides <= 10) damageDiceSides = 10; // Use actual d10 images
+    else if (damageSides <= 12) damageDiceSides = 12;
+    else damageDiceSides = 20; // For anything larger than d12
+
+    // Map the damage roll to the appropriate range for the dice image
+    const mappedRoll = Math.min(damageRoll, damageDiceSides);
+    diceImagePaths.push(
+      `media/dice/output/d${damageDiceSides}_${mappedRoll}.png`,
+    );
   }
 
   // Generate narration

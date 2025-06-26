@@ -23,6 +23,7 @@ export async function emoji({
     { sides: 4, prefix: "d4" },
     { sides: 6, prefix: "d6" },
     { sides: 8, prefix: "d8" },
+    { sides: 10, prefix: "d10" },
     { sides: 12, prefix: "d12" },
     { sides: 20, prefix: "d20" },
   ];
