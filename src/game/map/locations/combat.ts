@@ -3,7 +3,7 @@ import { prisma } from "~/db/index.ts";
 import type { Location, Player } from "~/generated/prisma/client.ts";
 import { bot } from "~/bot/index.ts";
 import { narrate } from "~/llm/index.ts";
-import { narrateEncounter } from "~/prompts.ts";
+import { narrateCombatBatch, narrateEncounter } from "~/prompts.ts";
 import { getOrCreatePlayer } from "~/db/player.ts";
 import { findOrCreateEncounter } from "~/db/encounter.ts";
 import { generateEnemies } from "~/game/enemies/enemy-generation.ts";
@@ -88,7 +88,7 @@ export async function handleCombat({
     channelId,
   });
 
-  const encounter = await findOrCreateEncounter({ locationId: location.id });
+  let encounter = await findOrCreateEncounter({ locationId: location.id });
   let enemyData: Array<{
     name: string;
     maxHealth: number;
@@ -119,30 +119,56 @@ export async function handleCombat({
   });
 
   // Get latest encounter state
-  let currentEncounter = await prisma.encounter.update({
+  encounter = await prisma.encounter.update({
     where: { id: encounter.id },
     data: { status: "active" },
     include: { players: true, enemies: true },
   });
-  let { players, enemies } = currentEncounter;
+  let { players, enemies } = encounter;
 
   // Main combat loop - process rounds until combat ends
   console.log(
     `[handleCombat] Starting combat loop. Players: ${players.length}, Enemies: ${enemies.length}`,
   );
 
-  while (currentEncounter.status === "active") {
-    ({ encounter: currentEncounter, players, enemies } =
-      await processCombatRound({
-        encounter: currentEncounter,
+  const BATCH_SIZE = 5;
+  while (encounter.status === "active") {
+    const batchResults = [];
+    for (
+      let i = 0;
+      i < BATCH_SIZE && encounter.status === "active";
+      i++
+    ) {
+      const roundState = await processCombatRound({
+        encounter,
         players,
         enemies,
         channelId,
         random,
-      }));
+      });
+      encounter = roundState.encounter;
+      players = roundState.players;
+      enemies = roundState.enemies;
+
+      // Push all action logs from this round into the batch
+      if (roundState.actionLogs) {
+        batchResults.push(...roundState.actionLogs);
+      }
+    }
+    await bot.helpers.sendMessage(channelId, {
+      content: await narrate({
+        prompt: narrateCombatBatch({
+          batchResults,
+          locationDescription: location.description,
+          dramaticEvents: batchResults.filter((r) => r.defeated).map(
+            (r) => `${r.target} was defeated`,
+          ),
+        }),
+      }),
+    });
   }
 
   console.log(
-    `[handleCombat] Combat ended with status: ${currentEncounter.status}`,
+    `[handleCombat] Combat ended with status: ${encounter.status}`,
   );
 }

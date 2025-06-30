@@ -1,8 +1,4 @@
 import type { Interaction } from "https://deno.land/x/discordeno@18.0.1/mod.ts";
-import {
-  type CombatActionResult,
-  renderCombatAction,
-} from "~/game/ui/renderers/combat-renderer.ts";
 
 // Command interface - defines what all game commands should implement
 export interface GameCommand {
@@ -15,6 +11,14 @@ export interface CommandResult {
   data?: unknown;
   error?: string;
   requiresUI?: boolean;
+}
+
+// Placeholder combat renderer
+function placeholderCombatRenderer(
+  data: unknown,
+  options: { channelId: bigint; avatarUrl?: string },
+) {
+  console.log("Combat result:", data, "Options:", options);
 }
 
 // Combat command - pure game logic
@@ -34,7 +38,7 @@ export class AttackCommand implements GameCommand {
 
   execute(): Promise<CommandResult> {
     // Pure game logic - no UI concerns
-    const combatResult: CombatActionResult = {
+    const combatResult = {
       attacker: this.params.attacker,
       target: this.params.target,
       hit: this.params.hit,
@@ -46,11 +50,11 @@ export class AttackCommand implements GameCommand {
       weaponName: this.params.weaponName,
     };
 
-    return {
+    return Promise.resolve({
       success: true,
       data: combatResult,
       requiresUI: true,
-    };
+    });
   }
 }
 
@@ -58,7 +62,7 @@ export class AttackCommand implements GameCommand {
 export class CommandHandler {
   constructor(
     private readonly renderers: {
-      combat: typeof renderCombatAction;
+      combat: typeof placeholderCombatRenderer;
     },
   ) {}
 
@@ -78,23 +82,11 @@ export class CommandHandler {
 
     // Handle UI rendering based on command result
     if (result.requiresUI && result.data) {
-      if (this.isCombatResult(result.data)) {
-        await this.renderers.combat(result.data, {
-          channelId: uiOptions.channelId,
-          avatarUrl: uiOptions.avatarUrl,
-        });
-      }
+      await this.renderers.combat(result.data, {
+        channelId: uiOptions.channelId,
+        avatarUrl: uiOptions.avatarUrl,
+      });
     }
-  }
-
-  private isCombatResult(data: unknown): data is CombatActionResult {
-    return (
-      typeof data === "object" &&
-      data !== null &&
-      "attacker" in data &&
-      "target" in data &&
-      "hit" in data
-    );
   }
 }
 
@@ -124,7 +116,7 @@ export async function handleAttackAction({
 
   // Handle command with UI rendering
   const handler = new CommandHandler({
-    combat: renderCombatAction,
+    combat: placeholderCombatRenderer,
   });
 
   await handler.handleCommand(attackCommand, {

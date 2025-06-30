@@ -69,7 +69,7 @@ for await (const key of new Keypress()) {
         where: { id: guild.id },
         data: { seed: newSeed },
       });
-      await seedMapForGuild({ id: guild.id });
+      await seedMapForGuild({ id: guild.id, random: Math.random });
       maps = await GameMap.findAll();
       render("Map reseeded and regenerated.");
     } catch (err) {
@@ -89,7 +89,7 @@ for await (const key of new Keypress()) {
       continue;
     }
     try {
-      await seedMapForGuild({ id: BigInt(guildId) });
+      await seedMapForGuild({ id: BigInt(guildId), random: Math.random });
       maps = await GameMap.findAll();
       render(`Seeded new map for guild ${guildId}.`);
     } catch (err) {

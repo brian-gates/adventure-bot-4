@@ -1,5 +1,4 @@
 import { prisma } from "~/db/index.ts";
-import { combatEmbedMessage } from "./message-components.ts";
 import {
   findWeakestEnemy,
   findWeakestPlayer,
@@ -14,10 +13,21 @@ import type {
 } from "~/generated/prisma/client.ts";
 import { bot } from "~/bot/index.ts";
 import { checkEncounterStatus } from "../check-encounter-status.ts";
+import { resolveCombatAction } from "./message-components.ts";
 
 export type EncounterWithCombatants = Prisma.EncounterGetPayload<{
   include: { enemies: true; players: true };
 }>;
+
+export type ActionLog = {
+  attacker: string;
+  target: string;
+  hit: boolean;
+  damage?: number;
+  critical?: boolean;
+  defeated?: boolean;
+  actionDescription?: string;
+};
 
 // Function to get player's equipped weapon
 async function getPlayerEquippedWeapon(playerId: bigint) {
@@ -92,18 +102,20 @@ export const processCombatRound = async ({
   channelId: bigint;
   random: () => number;
 }) => {
+  const actionLogs: ActionLog[] = [];
+
   // Sort by initiative
   const allCombatants = [
     ...players.map((p) => ({ ...p, type: "player" as const })),
     ...enemies.map((e) => ({ ...e, type: "enemy" as const })),
   ].sort((a, b) => (b.initiative || 0) - (a.initiative || 0));
 
-  // Process each combatant's turn
   for (const combatant of allCombatants) {
     if (encounter.status !== "active") break;
 
+    let actionLog;
     if (combatant.type === "player") {
-      ({ encounter, players, enemies } = await processPlayerTurn({
+      ({ encounter, players, enemies, actionLog } = await processPlayerTurn({
         encounter,
         players,
         enemies,
@@ -112,7 +124,7 @@ export const processCombatRound = async ({
         random,
       }));
     } else {
-      ({ encounter, players, enemies } = await processEnemyTurn({
+      ({ encounter, players, enemies, actionLog } = await processEnemyTurn({
         encounter,
         players,
         enemies,
@@ -121,8 +133,8 @@ export const processCombatRound = async ({
         random,
       }));
     }
+    if (actionLog) actionLogs.push(actionLog);
 
-    // After each turn, check if the encounter has ended and refresh the state.
     await checkEncounterStatus(encounter, channelId);
     encounter = await prisma.encounter.findUniqueOrThrow({
       where: { id: encounter.id },
@@ -133,7 +145,7 @@ export const processCombatRound = async ({
     });
   }
 
-  return { encounter, players, enemies };
+  return { encounter, players, enemies, actionLogs };
 };
 
 const processPlayerTurn = async ({
@@ -159,49 +171,28 @@ const processPlayerTurn = async ({
   const user = await bot.helpers.getUser(player.id);
   const equippedWeapon = await getPlayerEquippedWeapon(player.id);
 
-  // Get user's avatar URL
-  const avatarUrl = user.avatar
-    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
-    : `https://cdn.discordapp.com/embed/avatars/${
-      Number(user.discriminator) % 5
-    }.png`;
-
   // Determine attack parameters based on equipped weapon
   const attackBonus = equippedWeapon ? equippedWeapon.attack : 0;
   const damageDice = equippedWeapon?.damageDice || "d4";
 
-  // Create composed combat message with embed
-  const combatResult = await combatEmbedMessage({
-    attackerName: user.username,
-    targetName: target.name,
+  // Use pure combat logic
+  const combatResult = resolveCombatAction({
     attackBonus,
     damageDice,
     ac: 10,
     random,
-    currentHealth: target.health,
-    maxHealth: target.maxHealth,
-    weaponName: equippedWeapon?.name || null,
-    avatarUrl,
+    targetHealth: target.health,
   });
 
+  let actionLog;
   if (!combatResult.hit) {
-    await bot.helpers.sendMessage(channelId, {
-      embeds: [
-        {
-          author: {
-            name: user.username,
-            iconUrl: combatResult.avatarUrl,
-          },
-          description: combatResult.narration,
-          image: { url: `attachment://${combatResult.fileName}` },
-        },
-      ],
-      file: {
-        blob: new Blob([combatResult.composedImage]),
-        name: combatResult.fileName,
-      },
-    });
-    return { encounter, players, enemies };
+    actionLog = {
+      attacker: user.username,
+      target: target.name,
+      hit: false,
+      actionDescription: undefined,
+    };
+    return { encounter, players, enemies, actionLog };
   }
 
   // Update enemy health
@@ -211,29 +202,22 @@ const processPlayerTurn = async ({
     newHealth,
   });
 
-  await bot.helpers.sendMessage(channelId, {
-    embeds: [
-      {
-        author: {
-          name: user.username,
-          iconUrl: combatResult.avatarUrl,
-        },
-        description: combatResult.narration,
-        image: { url: `attachment://${combatResult.fileName}` },
-      },
-    ],
-    file: {
-      blob: new Blob([combatResult.composedImage]),
-      name: combatResult.fileName,
-    },
-  });
-
   // Update enemies array
   const updatedEnemies = enemies.map((e) =>
     e.id === target.id ? updatedEnemy : e
   );
 
-  return { encounter, players, enemies: updatedEnemies };
+  actionLog = {
+    attacker: user.username,
+    target: target.name,
+    hit: true,
+    damage: combatResult.damageRoll,
+    critical: combatResult.d20 === 20,
+    defeated: newHealth === 0,
+    actionDescription: undefined,
+  };
+
+  return { encounter, players, enemies: updatedEnemies, actionLog };
 };
 
 const processEnemyTurn = async ({
@@ -258,32 +242,24 @@ const processEnemyTurn = async ({
 
   const targetUser = await bot.helpers.getUser(target.id);
 
-  // Create composed combat message with embed
-  const combatResult = await combatEmbedMessage({
-    attackerName: enemy.name,
-    targetName: targetUser.username,
+  // Use pure combat logic
+  const combatResult = resolveCombatAction({
     attackBonus: 0,
     damageDice: "d4",
     ac: 10,
     random,
-    currentHealth: target.health,
-    maxHealth: target.maxHealth,
+    targetHealth: target.health,
   });
 
+  let actionLog;
   if (!combatResult.hit) {
-    await bot.helpers.sendMessage(channelId, {
-      embeds: [
-        {
-          description: combatResult.narration,
-          image: { url: `attachment://${combatResult.fileName}` },
-        },
-      ],
-      file: {
-        blob: new Blob([combatResult.composedImage]),
-        name: combatResult.fileName,
-      },
-    });
-    return { encounter, players, enemies };
+    actionLog = {
+      attacker: enemy.name,
+      target: targetUser.username,
+      hit: false,
+      actionDescription: undefined,
+    };
+    return { encounter, players, enemies, actionLog };
   }
 
   // Update player health
@@ -293,24 +269,20 @@ const processEnemyTurn = async ({
     newHealth,
   });
 
-  // Send the composed message with embed
-  await bot.helpers.sendMessage(channelId, {
-    embeds: [
-      {
-        description: combatResult.narration,
-        image: { url: `attachment://${combatResult.fileName}` },
-      },
-    ],
-    file: {
-      blob: new Blob([combatResult.composedImage]),
-      name: combatResult.fileName,
-    },
-  });
-
   // Update players array
   const updatedPlayers = players.map((p) =>
     p.id === target.id ? updatedPlayer : p
   );
 
-  return { encounter, players: updatedPlayers, enemies };
+  actionLog = {
+    attacker: enemy.name,
+    target: targetUser.username,
+    hit: true,
+    damage: combatResult.damageRoll,
+    critical: combatResult.d20 === 20,
+    defeated: newHealth === 0,
+    actionDescription: undefined,
+  };
+
+  return { encounter, players: updatedPlayers, enemies, actionLog };
 };

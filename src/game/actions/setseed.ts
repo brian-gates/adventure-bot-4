@@ -44,7 +44,15 @@ export const setseed = async ({
     // Fetch the new map and render it
     const guild = await prisma.guild.findUnique({
       where: { id: guildId },
-      include: { map: { include: { locations: true, paths: true } } },
+      include: {
+        map: {
+          include: {
+            locations: true,
+            paths: true,
+            guild: { include: { currentLocation: true } },
+          },
+        },
+      },
     });
     if (!guild?.map) {
       await bot.helpers.editOriginalInteractionResponse(interaction.token, {

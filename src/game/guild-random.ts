@@ -39,6 +39,10 @@ export function guildRandom(
     const value = randomFn();
     calls++;
     debouncedFlush();
+    if (calls >= 500) {
+      // Force flush after 500 calls
+      flush();
+    }
     return value;
   };
 

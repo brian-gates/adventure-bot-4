@@ -201,3 +201,36 @@ export function generateLocationName() {
 export function cleanLocationName(name: string): string {
   return name.replace(/^['"“"']+|['"""']+$/g, "").replace(/\.+$/, "").trim();
 }
+
+export function narrateCombatBatch({
+  batchResults,
+  locationDescription,
+  dramaticEvents,
+}: {
+  batchResults: Array<{
+    attacker: string;
+    target: string;
+    hit: boolean;
+    damage?: number;
+    critical?: boolean;
+    defeated?: boolean;
+    actionDescription?: string;
+  }>;
+  locationDescription?: string;
+  dramaticEvents?: string[];
+}) {
+  return [
+    locationDescription ? `Scene: ${locationDescription}` : "",
+    `Summarize the following combat actions in a fantasy RPG, focusing on drama and narrative. Do not mention dice rolls or numbers unless a dramatic event (like a critical hit) occurs. Use immersive, atmospheric language.`,
+    batchResults.map((r) =>
+      `- ${r.attacker} attacks ${r.target}${r.critical ? " (critical!)" : ""}${
+        r.defeated ? ", defeating them" : ""
+      }${r.actionDescription ? ": " + r.actionDescription : ""}`
+    ).join("\n"),
+    dramaticEvents && dramaticEvents.length > 0
+      ? `Dramatic events: ${dramaticEvents.join(", ")}`
+      : "",
+    ...defaultResponseTemplate,
+    immersiveRoleplay,
+  ].filter(Boolean).join("\n");
+}

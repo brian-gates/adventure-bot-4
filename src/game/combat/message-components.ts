@@ -154,106 +154,41 @@ export async function combatMessage({
     hit: attackResult.hit,
     damageRoll: attackResult.damageRoll,
     healthBarImage: healthBarData,
+    d20: undefined,
+    composedImage: undefined,
+    fileName: undefined,
+    avatarUrl: undefined,
   };
 }
 
-export async function combatEmbedMessage({
-  attackerName,
-  targetName,
+export function resolveCombatAction({
   attackBonus,
   damageDice,
   ac,
   random,
-  currentHealth,
-  maxHealth,
-  weaponName,
-  avatarUrl,
+  targetHealth,
 }: {
-  attackerName: string;
-  targetName: string;
   attackBonus: number;
   damageDice: string;
   ac: number;
   random: () => number;
-  currentHealth?: number;
-  maxHealth?: number;
-  weaponName?: string | null;
-  avatarUrl?: string;
+  targetHealth: number;
 }) {
-  // Roll attack die (d20 + attack bonus)
   const d20 = Math.floor(random() * 20) + 1;
   const totalAttack = d20 + attackBonus;
-  const diceImagePaths = [`media/dice/output/d20_${d20}.png`];
-
-  // Check if hit
   const hit = totalAttack >= ac;
   let damageRoll = 0;
-
-  // Roll damage die if hit
   if (hit) {
-    // Extract the number from damageDice (e.g., "d8" -> 8)
     const damageSides = parseInt(damageDice.substring(1));
     damageRoll = Math.floor(random() * damageSides) + 1;
-
-    // Map damage sides to available dice images
-    let damageDiceSides: number;
-    if (damageSides <= 4) damageDiceSides = 4;
-    else if (damageSides <= 6) damageDiceSides = 6;
-    else if (damageSides <= 8) damageDiceSides = 8;
-    else if (damageSides <= 10) damageDiceSides = 10; // Use actual d10 images
-    else if (damageSides <= 12) damageDiceSides = 12;
-    else damageDiceSides = 20; // For anything larger than d12
-
-    // Map the damage roll to the appropriate range for the dice image
-    const mappedRoll = Math.min(damageRoll, damageDiceSides);
-    diceImagePaths.push(
-      `media/dice/output/d${damageDiceSides}_${mappedRoll}.png`,
-    );
   }
-
-  // Generate narration
-  const narration = await combatNarration({
-    attacker: attackerName,
-    target: targetName,
-    hit,
-    damage: damageRoll,
-    newHealth: currentHealth,
-    maxHealth,
-    weaponName,
-  });
-
-  let composedImage: Uint8Array;
-  let fileName: string;
-
-  if (hit && currentHealth !== undefined && maxHealth !== undefined) {
-    // Only generate health bar if there's a hit and we have health data
-    const healthBarImage = await getHealthBarImage({
-      current: currentHealth,
-      max: maxHealth,
-      damage: damageRoll,
-      label: targetName,
-    });
-
-    // Compose dice and health bar image
-    composedImage = await composeDiceAndHealthbarImage({
-      imagePaths: diceImagePaths,
-      healthBarImage,
-    });
-    fileName = `combat_${d20}_${damageRoll}.png`;
-  } else {
-    // Just combine the dice images without health bar
-    composedImage = await combineDiceImages({
-      imagePaths: diceImagePaths,
-    });
-    fileName = `combat_${d20}.png`;
-  }
-
+  const newHealth = Math.max(0, targetHealth - damageRoll);
   return {
-    narration,
+    d20,
     hit,
     damageRoll,
-    composedImage,
-    fileName,
-    avatarUrl,
+    critical: d20 === 20,
+    defeated: hit && newHealth === 0,
+    newHealth,
   };
 }

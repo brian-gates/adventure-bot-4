@@ -1,15 +1,20 @@
 import { prisma } from "~/db/index.ts";
 import type { Encounter, Enemy, Player } from "~/generated/prisma/client.ts";
 import { rollDie } from "../dice.ts";
-import {
-  type CombatActionResult,
-  renderCombatAction,
-} from "~/game/ui/renderers/combat-renderer.ts";
 import { checkEncounterStatus } from "../check-encounter-status.ts";
 
 export interface AttackWeakestPlayerResult {
   success: boolean;
-  combatResult?: CombatActionResult;
+  combatResult?: {
+    attacker: string;
+    target: string;
+    hit: boolean;
+    damage: number;
+    attackRoll: number;
+    damageRoll: number;
+    newHealth: number;
+    maxHealth: number;
+  };
   error?: string;
 }
 
@@ -53,7 +58,7 @@ export async function attackWeakestPlayer({
   }
 
   // Create combat result for UI rendering
-  const combatResult: CombatActionResult = {
+  const combatResult = {
     attacker: attacker.name,
     target: weakestPlayer.name,
     hit,
@@ -64,12 +69,8 @@ export async function attackWeakestPlayer({
     maxHealth: weakestPlayer.maxHealth,
   };
 
-  // Render the UI (separated from game logic)
-  await renderCombatAction(combatResult, {
-    channelId,
-    avatarUrl: "attachment://crossed-swords.png",
-    includeHealthBar: true,
-  });
+  // Log the combat result instead of rendering UI
+  console.log("Combat result:", combatResult);
 
   // Check encounter status after the action
   await checkEncounterStatus(encounter, channelId);
